@@ -1,0 +1,718 @@
+\documentclass{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[linesnumbered,ruled,vlined]{algorithm2e}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{stmaryrd} % for double brackets
+\usepackage{mathrsfs} % good script letters
+
+% wrap in angle brackets
+\newcommand{\tuple}[1]{\langle #1 \rangle}
+
+% get >> with a line under it (dominates)
+\newcommand{\strictlydominates}{\mathrel{\gg}}
+\newcommand{\dominates}{\mathrel{\underline{\strictlydominates}}}
+
+\newcommand{\strictlydominatedby}{\mathrel{\ll}}
+\newcommand{\dominatedby}{\mathrel{\underline{\strictlydominatedby}}}
+\newcommand{\idom}{\textit{idom}}
+\newcommand{\children}{\textit{children}}
+
+% type of path expression
+\newcommand{\type}{\textit{type}}
+
+\newcommand{\subexp}{\textit{Subexp}}
+
+% for Paths_G(u,v)
+\newcommand{\Paths}{\textit{Paths}}
+
+% interpretation of regular expression as a transition formula
+\newcommand{\tf}[1]{\mathscr{I} \llbracket #1 \rrbracket}
+
+% define theorems, lemmas, corollaries, and definitions
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+
+\begin{document}
+
+\begin{definition}
+  A \emph{path expression} $P$ of type $\tuple{u, v}$ on a graph
+  $G = \tuple{V, E}$ is a simple regular expression over $E$ such
+  that $\sigma(P) \subseteq \Paths_G(u,v)$ for some $u,v \in
+  V$.
+\end{definition}
+
+\begin{lemma}
+  \label{pe:type}
+  Let $P$ be a path expression of type $\tuple{u, v}$ on
+  $G = \tuple{V, E}$. Then, the following hold:
+
+  \begin{enumerate}
+  \item If $P = P_1 + P_2$, then $P_1$ and $P_2$ are path
+    expressions of type $\tuple{u, v}$ on $G$.
+  \item If $P = P_1 \cdot P_2$, then there is a unique $w\in V$
+    such that $P_1$ is a path expression of type $\tuple{u, w}$ on
+    $G$ and $P_2$ is a path expression of type $\tuple{w, v}$ on
+    $G$.
+  \item If $P = {P_1}^*$, then $u=v$ and $P_1$ is a path
+    expression of type $\tuple{u, v}=\tuple{u, u}$ on $G$. 
+  \end{enumerate}
+\end{lemma}
+
+\begin{proof}
+  We consider each case individually:
+
+  \begin{enumerate}
+  \item $P_1$ and $P_2$ are simple regular expressions, and we
+    have that
+    $\sigma(P_1),\sigma(P_2) \subseteq \sigma(P) \subseteq
+    \Paths_G(u,v)$ by definition. Therefore, $P_1$ and $P_2$ are
+    path expressions of type $\tuple{u, v}$ on $G$.
+
+  \item Since $P$ is simple, $\sigma(P_1)\ne\emptyset$ and
+    $\sigma(P_2)\ne\emptyset$. Consider any $p_1\in \sigma(P_1)$
+    and $p_2\in \sigma(P_2)$. Since $p_1\cdot p_2$ is a path from
+    $u$ to $v$, clearly, $p_1$ and $p_2$ are paths with $p_1$
+    starting at $u$ and ending at some vertex $w$, and $p_2$
+    starting at $w$ and ending at $v$. Now, consider any
+    ${p_1}^\prime \in \sigma(P_1)$. Since
+    ${p_1}^\prime \cdot p_2$ is also a path from $u$ to $v$,
+    ${p_1}^\prime$ must start at $u$ and end at $w$. Similarly,
+    consider any ${p_2}^\prime \in \sigma(P_2)$. Since
+    $p_1\cdot {p_2}^\prime$ is also a path from $u$ to $v$,
+    ${p_2}^\prime$ must start at $w$ and end at $v$. Therefore,
+    $P_1$ is a path expression of type $\tuple{u, w}$ on $G$ and
+    $P_2$ is a path expression of type $\tuple{w, v}$ on $G$.
+
+  \item $1 \in \sigma(P)$, so $1 \in \Paths_G(u,v)$. Therefore,
+    $u=v$. Furthermore, we have
+    $\sigma(P_1) \subseteq \sigma(P) \subseteq \Paths_G(u,v)$ by
+    definition. So, $P_1$ is a path expression of type
+    $\tuple{u, v} = \tuple{u, u}$ on $G$.
+  \end{enumerate}
+\end{proof}
+
+\begin{corollary}
+  For any path expression $P$ of type $\tuple{u,v}$ on $G$ that
+  does not have 1 as a subexpression, there exists a function
+  $\type: \subexp(P) \to V \times V$ such that the following
+  hold:
+
+  \begin{itemize}
+  \item For all $e=\tuple{u,v} \in E$ such that
+    $e \in \subexp(P)$, we have that $\type(e) = \tuple{u,v}$.
+  \item For all $P_1, P_2 \in \subexp(P)$ with $P_1+P_2 \in
+    \subexp(P)$, we have that 
+    $\type(P_1+P_2)=\type(P_1)=\type(P_2)$
+  \item For all $P_1, P_2 \in \subexp(P)$ with
+    $P_1 \cdot P_2 \in \subexp(P)$, we have that if
+    $\type(P_1 \cdot P_2)=\tuple{u^\prime,v^\prime}$ for some
+    $u^\prime,v^\prime \in V$, then there is some $w\in V$ such
+    that $\type(P_1) = \tuple{u^\prime, w}$ and
+    $\type(P_2) = \tuple{w, v^\prime}$.
+  \item For all $P_1 \in \subexp(P)$ with
+    ${P_1}^* \in \subexp(P)$, we have that
+    $\type({P_1}^*) = \type(P_1) = \tuple{w,w}$ for some
+    $w\in V$.
+  \end{itemize}
+\end{corollary}
+
+\begin{proof}
+  Induction using Lemma \ref{pe:type}.
+\end{proof}
+
+\begin{definition}
+  % todo: find a better name
+  A path expression $P$ is well-formed if it does not have 1 as a
+  subexpression and if there exist functions
+  $l, r: \subexp(P) \to \{Open,Closed\}$ and
+  $V_P: \subexp(P) \to \mathcal{P}(V)$ such that the following
+  hold:
+  \begin{itemize}
+  \item For all $e=\tuple{u,v} \in E$ such that
+    $e \in \subexp(P)$, we have that $l(e) = r(e) = Open$ and
+    $V_P(e) = \{u, v\}$.
+  \item For all $P_1, P_2 \in \subexp(P)$ with
+    $P_1 + P_2 \in \subexp(P)$, we have that
+    $l(P_1 + P_2) = l(P_1) = l(P_2)$,
+    $r(P_1 + P_2) = r(P_1) = r(P_2)$, and
+    $V_P(P_1+P_2) = V_P(P_1) \cup V_P(P_2)$.
+  \item For all $P_1, P_2 \in \subexp(P)$ with
+    $P_1 \cdot P_2 \in \subexp(P)$, we have that
+    $l(P_1 \cdot P_2) = l(P_1)$, $r(P_1 \cdot P_2) = r(P_2)$,
+    $r(P_1) \implies \neg l(P_2)$,
+    $V_P(P_1+P_2) = V_P(P_1) \cup V_P(P_2)$, and
+    $|V_P(P_1) \cap V_P(P_2)| = 1$.
+  \item For all $P_1 \in \subexp$ with ${P_1}^* \in \subexp(P)$,
+    we have that $l({P_1}^*) = r({P_1}^*) = Closed$,
+    $l(P_1) = r(P_1) = Open$, and $V_P({P_1}^*) = \{v\}$, where
+    $\type(P_1) = \tuple{v,v}$.
+  \end{itemize}
+\end{definition}
+
+\begin{algorithm}
+  \caption{Path Expression DAG to Transition Formula}
+  \label{alg:path-exp-to-tf}
+
+  \SetAlgoLined
+  \SetAlgoNoEnd
+  
+  \SetKw{Skip}{skip}
+
+  \KwIn{A graph $G=\tuple{V, E}$ and a non-empty, well-formed
+    path expression $P$ whose distinct subexpressions
+    $\{P_1,\dots,P_n\}$ are labeled so that
+    $P_i \in \subexp(P_j) \implies i < j$ (note that $P=P_n$).}
+  
+  \KwOut{A formula $\Gamma$ such that
+    $Sat(\Gamma) \iff Sat(\tf{P})$}
+
+  $\Gamma \gets true$
+  
+  \ForEach{$i = 1$ \KwTo $n$}{
+    $\tuple{u, v} \gets \type(P_i)$ \;
+    \Switch{$P_i$}{
+      % \lCase{1}{
+      %   $\Gamma \gets \Gamma \wedge (b_i \implies X_u =
+      %   {X_u}^\prime)$
+      % }
+
+      \lCase{$\tuple{u, v}$}{
+        $\Gamma \gets \Gamma \wedge (b_i \implies
+        F_{\tuple{u, v}}({X_u}^\prime, X_v))$
+      }
+
+      \lCase{$P_j + P_k$}{
+        $\Gamma \gets \Gamma \wedge (b_i \implies b_j \vee b_k)$
+      }
+
+      \Case{$P_j \cdot P_k$}{
+
+        \lIf{$r(P_j) = l(P_k) = Open$}{
+          $\Gamma \gets \Gamma \wedge (b_i \implies X_u =
+          {X_u}^\prime)$ 
+        }
+        $\Gamma \gets \Gamma \wedge (b_i \implies b_j \wedge
+        b_k)$ \;
+        
+      }
+
+      \Case{${P_j}^*$}{
+
+        $F \gets \textit{star}(\Gamma, b_j, \tuple{{X_u}^\prime,
+          X_u})$ \;
+        $F^\prime \gets F(X_u, {X_u}^\prime)$ \;
+        $\Gamma \gets \Gamma \wedge (b_i \implies F^\prime)$ \;
+
+      }
+    }
+  }
+
+  \Return $\Gamma \wedge b_n$ \;
+
+\end{algorithm}
+
+\begin{theorem}
+  After the $i$th iteration of the for loop, for all $j \le i$,
+  $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(Pre(P_j),
+  Post(P_j)))$, where $Pre(P_j) = X_u$ if $l(P_j)$ and
+  ${X_u}^\prime$ otherwise, and $Post(P_j) = {X_v}^\prime$ if
+  $r(P_j)$ and $X_v$ otherwise, where $\tuple{u,v} =
+  \type(P_j)$. 
+\end{theorem}
+
+\begin{proof}
+  We proceed by induction on $i$. Certainly this is true before
+  the first iteration. Suppose this is true before the $i$th
+  iteration of the loop. Since the only implications added to
+  $\Gamma$ during this iteration are of the form $b_i \implies F$
+  for some formula $F$, and since $b_i$ does not appear in
+  $\Gamma$ prior to this, the claim still holds for all $j <
+  i$. For $j = i$, let us consider each possible form of $P_i$
+  separately:
+
+  \begin{itemize}
+  % \item $P_i = 1$: Since $Pre(P_i) = X_u$ and
+  %   $Post(P_i) = {X_u}^\prime$,
+  %   $\tf{1}(Pre(P_i), Post(P_i)) = (X_u = {X_u}^\prime)$, and
+  %   after this iteration,
+  %   $\Gamma \models b_i \implies X_u = {X_u}^\prime$, and this is
+  %   the only implication in $\Gamma$ containing $b_i$. Clearly,
+  %   $Sat(\Gamma \wedge b_i) \iff Sat(\tf{1}(Pre(P_i),
+  %   Post(P_i)))$.
+
+  \item $P_i = \tuple{u, v}$: We have that
+    $\tf{\tuple{u, v}} = F_{\tuple{u, v}}$, and after this
+    iteration,
+    $\Gamma \models b_i \implies F_{\tuple{u, v}}({X_u}^\prime,
+    X_v)$. If $Sat(\Gamma \wedge b_i)$, then clearly there is
+    some binding to ${X_u}^\prime, X_v$ so that
+    $F_{\tuple{u, v}}({X_u}^\prime, X_v)$. So, since
+    $Pre(P_i) = {X_u}^\prime$ and $Post(P_i) = X_v$, clearly
+    $Sat(\tf{P_i}(Pre(P_i), Post(P_i)))$. Similarly, suppose
+    $Sat(\tf{P_i}(Pre(P_i), Post(P_i)))$. Then, we can choose
+    some particular bindings to ${X_u}^\prime, X_v$ so that
+    $F_{\tuple{u, v}}({X_u}^\prime, X_v)$. Since $\Gamma$
+    contains no other instances of $b_i$ besides the
+    aforementioned implication, this means that
+    $Sat(\Gamma \wedge b_i)$.
+    
+  \item $P_i = P_j + P_k$:
+    $\tf{P_j+P_k} = \tf{P_j} \vee \tf{P_k}$. By the induction
+    hypothesis and the well-formedness of $P$, we know that
+    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(Pre(P_j),
+    Post(P_j))) \iff Sat(\tf{P_j}(Pre(P_i), Post(P_i)))$ and
+    $Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_k}(Pre(P_k),
+    Post(P_k))) \iff Sat(\tf{P_k}(Pre(P_i), Post(P_i)))$. After
+    this iteration, $\Gamma \models b_i \implies b_j \vee b_k$,
+    and $\Gamma$ contains no other implications involving $b_i$,
+    so
+    $Sat(\Gamma \wedge b_i) \iff Sat(\Gamma \wedge b_j) \vee
+    Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_j}(Pre(P_i),
+    Post(P_i))) \vee Sat(\tf{P_k}(Pre(P_i), Post(P_i))) \iff
+    Sat(\tf{P_i}(Pre(P_i), Post(P_i)))$, as desired.
+    
+  \item $P_i = P_j \cdot P_k$:
+    $Sat(\tf{P_i}(Pre(P_i), Post(P_i))) \iff Sat(\exists
+    X. \tf{P_j}(Pre(P_i), X) \wedge \tf{P_k}(X, Post(P_i)))$. By
+    the induction hypothesis,
+    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(Pre(P_j),
+    Post(P_j)))$ and
+    $Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_k}(Pre(P_k),
+    Post(P_k)))$.
+
+    Proof sketch: First, deal with the case that
+    $r(P_j) = l(P_k) = Open$. We use the lemma to get the
+    intermediate vertex $w$. Then, in order to deal with the
+    existential quantification, we want to show that we can
+    provide the bindings of $X_w$/${X_w}^\prime$ as a witness
+    (for the forward direction) or can use the witness to provide
+    bindings for $X_w$/${X_w}^\prime$. We consider what other
+    conditions on $X_w$/${X_w}^\prime$ we have that are entailed
+    by $\Gamma \wedge b_i$ (note that there may be other
+    implications involving them in $\Gamma$, it's just that those
+    are along different paths!). This condition must come from
+    either * or $\tuple{u,v}$. But both of these should be ruled
+    out by well-formedness. So basically, there aren't any
+    conditions besides equality and the conditions placed on them
+    by the immediate preceeding / proceeding edge.
+
+    % First, consider the case that either $r(P_j)$ or
+    % $l(P_k)$. Note that $Post(P_j) = Pre(P_k)$. We have
+    % that $\Gamma\wedge b_i \models b_i \implies b_j \wedge b_k$,
+    % and $b_i$ appears nowhere else in $\Gamma$, so clearly
+    % $Sat(\Gamma \wedge b_i) \iff Sat(\Gamma \wedge b_j) \wedge
+    % Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_j}(Pre(P_j),
+    % Post(P_j))) \wedge Sat(\tf{P_k}(Pre(P_k), Post(P_k)))$.
+
+    % First,
+    % $Sat(\tf{P_i}(Pre(P_i), Post(P_i))) \implies Sat(\exists
+    % X. \tf{P_j}(Pre(P_i), X) \wedge \tf{P_k}(X, Post(P_i)))
+    % \implies Sat(\exists X. \tf{P_j}(Pre(P_i), X)) \wedge
+    % Sat(\exists X. \tf{P_k}(X, Post(P_i))) \implies Sat(\Gamma
+    % \wedge b_i)$.
+
+    % Now, suppose $Sat(\Gamma \wedge b_i)$. By Lemma
+    % \ref{pe:type}, there is some vertex $w$ such that
+    % $\type(P_j) = \tuple{u, w}$ and $\type(P_k) = \tuple{w,
+    %   v}$. We hypothesize that any bindings induced on $Pre(w)$
+    % by a solution to $\Gamma \wedge b_i$ have the property that
+    % $Sat(\exists X, X^\prime. \tf{P_j}(X, Pre(w)) \wedge
+    % \tf{P_k}(Pre(w), X^\prime))$. 
+
+  \item $P_i = {P_j}^*$: By the induction hypothesis,
+    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(Pre(P_j),
+    Post(P_j)))$. But, by the well-formedness of $P$,
+    $Pre(P_j) = {X_u}^\prime$ and $Post(P_j) = X_u$. So, for
+    $F = \textit{star}(\Gamma, b_j, \tuple{{X_u}^\prime, X_u})$,
+    $Sat(F) \iff Sat(\tf{{P_j}^*}({X_u}^\prime,
+    X_u))$. Therefore, for $F^\prime = F(X_u, {X_u}^\prime)$,
+    $Sat(F^\prime) \iff Sat(\tf{{P_j}^*}(X_u,
+    {X_u}^\prime))$. Since the only implication added to $\Gamma$
+    during this iteration is $b_i \implies F^\prime$, and since
+    $Pre(P_i) = X_u$ and $Post(P_i) = {X_u}^\prime$,
+    $Sat(\Gamma \wedge b_i) \iff Sat(\tf{{P_j}^*}(X_u,
+    {X_u}^\prime))$. 
+  \end{itemize}
+\end{proof}
+
+\newpage
+
+% Let $G = \tuple{V, E, r}$ be a flow graph. A vertex
+% $v \in V$ \emph{dominates} a vertex $u \in V$, written
+% $v \dominates u$, if and only if every path from $r$ to $v$ in
+% $G$ passes through $u$. $v$ \emph{strictly dominates} $u$,
+% written $v \strictlydominates u$, if and only if $v \dominates u$
+% and $v \ne u$. $\idom(u)$ for $u\ne r$ denotes the unique
+% vertex $v\strictlydominates u$ such that for all
+% $v^\prime \strictlydominates u$, $v^\prime \dominates v$. We use
+% $\children(v)$ to denote the set $\{u|\idom(u)=v\}$.
+
+% \begin{lemma}
+%   For all $\tuple{u, v} \in E$, $\idom(v) \dominates u$.
+% \end{lemma}
+
+% \begin{proof}
+%   First, note that $v\ne r$, meaning $\idom(v)$ exists and is
+%   unique. Now, every path from $r$ to $v$ must pass through
+%   $\idom(v)$. Clearly, all paths from $r$ to $u$ followed by
+%   $\tuple{u, v}$ are paths from $r$ to $v$. So, either
+%   $u=\idom(v)$ or all paths from $r$ to $u$ must contain
+%   $\idom(v)$. Therefore, $\idom(v) \dominates u$.
+% \end{proof}
+
+% Now, for every edge $e=\tuple{u, v}\in E$, associate an edge
+% $\tilde{e}$ where if $u=\idom(v)$, then $\tilde{e} = e$, and
+% otherwise $\tilde{e} = \tuple{\tilde{u}, v}$ where
+% $\idom(v) \to \tilde{u} \to^* u$. This is well-defined by the
+% above lemma. Then, let
+% $\tilde{G} = \tuple{V, \tilde{E}, r}$ where
+% $\tilde{E} = \{\tilde{e} | e\in E\}$. Note that $\tilde{G}$ might
+% not be simple.
+
+% $G$ is said to be reducible if every cycle contains an edge
+% $\tuple{u, v}$ such that $v\dominates u$. We arrive at the
+% following lemma:
+
+% \begin{lemma}
+%   $G$ is reducible if and only if all cycles in $\tilde{G}$
+%   are self-loops
+% \end{lemma}
+
+% \begin{proof}
+%   For the forward direction, let $G$ be reducible and suppose
+%   there is some simple cycle
+%   $\tilde{e}_1,\tilde{e}_2,\dots,\tilde{e}_n$ in
+%   $\tilde{G}$. Consider the corresponding $e_1,e_2,\dots,e_n$ in
+%   $G$. By definition, there must be some (possibly empty) path
+%   $p_i$ from $h(\tilde{e}_i)$ to $h(e_i)$ for each $i$, and we
+%   also have that $t(\tilde{e}_i) = t(e_i)$. So, the concatenation
+%   of $p_1,e_1,p_2,e_2,\dots,p_n,e_n$ is a cycle in $G$.
+% \end{proof}
+
+% \textbf{TODOTODOTODO}
+
+\begin{algorithm}
+  \caption{Tarjan's Algorithm (modified)}
+  \label{alg:path-exp}
+  \SetAlgoLined
+
+  \SetAlgoNoEnd
+
+  \KwIn{A reducible flow graph $G = \tuple{V, E, r}$
+    where every $v$ vertex has an associated set of variables
+    $X_v$}
+  
+  \KwOut{A formula $\Gamma$ such that for every vertex $v \in V$,
+    $b_{v_\textit{entry}}$ is consistent with $\Gamma$ if and
+    only if
+    $\exists X,X^\prime.\tf{\textit{eval}(v)}(X, X^\prime)$
+      is satisfiable, where $\textit{eval}(v)$ is guaranteed to
+      be a path expression representing exactly
+      $\textit{Paths}_G(r,v)$. }
+
+  \SetKwFunction{SolveSparse}{solve-reducible}
+
+  children $\gets$ dominator tree for $G$ \;
+  Init compressed weighted forest with vertices $V$ \;
+  \Return \SolveSparse($r$) \;
+
+  \BlankLine
+
+  \SetKwProg{Fn}{Subroutine}{}{}
+  \Fn{\SolveSparse($v$)}{
+    \KwIn{Vertex $v \in V$}
+    
+    \KwOut{A formula $\Gamma_v$ such that for all
+      $w \dominatedby v$, $b_{w_\textit{entry}}$ is consistent
+      with $\Gamma_v$ if and only if
+      $\exists X,X^\prime.\tf{\textit{eval}(w)} (X, X^\prime)$ is
+      satisfiable, where $\textit{eval}(w)$ is an unambiguous
+      path expression recognizing exactly
+      $\textit{Paths}_G(v,w) \cap E|_v^*$.  }
+
+    $\Gamma_v \gets true$
+
+    \ForEach{$u \in \textit{children}(v)$ in topological order of
+      the sibling graph}{
+
+      \tcc{Solve subproblems}
+
+      $\Gamma_u \gets \SolveSparse(u)$\;
+      
+      $W_{\textit{cycle}} \gets \{w \in \textit{pred}(u) | w
+      \dominatedby u\}, W_{\textit{noncycle}} \gets \{w \in
+      \textit{pred}(u) | w \not\dominatedby u\}$ \;
+
+      $\textit{pe-cycle}, \textit{pe-noncycle} \gets 0$\;
+
+      \tcc{Perform the ``star'' operation on cycles}
+      
+      \If{$W_{\textit{cycle}} = \emptyset$}{
+        
+        $F_{\textit{star}} \gets (b_{u_\textit{exit}} \implies
+        X_{u_\textit{exit}} = X_{u_\textit{entry}})$
+        
+      }
+
+      \Else{
+        
+        $\Gamma_{\textit{cycle}} \gets
+        \wedge (b_{u_\textit{cycle}} \implies \bigvee_{w \in
+          W_{\textit{cycle}}} b_{\tuple{w, u}}) \wedge
+        \bigwedge_{w \in W_{\textit{cycle}}} ((b_{\tuple{w, u}}
+        \implies b_{w_\textit{exit}}) \wedge (b_{\tuple{w, u}}
+        \implies F_{\tuple{w, u}}(X_{w_\textit{exit}},
+        X_{u_\textit{entry}})))$ \;
+        
+        $F_{\textit{star}} \gets \textit{star}(\Gamma_u \wedge
+        \Gamma_{\textit{cycle}}, b_{u_\textit{cycle}},
+        \tuple{X_{u_\textit{exit}}, X_{u_\textit{entry}}})$ \;
+
+        $F_{\textit{star}} \gets
+        F_{\textit{star}}(X_{u_\textit{entry}},
+        X_{u_\textit{exit}}) $ \;
+
+        \ForEach{$w \in W_{\textit{cycle}}$}{
+          
+          $\textit{pe-cycle} \gets \textit{pe-cycle} +
+          \textit{eval}(w) \cdot \tuple{w, u}$ \;
+          
+        }
+        
+      }
+
+      \tcc{Collect non-cycle edges}
+
+      $\Gamma_{\textit{noncycle}} \gets \bigwedge_{w \in
+        W_{\textit{noncycle}}} ((b_{\tuple{w, u}} \implies
+      b_{w_\textit{exit}}) \wedge (b_{\tuple{w, u}} \implies
+      F_{\tuple{w, u}}(X_{w_\textit{exit}},
+      X_{u_\textit{entry}})))$ \;
+
+      \ForEach{$w \in W_{\textit{noncycle}}$}{
+        
+        $\textit{pe-noncycle} \gets \textit{pe-noncycle} +
+        \textit{eval}(w) \cdot \tuple{w, u}$ \;
+        
+      }
+
+      \tcc{Add all formulas created during this iteration}
+
+      $\Gamma_v \gets \Gamma_v \wedge \Gamma_u \wedge
+      \Gamma_{\textit{noncycle}} \wedge (b_{u_\textit{exit}}
+      \implies b_{u_\textit{entry}}) \wedge (b_{u_\textit{exit}}
+      \implies F_{\textit{star}}) \wedge (b_{u_\textit{entry}}
+      \implies \bigvee_{w \in W_{\textit{noncycle}}} b_{\tuple{w, u}}) $
+
+      $\textit{link}(u, \textit{pe-noncycle} \cdot
+      \textit{pe-cycle}^*, v)$ \;
+      
+    }
+    \Return $\Gamma_v$ \;
+  }
+\end{algorithm}
+
+\begin{lemma}
+  \label{sr:dominates:literals}
+  All assumption literals in $\Gamma_v = \SolveSparse(v)$ are
+  either $b_{v_\textit{exit}}$, associated with a vertex
+  $w \strictlydominatedby v$, or associated with an edge
+  $e \in E|_v$.
+\end{lemma}
+
+\begin{proof}
+  We proceed by structural induction on the dominator tree rooted
+  at $v$. If $v$ is a leaf node, $\Gamma_v = true$, so the claim
+  holds trivially. Otherwise, by the induction hypothesis,
+  $\Gamma_u$ contains only assumption literals that are
+  associated either with a vertex
+  $w \dominatedby u \dominatedby v$ or with an edge
+  $e \in E|_u \subseteq E|_V$. Note that the claim holds
+  trivially for $\Gamma_{\textit{noncycle}}$,
+  $\Gamma_{\textit{tree}}$, $b_{u_\textit{tree}}$,
+  $(b_{u_\textit{exit}} \implies b_{u_\textit{entry}})$, and
+  $(b_{u_\textit{entry}} \implies \bigvee_{w \in
+    W_{\textit{noncycle}} \cup W_{\textit{tree}}}
+  b_{\tuple{w, u}})$. Thus, the only implication left to check is
+  $(b_{u_\textit{exit}} \implies F_{\textit{star}})$. But, by our
+  assumptions on the \textit{star} operator, since $\Gamma_u$ and
+  $\Gamma_{\textit{cycle}}$ follow the desired properties,
+  $F_{\textit{star}}$ does as well, which completes the proof.
+\end{proof}
+
+\begin{lemma}
+  \label{sr:dominates:entails}
+  Let $\Gamma_v = \SolveSparse(v)$ for some vertex $v\in
+  V$. Then, for any $w\strictlydominatedby v$, $b_{w_\textit{entry}}
+  \wedge \Gamma_v \models b_{v_\textit{exit}}$. 
+\end{lemma}
+
+\begin{proof}
+  We proceed by structural induction on the dominator tree rooted
+  at $v$. If $v$ is a leaf node, then the claim holds
+  vacuously. Now, suppose $v$ is not a leaf node, and take some
+  arbitrary $w\strictlydominatedby v$. There must be some
+  $u \in \children(v)$ such that $u \dominates w$. Suppose that
+  $u \strictlydominates w$; then, by the induction hypothesis,
+  $b_{w_\textit{entry}} \wedge \Gamma_u \models
+  b_{u_\textit{exit}}$, so clearly
+  $b_{w_\textit{entry}} \wedge \Gamma_v \models
+  b_{u_\textit{exit}}$, and we furthermore have
+  $b_{u_\textit{exit}} \wedge \Gamma_v \models
+  b_{u_\textit{entry}}$. Therefore, it is sufficient to prove the
+  claim for $u$, i.e. that
+  $b_{u_\textit{entry}} \wedge \Gamma_v \models
+  b_{v_\textit{exit}}$.
+
+  We proceed by induction on the topological order of the sibling
+  graph. If $u$ is the first child in that order, then $v$ is the
+  only predecessor it doesn't dominate. Therefore, we have that
+  $\Gamma_v \models (b_{u_\textit{entry}} \implies
+  b_{\tuple{v, u}})$. But, we also have that $\Gamma_v \models
+  (b_{\tuple{v, u}} \implies b_{v_\textit{exit}})$, which provides
+  the desired result.
+
+  Now, suppose $u$ is some later child. Since
+  $\Gamma_v \models (b_{\tuple{w^\prime, u}} \implies
+  b_{w^\prime_\textit{exit}}) \wedge (b_{w^\prime_\textit{exit}}
+  \implies b_{w^\prime_\textit{entry}})$ for all
+  $\tuple{w^\prime, u} \in E$, and since, by the induction
+  hypotheses, $\Gamma_v \models (b_{w^\prime_\textit{entry}}
+  \implies b_{v_\textit{exit}})$,
+  $\Gamma_v \models (b_{u_\textit{entry}} \implies \bigvee_{w \in
+    W_{\textit{noncycle}}} b_{v_\textit{exit}}) \equiv
+  (b_{u_\textit{entry}} \implies
+  b_{v_\textit{exit}})$. Therefore,
+  $b_{u_\textit{entry}} \wedge \Gamma_v \models
+  b_{v_\textit{exit}}$, as desired.
+\end{proof}
+
+\begin{lemma}
+  \label{sr:dominates:split}
+  Let $\Gamma_v = \SolveSparse(v)$ for some vertex $v\in
+  V$. Then, for any $u\dominatedby v$ with
+  $\Gamma_u = \SolveSparse(u)$, for all
+  $w \strictlydominatedby u$, $b_{w_\textit{entry}}$ is
+  consistent with $\Gamma_v$ if and only if $b_{u_\textit{exit}}$
+  is consistent with $\Gamma_v$ and $b_{w_\textit{entry}}$ is
+  consistent with $\Gamma_u$.
+\end{lemma}
+
+\begin{proof}
+  Let $u,v,w$ be arbitrary so that
+  $w \strictlydominatedby u \dominatedby v$. If
+  $b_{w_\textit{entry}}$ is consistent with $\Gamma_v$, then it
+  must be consistent with $\Gamma_u$; so, by Lemma
+  \ref{sr:dominates:entails}, $b_{u_\textit{exit}}$ is entailed
+  by $\Gamma_u\wedge b_{w_\textit{entry}}$, meaning it must be
+  consistent with $\Gamma_v$.
+
+  Now, consider the case that $b_{w_\textit{entry}}$ is
+  inconsistent with $\Gamma_v$. We are done if
+  $b_{w_\textit{entry}}$ is not consistent with
+  $\Gamma_u$. Suppose otherwise. Clearly, $\SolveSparse(v)$ must
+  have added some implication of the form $b \implies F$ for some
+  formula $F$ and assumption literal $b$ also present in
+  $\Gamma_u$. But, by Lemma \ref{sr:dominates:literals}, all
+  assumption literals in $\Gamma_u$ are either
+  $b_{u_\textit{exit}}$, associated with a vertex strictly
+  dominated by $u$, or associated with an edge strictly dominated
+  by $u$. By simple analysis of \SolveSparse, we must have that
+  $b = b_{u_\textit{exit}}$ for all such implications. So,
+  $b_{u_\textit{exit}}$ must be inconsistent with $\Gamma_v$.
+\end{proof}
+
+% correctness of algorithm
+\begin{theorem}
+  Let $\Gamma_v = \SolveSparse(v)$ for some vertex $v \in
+  V$. Then, immediately after the call returns, for all
+  $w\strictlydominatedby v$ the following hold:
+
+  \begin{enumerate}
+  \item $\textit{eval}(w)$ is an unambiguous path expression
+    recognizing exactly $\textit{Paths}_G(v,w) \cap E|_v^*$
+  \item If $b_{w_\textit{entry}}$ is consistent with $\Gamma_v$, then
+    $b_{w_\textit{entry}} \wedge \tf{\textit{eval}(w)}
+    (X_{v_\textit{exit}}, X_{w_\textit{entry}})$ is as well
+  \item If
+    $\exists X,X^\prime.\tf{\textit{eval}(w)} (X, X^\prime)$ is
+    satisfiable, then $b_{w_\textit{entry}}$ is consistent with
+    $\Gamma_v$
+  \item
+    $\Gamma_v \wedge b_{w_\textit{entry}} \equiv \exists
+    X,X^\prime.\tf{\textit{eval}(w)} (X, X^\prime)$
+  \end{enumerate}
+\end{theorem}
+
+\begin{proof}
+
+  Note that $(2)\wedge(3)\implies(4)$.
+
+  We proceed by structural induction on the dominator tree. If
+  $v$ is a leaf node, the claim holds vacuously. Now, consider
+  the case that $v$ is not a leaf node, and take some arbitrary
+  $w \strictlydominatedby v$. Then, there must be some
+  $u \in \textit{children}(v)$ such that $u \dominates w$.
+
+  Consider first the case that $u \strictlydominates w$ (which
+  will ultimately reduce to the case that $u=w$):
+
+  \begin{enumerate}
+  \item let $\Gamma_u = \SolveSparse(u)$. By the induction
+    hypothesis, immediately after this call,
+    $\textit{pe}_{(u,w)} = \textit{eval}(w)$ is an unambiguous
+    path expression recognizing exactly
+    $\textit{Paths}_G(u,w) \cap E|_u^*$. After $\textit{link}$ is
+    called on $u$, by definition
+    $\textit{eval}(w) = \textit{pe-noncycle} \cdot
+    \textit{pe-cycle}^* \cdot \textit{eval}_u(w)$. Since
+    $u\strictlydominates w$, $\textit{eval}(w)$ recognizes
+    exactly $\textit{Paths}_G(v,w) \cap E|_v^*$ if
+    $\textit{pe-noncycle} \cdot \textit{pe-cycle}^*$ recognizes
+    exactly $\textit{Paths}_G(v,u) \cap E|_v^*$, i.e. it is
+    sufficient to prove (1) for $u$.
+
+  \item Now, suppose $b_{w_\textit{entry}}$ is consistent with
+    $\Gamma_v$. By Lemma \ref{sr:dominates:split},
+    $b_{w_\textit{entry}}$ is consistent with $\Gamma_u$, and
+    $b_{u_\textit{exit}}$ is consistent with $\Gamma_v$. By the
+    induction hypothesis, we know
+    $b_{w_\textit{entry}} \wedge
+    \tf{\textit{pe}_{(u,w)}}(X_{u_\textit{exit}},
+    X_{w_\textit{entry}})$ is consistent with $\Gamma_u$. We wish
+    to prove that
+    $b_{w_\textit{entry}} \wedge
+    \tf{\textit{eval}(w)}(X_{v_\textit{exit}},
+    X_{w_\textit{entry}}) \wedge \Gamma_v$ is satisfiable; in
+    particular, it is sufficient to prove that
+    $b_{w_\textit{entry}} \wedge
+    \tf{\textit{pe-noncycle}}(X_{v_\textit{exit}},
+    X_{u_\textit{entry}}) \wedge
+    \tf{\textit{pe-cycle}^*}(X_{u_\textit{entry}},
+    X_{u_\textit{exit}}) \wedge
+    \tf{\textit{pe}_{(u,w)}}(X_{u_\textit{exit}},
+    X_{w_\textit{entry}}) \wedge \Gamma_v$ is satisfiable.
+    
+  \item
+
+  \end{enumerate}
+
+  So, it is sufficient to prove each of these properties for the
+  child $u$. We proceed by induction on the topological order of
+  the sibling graph and assume that the claims hold for all
+  $w\dominatedby u^\prime$ for $u^\prime \in \children(v)$ coming
+  before $u$ in the topological order. This is vacuously true for
+  the first child. Suppose we know that this assumption holds. We
+  want to prove that the claims also hold for all $w \dominatedby
+  u$ (TODO: show it still holds for all previous too!). By the
+  above reasoning, it is sufficient to show that the claims hold
+  for $u$. 
+
+\end{proof}
+
+\end{document}
