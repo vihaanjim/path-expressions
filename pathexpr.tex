@@ -144,7 +144,7 @@
   \item For all $P_1, P_2 \in \subexp(P)$ with
     $P_1 \cdot P_2 \in \subexp(P)$, we have that
     $l(P_1 \cdot P_2) = l(P_1)$, $r(P_1 \cdot P_2) = r(P_2)$,
-    $r(P_1) \implies \neg l(P_2)$,
+    $r(P_1) = Closed \implies l(P_2) = Open$,
     $V_P(P_1+P_2) = V_P(P_1) \cup V_P(P_2)$, and
     $|V_P(P_1) \cap V_P(P_2)| = 1$.
   \item For all $P_1 \in \subexp$ with ${P_1}^* \in \subexp(P)$,
@@ -176,11 +176,6 @@
   \ForEach{$i = 1$ \KwTo $n$}{
     $\tuple{u, v} \gets \type(P_i)$ \;
     \Switch{$P_i$}{
-      % \lCase{1}{
-      %   $\Gamma \gets \Gamma \wedge (b_i \implies X_u =
-      %   {X_u}^\prime)$
-      % }
-
       \lCase{$\tuple{u, v}$}{
         $\Gamma \gets \Gamma \wedge (b_i \implies
         F_{\tuple{u, v}}({X_u}^\prime, X_v))$
@@ -217,34 +212,28 @@
 \end{algorithm}
 
 \begin{theorem}
-  After the $i$th iteration of the for loop, for all $j \le i$,
-  $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(Pre(P_j),
-  Post(P_j)))$, where $Pre(P_j) = X_u$ if $l(P_j)$ and
-  ${X_u}^\prime$ otherwise, and $Post(P_j) = {X_v}^\prime$ if
-  $r(P_j)$ and $X_v$ otherwise, where $\tuple{u,v} =
-  \type(P_j)$. 
+  $Sat(\Gamma) \iff Sat(\tf{P})$.
 \end{theorem}
 
 \begin{proof}
-  We proceed by induction on $i$. Certainly this is true before
-  the first iteration. Suppose this is true before the $i$th
-  iteration of the loop. Since the only implications added to
-  $\Gamma$ during this iteration are of the form $b_i \implies F$
-  for some formula $F$, and since $b_i$ does not appear in
-  $\Gamma$ prior to this, the claim still holds for all $j <
-  i$. For $j = i$, let us consider each possible form of $P_i$
-  separately:
+  We proceed by strong induction on the iteration $i$ of the for
+  loop. For each $P_j \in \subexp(P)$ with
+  $\type(P_j) = \tuple{u,v}$, let $L_j$ be $X_u$ if
+  $l(P_j) = Closed$ and ${X_u}^\prime$ otherwise, and let $R_j$
+  be ${X_v}^\prime$ if $r(P_j) = Closed$ and $X_v$ otherwise.
+  Our induction hypothesis is that after the $i$th iteration of
+  the for loop, for all $j \le i$,
+  $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(L_j, R_j))$.
+
+  Certainly this is true before the first iteration. Suppose this
+  is true before the $i$th iteration of the loop. Since the only
+  implications added to $\Gamma$ during this iteration are of the
+  form $b_i \implies F$ for some formula $F$, and since $b_i$
+  does not appear in $\Gamma$ prior to this, the claim still
+  holds for all $j < i$. For $j = i$, let us consider each
+  possible form of $P_i$ separately:
 
   \begin{itemize}
-  % \item $P_i = 1$: Since $Pre(P_i) = X_u$ and
-  %   $Post(P_i) = {X_u}^\prime$,
-  %   $\tf{1}(Pre(P_i), Post(P_i)) = (X_u = {X_u}^\prime)$, and
-  %   after this iteration,
-  %   $\Gamma \models b_i \implies X_u = {X_u}^\prime$, and this is
-  %   the only implication in $\Gamma$ containing $b_i$. Clearly,
-  %   $Sat(\Gamma \wedge b_i) \iff Sat(\tf{1}(Pre(P_i),
-  %   Post(P_i)))$.
-
   \item $P_i = \tuple{u, v}$: We have that
     $\tf{\tuple{u, v}} = F_{\tuple{u, v}}$, and after this
     iteration,
@@ -252,10 +241,10 @@
     X_v)$. If $Sat(\Gamma \wedge b_i)$, then clearly there is
     some binding to ${X_u}^\prime, X_v$ so that
     $F_{\tuple{u, v}}({X_u}^\prime, X_v)$. So, since
-    $Pre(P_i) = {X_u}^\prime$ and $Post(P_i) = X_v$, clearly
-    $Sat(\tf{P_i}(Pre(P_i), Post(P_i)))$. Similarly, suppose
-    $Sat(\tf{P_i}(Pre(P_i), Post(P_i)))$. Then, we can choose
-    some particular bindings to ${X_u}^\prime, X_v$ so that
+    $L_i = {X_u}^\prime$ and $R_i = X_v$, clearly
+    $Sat(\tf{P_i}(L_i, R_i))$. Similarly, suppose
+    $Sat(\tf{P_i}(L_i, R_i))$. Then, we can choose some
+    particular bindings to ${X_u}^\prime, X_v$ so that
     $F_{\tuple{u, v}}({X_u}^\prime, X_v)$. Since $\Gamma$
     contains no other instances of $b_i$ besides the
     aforementioned implication, this means that
@@ -264,26 +253,22 @@
   \item $P_i = P_j + P_k$:
     $\tf{P_j+P_k} = \tf{P_j} \vee \tf{P_k}$. By the induction
     hypothesis and the well-formedness of $P$, we know that
-    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(Pre(P_j),
-    Post(P_j))) \iff Sat(\tf{P_j}(Pre(P_i), Post(P_i)))$ and
-    $Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_k}(Pre(P_k),
-    Post(P_k))) \iff Sat(\tf{P_k}(Pre(P_i), Post(P_i)))$. After
-    this iteration, $\Gamma \models b_i \implies b_j \vee b_k$,
-    and $\Gamma$ contains no other implications involving $b_i$,
-    so
+    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(L_j, R_j)) \iff
+    Sat(\tf{P_j}(L_i, R_i))$ and
+    $Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_k}(L_k, R_k)) \iff
+    Sat(\tf{P_k}(L_i, R_i))$. After this iteration,
+    $\Gamma \models b_i \implies b_j \vee b_k$, and $\Gamma$
+    contains no other implications involving $b_i$, so
     $Sat(\Gamma \wedge b_i) \iff Sat(\Gamma \wedge b_j) \vee
-    Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_j}(Pre(P_i),
-    Post(P_i))) \vee Sat(\tf{P_k}(Pre(P_i), Post(P_i))) \iff
-    Sat(\tf{P_i}(Pre(P_i), Post(P_i)))$, as desired.
+    Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_j}(L_i, R_i)) \vee
+    Sat(\tf{P_k}(L_i, R_i)) \iff Sat(\tf{P_i}(L_i, R_i))$, as
+    desired.
     
   \item $P_i = P_j \cdot P_k$:
-    $Sat(\tf{P_i}(Pre(P_i), Post(P_i))) \iff Sat(\exists
-    X. \tf{P_j}(Pre(P_i), X) \wedge \tf{P_k}(X, Post(P_i)))$. By
-    the induction hypothesis,
-    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(Pre(P_j),
-    Post(P_j)))$ and
-    $Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_k}(Pre(P_k),
-    Post(P_k)))$.
+    $Sat(\tf{P_i}(L_i, R_i)) \iff Sat(\exists X. \tf{P_j}(L_i, X)
+    \wedge \tf{P_k}(X, R_i))$. By the induction hypothesis,
+    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(L_j, R_j))$ and
+    $Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_k}(L_k, R_k))$.
 
     Proof sketch: First, deal with the case that
     $r(P_j) = l(P_k) = Open$. We use the lemma to get the
@@ -302,18 +287,18 @@
     by the immediate preceeding / proceeding edge.
 
     % First, consider the case that either $r(P_j)$ or
-    % $l(P_k)$. Note that $Post(P_j) = Pre(P_k)$. We have
+    % $l(P_k)$. Note that $R_j = L_k$. We have
     % that $\Gamma\wedge b_i \models b_i \implies b_j \wedge b_k$,
     % and $b_i$ appears nowhere else in $\Gamma$, so clearly
     % $Sat(\Gamma \wedge b_i) \iff Sat(\Gamma \wedge b_j) \wedge
-    % Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_j}(Pre(P_j),
-    % Post(P_j))) \wedge Sat(\tf{P_k}(Pre(P_k), Post(P_k)))$.
+    % Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_j}(L_j,
+    % R_j)) \wedge Sat(\tf{P_k}(L_k, R_k))$.
 
     % First,
-    % $Sat(\tf{P_i}(Pre(P_i), Post(P_i))) \implies Sat(\exists
-    % X. \tf{P_j}(Pre(P_i), X) \wedge \tf{P_k}(X, Post(P_i)))
-    % \implies Sat(\exists X. \tf{P_j}(Pre(P_i), X)) \wedge
-    % Sat(\exists X. \tf{P_k}(X, Post(P_i))) \implies Sat(\Gamma
+    % $Sat(\tf{P_i}(L_i, R_i)) \implies Sat(\exists
+    % X. \tf{P_j}(L_i, X) \wedge \tf{P_k}(X, R_i))
+    % \implies Sat(\exists X. \tf{P_j}(L_i, X)) \wedge
+    % Sat(\exists X. \tf{P_k}(X, R_i)) \implies Sat(\Gamma
     % \wedge b_i)$.
 
     % Now, suppose $Sat(\Gamma \wedge b_i)$. By Lemma
@@ -325,18 +310,18 @@
     % \tf{P_k}(Pre(w), X^\prime))$. 
 
   \item $P_i = {P_j}^*$: By the induction hypothesis,
-    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(Pre(P_j),
-    Post(P_j)))$. But, by the well-formedness of $P$,
-    $Pre(P_j) = {X_u}^\prime$ and $Post(P_j) = X_u$. So, for
+    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(L_j, R_j))$. But,
+    by the well-formedness of $P$, $L_j = {X_u}^\prime$ and
+    $R_j = X_u$. So, for
     $F = \textit{star}(\Gamma, b_j, \tuple{{X_u}^\prime, X_u})$,
     $Sat(F) \iff Sat(\tf{{P_j}^*}({X_u}^\prime,
     X_u))$. Therefore, for $F^\prime = F(X_u, {X_u}^\prime)$,
     $Sat(F^\prime) \iff Sat(\tf{{P_j}^*}(X_u,
     {X_u}^\prime))$. Since the only implication added to $\Gamma$
     during this iteration is $b_i \implies F^\prime$, and since
-    $Pre(P_i) = X_u$ and $Post(P_i) = {X_u}^\prime$,
+    $L_i = X_u$ and $R_i = {X_u}^\prime$,
     $Sat(\Gamma \wedge b_i) \iff Sat(\tf{{P_j}^*}(X_u,
-    {X_u}^\prime))$. 
+    {X_u}^\prime))$.
   \end{itemize}
 \end{proof}
 
