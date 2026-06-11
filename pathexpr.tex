@@ -168,8 +168,8 @@
     $\{P_1,\dots,P_n\}$ are labeled so that
     $P_i \in \subexp(P_j) \implies i < j$ (note that $P=P_n$).}
   
-  \KwOut{A formula $\Gamma$ such that
-    $Sat(\Gamma) \iff Sat(\tf{P})$}
+  \KwOut{A formula $\Gamma$ such that for all $1 \le i \le n$,
+    $\Gamma \wedge b_i \equiv_\sigma \tf{P_i}$}
 
   $\Gamma \gets true$
   
@@ -187,9 +187,12 @@
 
       \Case{$P_j \cdot P_k$}{
 
-        \lIf{$r(P_j) = l(P_k) = Open$}{
-          $\Gamma \gets \Gamma \wedge (b_i \implies X_u =
-          {X_u}^\prime)$ 
+        \If{$r(P_j) = l(P_k) = Open$}{
+          
+          $\tuple{u,w} \gets \type(P_j)$ \;
+          
+          $\Gamma \gets \Gamma \wedge (b_i \implies X_w =
+          {X_w}^\prime)$ 
         }
         $\Gamma \gets \Gamma \wedge (b_i \implies b_j \wedge
         b_k)$ \;
@@ -207,12 +210,13 @@
     }
   }
 
-  \Return $\Gamma \wedge b_n$ \;
+  \Return $\Gamma$ \;
 
 \end{algorithm}
 
 \begin{theorem}
-  $Sat(\Gamma) \iff Sat(\tf{P})$.
+  For all $1 \le i \le n$,
+  $\Gamma \wedge b_i \equiv_\sigma \tf{P}$.
 \end{theorem}
 
 \begin{proof}
@@ -223,7 +227,7 @@
   be ${X_v}^\prime$ if $r(P_j) = Closed$ and $X_v$ otherwise.
   Our induction hypothesis is that after the $i$th iteration of
   the for loop, for all $j \le i$,
-  $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(L_j, R_j))$.
+  $\Gamma \wedge b_j \equiv_\sigma \tf{P_j}(L_j, R_j)$.
 
   Certainly this is true before the first iteration. Suppose this
   is true before the $i$th iteration of the loop. Since the only
@@ -236,39 +240,46 @@
   \begin{itemize}
   \item $P_i = \tuple{u, v}$: We have that
     $\tf{\tuple{u, v}} = F_{\tuple{u, v}}$, and after this
-    iteration,
-    $\Gamma \models b_i \implies F_{\tuple{u, v}}({X_u}^\prime,
-    X_v)$. If $Sat(\Gamma \wedge b_i)$, then clearly there is
-    some binding to ${X_u}^\prime, X_v$ so that
-    $F_{\tuple{u, v}}({X_u}^\prime, X_v)$. So, since
-    $L_i = {X_u}^\prime$ and $R_i = X_v$, clearly
-    $Sat(\tf{P_i}(L_i, R_i))$. Similarly, suppose
-    $Sat(\tf{P_i}(L_i, R_i))$. Then, we can choose some
-    particular bindings to ${X_u}^\prime, X_v$ so that
-    $F_{\tuple{u, v}}({X_u}^\prime, X_v)$. Since $\Gamma$
-    contains no other instances of $b_i$ besides the
-    aforementioned implication, this means that
-    $Sat(\Gamma \wedge b_i)$.
+    iteration, the only occurance of $b_i$ in $\Gamma$ is
+    $b_i \implies F_{\tuple{u, v}}({X_u}^\prime, X_v)$. Since
+    $L_i = {X_u}^\prime$ and $R_i = X_v$,
+    $\Gamma \wedge b_i \equiv_\sigma F_{\tuple{u,
+        v}}({X_u}^\prime, X_v) \equiv_\sigma \tf{\tuple{u,
+        v}}(L_i, R_i)$.
     
   \item $P_i = P_j + P_k$:
     $\tf{P_j+P_k} = \tf{P_j} \vee \tf{P_k}$. By the induction
     hypothesis and the well-formedness of $P$, we know that
-    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(L_j, R_j)) \iff
-    Sat(\tf{P_j}(L_i, R_i))$ and
-    $Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_k}(L_k, R_k)) \iff
-    Sat(\tf{P_k}(L_i, R_i))$. After this iteration,
-    $\Gamma \models b_i \implies b_j \vee b_k$, and $\Gamma$
-    contains no other implications involving $b_i$, so
-    $Sat(\Gamma \wedge b_i) \iff Sat(\Gamma \wedge b_j) \vee
-    Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_j}(L_i, R_i)) \vee
-    Sat(\tf{P_k}(L_i, R_i)) \iff Sat(\tf{P_i}(L_i, R_i))$, as
+    $\Gamma \wedge b_j \equiv_\sigma \tf{P_j}(L_j, R_j)
+    \equiv_\sigma \tf{P_j}(L_i, R_i)$ and
+    $\Gamma \wedge b_k \equiv_\sigma \tf{P_k}(L_k, R_k)
+    \equiv_\sigma \tf{P_k}(L_i, R_i)$. After this iteration, the
+    only occurance of $b_i$ in $\Gamma$ is
+    $b_i \implies b_j \vee b_k$, so
+    $\Gamma \wedge b_i \equiv_\sigma (\Gamma \wedge b_j) \vee
+    (\Gamma \wedge b_k) \equiv_\sigma \tf{P_j}(L_i, R_i) \vee
+    \tf{P_k}(L_i, R_i) \equiv_\sigma \tf{P_i}(L_i, R_i)$, as
     desired.
     
   \item $P_i = P_j \cdot P_k$:
-    $Sat(\tf{P_i}(L_i, R_i)) \iff Sat(\exists X. \tf{P_j}(L_i, X)
-    \wedge \tf{P_k}(X, R_i))$. By the induction hypothesis,
-    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(L_j, R_j))$ and
-    $Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_k}(L_k, R_k))$.
+    $\tf{P_i}(L_i, R_i) = \exists X. \tf{P_j}(L_i, X) \wedge
+    \tf{P_k}(X, R_i)$. By the induction hypothesis,
+    $\Gamma \wedge b_j \equiv_\sigma \tf{P_j}(L_j, R_j)$ and
+    $\Gamma \wedge b_k \equiv_\sigma \tf{P_k}(L_k, R_k)$.
+
+    First, consider the case that $r(P_j) = l(P_k) = Open$. Then,
+    there are exactly two occurances of $b_i$ in $\Gamma$ after
+    this iteration: $b_i \implies X_w = {X_w}^\prime$ and
+    $b_i \implies b_j \wedge b_k$, where $w$ is the unique vertex
+    such that $\type(P_j) = \tuple{u,w}$ and
+    $\type(P_k) = \tuple{w,v}$. So,
+    $\Gamma \wedge b_i \equiv (\Gamma \wedge b_j) \wedge (\Gamma
+    \wedge b_k) \wedge X_w = {X_w}^\prime \equiv_\sigma
+    \tf{P_j}(L_j, R_j) \wedge \tf{P_k}(L_k, R_k) \wedge X_w =
+    {X_w}^\prime$. But, $R_j = X_w$ and $L_k =
+    {X_w}^\prime$. Therefore,
+    $\Gamma \wedge b_i \models_\sigma \exists X. \tf{P_j}(L_i, X)
+    \wedge \tf{P_k}(X, R_i)$.
 
     Proof sketch: First, deal with the case that
     $r(P_j) = l(P_k) = Open$. We use the lemma to get the
@@ -286,42 +297,19 @@
     conditions besides equality and the conditions placed on them
     by the immediate preceeding / proceeding edge.
 
-    % First, consider the case that either $r(P_j)$ or
-    % $l(P_k)$. Note that $R_j = L_k$. We have
-    % that $\Gamma\wedge b_i \models b_i \implies b_j \wedge b_k$,
-    % and $b_i$ appears nowhere else in $\Gamma$, so clearly
-    % $Sat(\Gamma \wedge b_i) \iff Sat(\Gamma \wedge b_j) \wedge
-    % Sat(\Gamma \wedge b_k) \iff Sat(\tf{P_j}(L_j,
-    % R_j)) \wedge Sat(\tf{P_k}(L_k, R_k))$.
-
-    % First,
-    % $Sat(\tf{P_i}(L_i, R_i)) \implies Sat(\exists
-    % X. \tf{P_j}(L_i, X) \wedge \tf{P_k}(X, R_i))
-    % \implies Sat(\exists X. \tf{P_j}(L_i, X)) \wedge
-    % Sat(\exists X. \tf{P_k}(X, R_i)) \implies Sat(\Gamma
-    % \wedge b_i)$.
-
-    % Now, suppose $Sat(\Gamma \wedge b_i)$. By Lemma
-    % \ref{pe:type}, there is some vertex $w$ such that
-    % $\type(P_j) = \tuple{u, w}$ and $\type(P_k) = \tuple{w,
-    %   v}$. We hypothesize that any bindings induced on $Pre(w)$
-    % by a solution to $\Gamma \wedge b_i$ have the property that
-    % $Sat(\exists X, X^\prime. \tf{P_j}(X, Pre(w)) \wedge
-    % \tf{P_k}(Pre(w), X^\prime))$. 
-
   \item $P_i = {P_j}^*$: By the induction hypothesis,
-    $Sat(\Gamma \wedge b_j) \iff Sat(\tf{P_j}(L_j, R_j))$. But,
-    by the well-formedness of $P$, $L_j = {X_u}^\prime$ and
+    $\Gamma \wedge b_j \equiv_\sigma \tf{P_j}(L_j, R_j)$. But, by
+    the well-formedness of $P$, $L_j = {X_u}^\prime$ and
     $R_j = X_u$. So, for
     $F = \textit{star}(\Gamma, b_j, \tuple{{X_u}^\prime, X_u})$,
-    $Sat(F) \iff Sat(\tf{{P_j}^*}({X_u}^\prime,
-    X_u))$. Therefore, for $F^\prime = F(X_u, {X_u}^\prime)$,
-    $Sat(F^\prime) \iff Sat(\tf{{P_j}^*}(X_u,
-    {X_u}^\prime))$. Since the only implication added to $\Gamma$
+    $F \equiv_\sigma \tf{{P_j}^*}({X_u}^\prime, X_u)$. Therefore,
+    for $F^\prime = F(X_u, {X_u}^\prime)$,
+    $F^\prime \equiv_\sigma \tf{{P_j}^*}(X_u,
+    {X_u}^\prime)$. Since the only implication added to $\Gamma$
     during this iteration is $b_i \implies F^\prime$, and since
     $L_i = X_u$ and $R_i = {X_u}^\prime$,
-    $Sat(\Gamma \wedge b_i) \iff Sat(\tf{{P_j}^*}(X_u,
-    {X_u}^\prime))$.
+    $\Gamma \wedge b_i \equiv_\sigma \tf{{P_j}^*}(X_u,
+    {X_u}^\prime)$.
   \end{itemize}
 \end{proof}
 
