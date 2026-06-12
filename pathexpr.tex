@@ -28,6 +28,7 @@
 
 % interpretation of regular expression as a transition formula
 \newcommand{\tf}[1]{\mathscr{I} \llbracket #1 \rrbracket}
+\newcommand{\tfp}[1]{\mathscr{I}^\prime \llbracket #1 \rrbracket}
 
 % define theorems, lemmas, corollaries, and definitions
 \newtheorem{theorem}{Theorem}
@@ -43,7 +44,8 @@
   A \emph{path expression} $P$ of type $\tuple{u, v}$ on a graph
   $G = \tuple{V, E}$ is a simple regular expression over $E$ such
   that $\sigma(P) \subseteq \Paths_G(u,v)$ for some $u,v \in
-  V$.
+  V$. To simplify later definitions, we allow occurances of 1 to
+  be annotated with formulas, e.g. $1_\phi$.
 \end{definition}
 
 \begin{lemma}
@@ -149,9 +151,40 @@
     or a simple cycle in $G$.
   \item For all $P_1 \in \subexp$ with ${P_1}^* \in \subexp(P)$,
     we have that $l({P_1}^*) = r({P_1}^*) = Closed$,
-    $l(P_1) = r(P_1) = Open$, and $LF({P_1}^*) = 1$.
+    $l(P_1) = r(P_1) = Open$, and
+    $LF({P_1}^*) = 1_{\tf{{P_1}^*}}$.
   \end{itemize}
 \end{definition}
+
+\begin{definition}
+  $\tfp{\cdot}$ is the same as $\tf{\cdot}$ except that
+  $\tfp{1_\phi} = \phi$.
+\end{definition}
+
+\begin{lemma}
+  Let $P$ be well-formed. Then, $\tf{P} \equiv \tfp{LF(P)}$.
+\end{lemma}
+
+\begin{proof}
+  We proceed by structural induction on $P$. If $P=e$ for some
+  $e \in E$, $LF(e) = e$, so the claim holds trivially. Now,
+  suppose the claim holds for $P_1$ and $P_2$ and that
+  $P = P_1 + P_2$ is well-formed. Then,
+  $\tfp{LF(P_1+P_2)} \equiv \tfp{LF(P_1) + LF(P_2)} \equiv
+  \tfp{LF(P_1)} \vee \tfp{LF(P_2)} \equiv \tf{P_1} \vee \tf{P_2}
+  \equiv \tf{P_1 + P_2}$. Similarly, suppose the claim holds for
+  $P_1$ and $P_2$ and that $P = P_1 + \cdot P_2$ is
+  well-formed. Then,
+  $\tfp{LF(P_1 \cdot P_2)} \equiv \tfp{LF(P_1) \cdot LF(P_2)}
+  \equiv \exists X^{\prime\prime}. \tfp{LF(P_1)}(X,
+  X^{\prime\prime}) \wedge \tfp{LF(P_2)}(X^{\prime\prime},
+  X^\prime) \equiv \tf{P_1}(X, X^{\prime\prime}) \wedge
+  \tf{P_2}(X^{\prime\prime}, X^\prime) \equiv \tf{P_1 \cdot
+    P_2}$. Finally, suppose the claim holds for $P_1$ and that
+  ${P_1}^*$ is well-formed. Then,
+  $\tfp{LF({P_1}^*)} = \tfp{1_{\tf{{P_1}^*}}} = \tf{{P_1}^*}$.
+  
+\end{proof}
 
 \begin{algorithm}
   \caption{Path Expression DAG to Transition Formula}
@@ -265,8 +298,8 @@
   \item $P_i = P_j \cdot P_k$:
     $\tf{P_i}(L_i, R_i) = \exists X. \tf{P_j}(L_i, X) \wedge
     \tf{P_k}(X, R_i)$. By the induction hypothesis,
-    $\Gamma \wedge (b_j \iff \tf{P_j}(L_j, R_j))$ and
-    $\Gamma \wedge (b_k \iff \tf{P_k}(L_k, R_k))$. 
+    $\Gamma \models (b_j \iff \tf{P_j}(L_j, R_j))$ and
+    $\Gamma \models (b_k \iff \tf{P_k}(L_k, R_k))$. 
 
     (forward direction only so far!). Consider the case that
     $r(P_j) = l(P_k) = Open$.
