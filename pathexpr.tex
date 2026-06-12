@@ -219,8 +219,8 @@
 \end{algorithm}
 
 \begin{theorem}
-  For all $1 \le i \le n$,
-  $\Gamma \models (b_i \iff \tf{P})$.
+  % might need to add explicit variable arguments for \tf{P_i}
+  For all $1 \le i \le n$, $\Gamma \models (b_i \iff \tf{P_i})$.
 \end{theorem}
 
 \begin{proof}
@@ -238,7 +238,7 @@
   since we defined $b_j$ in $\Gamma$ by bi-implication, and since
   the only definition added to $\Gamma$ during this iteration was
   $b_i \iff \phi_i$ for some formula $\phi_i$ containing only
-  $b_k$ for $k < i$, the claim still holds as after this
+  $b_k$ for $k < i$, the claim still holds after this
   iteration. For $j = i$, let us consider each possible form of
   $P_i$ separately:
 
@@ -248,7 +248,7 @@
     iteration,
     $\Gamma \models (b_i \iff F_{\tuple{u, v}}({X_u}^\prime,
     X_v))$. Since $L_i = {X_u}^\prime$ and $R_i = X_v$, this means
-    $\Gamma \models \tf{\tuple{u, v}}(L_i, R_i)$.
+    $\Gamma \models (b_i \iff \tf{\tuple{u, v}}(L_i, R_i))$.
     
   \item $P_i = P_j + P_k$:
     $\tf{P_j+P_k} = \tf{P_j} \vee \tf{P_k}$. By the induction
