@@ -252,6 +252,11 @@
 
 \end{algorithm}
 
+For each $P_j \in \subexp(P)$ with $\type(P_j) = \tuple{u,v}$,
+let $L_j$ be $X_u$ if $l(P_j) = Closed$ and ${X_u}^\prime$
+otherwise, and let $R_j$ be ${X_v}^\prime$ if $r(P_j) = Closed$
+and $X_v$ otherwise.
+
 \begin{lemma}
   \label{tf:concat}
   For all $P_i = P_j \cdot P_k$,
@@ -285,14 +290,9 @@
 \end{theorem}
 
 \begin{proof}
-  We proceed by strong induction on the iteration $i$ of the for
-  loop. For each $P_j \in \subexp(P)$ with
-  $\type(P_j) = \tuple{u,v}$, let $L_j$ be $X_u$ if
-  $l(P_j) = Closed$ and ${X_u}^\prime$ otherwise, and let $R_j$
-  be ${X_v}^\prime$ if $r(P_j) = Closed$ and $X_v$ otherwise.
-  Our induction hypothesis is that after the $i$th iteration of
-  the for loop, for all $j \le i$,
-  $\Gamma \models (b_j \iff \tf{P_j}(L_j, R_j))$.
+  We proceed by induction on the iteration $i$ of the for loop,
+  with the hypothesis that before the $i$th iteration, for all
+  $j \le i$, $\Gamma \models (b_j \iff \tf{P_j}(L_j, R_j))$.
 
   Certainly this is true before the first iteration. Suppose this
   is true before the $i$th iteration of the loop. For $j < i$,
