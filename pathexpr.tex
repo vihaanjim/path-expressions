@@ -21,7 +21,7 @@
 % type of path expression
 \newcommand{\type}{\textit{type}}
 
-\newcommand{\subexp}{\textit{Subexp}}
+\newcommand{\subexp}{\textit{SubExp}}
 
 % for Paths_G(u,v)
 \newcommand{\Paths}{\textit{Paths}}
@@ -130,27 +130,26 @@
   A path expression $P$ is well-formed if it does not have 1 as a
   subexpression and if there exist functions
   $l, r: \subexp(P) \to \{Open,Closed\}$ and
-  $V_P: \subexp(P) \to \mathcal{P}(V)$ such that the following
-  hold:
+  $LF: \subexp(P) \to PathExp(G)$ such that the following hold:
   \begin{itemize}
-  \item For all $e=\tuple{u,v} \in E$ such that
+  \item For all $e \in E$ such that
     $e \in \subexp(P)$, we have that $l(e) = r(e) = Open$ and
-    $V_P(e) = \{u, v\}$.
+    $LF(e)=e$.
   \item For all $P_1, P_2 \in \subexp(P)$ with
     $P_1 + P_2 \in \subexp(P)$, we have that
     $l(P_1 + P_2) = l(P_1) = l(P_2)$,
     $r(P_1 + P_2) = r(P_1) = r(P_2)$, and
-    $V_P(P_1+P_2) = V_P(P_1) \cup V_P(P_2)$.
+    $LF(P_1+P_2) = LF(P_1) + LF(P_2)$.
   \item For all $P_1, P_2 \in \subexp(P)$ with
     $P_1 \cdot P_2 \in \subexp(P)$, we have that
     $l(P_1 \cdot P_2) = l(P_1)$, $r(P_1 \cdot P_2) = r(P_2)$,
-    $r(P_1) = Closed \implies l(P_2) = Open$,
-    $V_P(P_1+P_2) = V_P(P_1) \cup V_P(P_2)$, and
-    $|V_P(P_1) \cap V_P(P_2)| = 1$.
+    $r(P_1) = Open \vee l(P_2) = Open$, and
+    $LF(P_1 \cdot P_2) = LF(P_1) \cdot LF(P_2)$ where for all $p
+    \in \sigma(LF(P_1 \cdot P_2))$, $p$ is either a simple path
+    or a simple cycle in $G$.
   \item For all $P_1 \in \subexp$ with ${P_1}^* \in \subexp(P)$,
     we have that $l({P_1}^*) = r({P_1}^*) = Closed$,
-    $l(P_1) = r(P_1) = Open$, and $V_P({P_1}^*) = \{v\}$, where
-    $\type(P_1) = \tuple{v,v}$.
+    $l(P_1) = r(P_1) = Open$, and $LF({P_1}^*) = 1$.
   \end{itemize}
 \end{definition}
 
@@ -166,7 +165,7 @@
   \KwIn{A graph $G=\tuple{V, E}$ and a non-empty, well-formed
     path expression $P$ whose distinct subexpressions
     $\{P_1,\dots,P_n\}$ are labeled so that
-    $P_i \in \subexp(P_j) \implies i < j$ (note that $P=P_n$).}
+    $P_i \in \subexp(P_j) \implies i < j$.}
   
   \KwOut{A formula $\Gamma$ such that for all $1 \le i \le n$,
     $\Gamma \wedge b_i \equiv_\sigma \tf{P_i}$}
@@ -308,8 +307,8 @@
     {X_u}^\prime)$. Since the only implication added to $\Gamma$
     during this iteration is $b_i \implies F^\prime$, and since
     $L_i = X_u$ and $R_i = {X_u}^\prime$,
-    $\Gamma \wedge b_i \equiv_\sigma \tf{{P_j}^*}(X_u,
-    {X_u}^\prime)$.
+    $\Gamma \wedge b_i \equiv_\sigma \tf{{P_j}^*}(L_i, R_j)$, as
+    desired. 
   \end{itemize}
 \end{proof}
 
