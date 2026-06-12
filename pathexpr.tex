@@ -162,6 +162,7 @@
 \end{definition}
 
 \begin{lemma}
+  \label{tf:loopfree}
   Let $P$ be well-formed. Then, $\tf{P} \equiv \tfp{LF(P)}$.
 \end{lemma}
 
@@ -251,6 +252,33 @@
 
 \end{algorithm}
 
+\begin{lemma}
+  \label{tf:concat}
+  For all $P_i = P_j \cdot P_k$,
+  $\Gamma \models (\tf{P_i}(L_i, R_i) \iff \tf{P_j}(L_j, R_j)
+  \wedge \tf{P_k}(L_k, R_k) \wedge R_j = L_k)$.
+\end{lemma}
+
+\begin{proof}
+  Note that
+  $\tf{P_i}(L_i, R_i) \equiv \exists X. \tf{P_j}(L_j, X) \wedge
+  \tf{P_k}(X, R_k)$. So, the backwards direction is trivial. By
+  Lemma \ref{tf:loopfree},
+  $\tf{P_i}(L_i, R_i) \equiv \exists X. \tfp{LF(P_j)}(L_j, X)
+  \wedge \tfp{LF(P_k)}(X, R_k)$.
+
+  Proof sketch: Since $\tfp{LF(P_i)}$ is exact (on $LF(P_i)$), I
+  want to say that it is equivalent to show that in each
+  different ``path'' (including the 1's) in $\sigma(LF(P_j))$, it
+  relates $L_j$ to $R_j$, and the same for $P_k$. I want to look
+  at the occurances of $R_j$ and $L_k$ in $\Gamma$; either it
+  came from an edge, in which case it shows up in the path, or it
+  comes from a cycle, which also shows up in the ``path''. I also
+  have to take advantage of the condition that all paths are
+  simple or simple cycles (so variables are only constrained
+  once). 
+\end{proof}
+
 \begin{theorem}
   % might need to add explicit variable arguments for \tf{P_i}
   For all $1 \le i \le n$, $\Gamma \models (b_i \iff \tf{P_i})$.
@@ -295,33 +323,33 @@
     $\Gamma \models (b_i \iff \tf{P_j}(L_i, R_i) \vee
     \tf{P_k}(L_i, R_i))$, as desired.
     
-  \item $P_i = P_j \cdot P_k$:
-    $\tf{P_i}(L_i, R_i) = \exists X. \tf{P_j}(L_i, X) \wedge
-    \tf{P_k}(X, R_i)$. By the induction hypothesis,
+  \item $P_i = P_j \cdot P_k$: By Lemma \ref{tf:concat},
+    $\Gamma \models (\tf{P_i}(L_i, R_i) \iff \tf{P_j}(L_j, R_j)
+    \wedge \tf{P_k}(L_k, R_k) \wedge R_j = L_k)$. By the
+    induction hypothesis,
     $\Gamma \models (b_j \iff \tf{P_j}(L_j, R_j))$ and
-    $\Gamma \models (b_k \iff \tf{P_k}(L_k, R_k))$. 
+    $\Gamma \models (b_k \iff \tf{P_k}(L_k, R_k))$.
 
-    (forward direction only so far!). Consider the case that
-    $r(P_j) = l(P_k) = Open$.
+    Consider the case that $r(P_j) = l(P_k) = Open$.
     $\Gamma \models (b_i \iff b_j \wedge b_k \wedge X_w =
     {X_w}^\prime)$, where $w$ is the unique vertex such that
     $\type(P_j) = \tuple{u,w}$ and $\type(P_k) = \tuple{w,v}$.
     So,
     $\Gamma \models (b_i \iff \tf{P_j}(L_j, R_j) \wedge
     \tf{P_k}(L_k, R_k) \wedge X_w = {X_w}^\prime)$. But,
-    $R_j = X_w$ and $L_k = {X_w}^\prime$. Therefore,
-    $\Gamma \models (b_i \implies \exists X. \tf{P_j}(L_i, X)
-    \wedge \tf{P_k}(X, R_i))$.
+    $R_j = X_w$ and $L_k = {X_w}^\prime$, and by well-formedness,
+    $L_i = L_j$ and $R_i = R_k$. Therefore,
+    $\Gamma \models (b_i \iff \tf{P_i}(L_i, R_i))$.
 
     In the case that $r(P_j) = Closed$ and $l(P_k) = Open$, we
     have $R_j = {X_v}^\prime = L_k$; in the case that
     $r(P_j) = Open$ and $l(P_k) = Closed$, we have
-    $R_j = X_v = L_k$. Either way, $R_j = L_k$. After this
+    $R_j = X_v = L_k$. Either way, $R_j = L_k$. And, by
+    well-formedness, $L_i = L_j$ and $R_i = R_k$. After this
     iteration,
     $\Gamma \models (b_i \iff \tf{P_j}(L_j, R_j) \wedge
     \tf{P_k}(L_k, R_k))$. So,
-    $\Gamma \models (b_i \implies \exists X. \tf{P_j}(L_i, X)
-    \wedge \tf{P_k}(X, R_i))$.
+    $\Gamma \models (b_i \iff \tf{P_i}(L_i, R_i))$.
 
   \item $P_i = {P_j}^*$: By the induction hypothesis,
     $\Gamma \models (b_j \iff \tf{P_j}(L_j, R_j))$. But, by the
