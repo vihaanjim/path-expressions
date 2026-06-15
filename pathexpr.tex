@@ -29,6 +29,7 @@
 % interpretation of regular expression as a transition formula
 \newcommand{\tf}[1]{\mathscr{I} \llbracket #1 \rrbracket}
 \newcommand{\tfp}[1]{\mathscr{I}^\prime \llbracket #1 \rrbracket}
+\newcommand{\si}[1]{\mathscr{L} \llbracket #1 \rrbracket}
 
 % define theorems, lemmas, corollaries, and definitions
 \newtheorem{theorem}{Theorem}
@@ -41,151 +42,85 @@
 \begin{document}
 
 \begin{definition}
-  A \emph{path expression} $P$ of type $\tuple{u, v}$ on a graph
-  $G = \tuple{V, E}$ is a simple regular expression over $E$ such
-  that $\sigma(P) \subseteq \Paths_G(u,v)$ for some $u,v \in
-  V$. To simplify later definitions, we allow occurances of 1 to
-  be annotated with formulas, e.g. $1_\phi$.
-\end{definition}
-
-\begin{lemma}
-  \label{pe:type}
-  Let $P$ be a path expression of type $\tuple{u, v}$ on
-  $G = \tuple{V, E}$. Then, the following hold:
-
-  \begin{enumerate}
-  \item If $P = P_1 + P_2$, then $P_1$ and $P_2$ are path
-    expressions of type $\tuple{u, v}$ on $G$.
-  \item If $P = P_1 \cdot P_2$, then there is a unique $w\in V$
-    such that $P_1$ is a path expression of type $\tuple{u, w}$ on
-    $G$ and $P_2$ is a path expression of type $\tuple{w, v}$ on
-    $G$.
-  \item If $P = {P_1}^*$, then $u=v$ and $P_1$ is a path
-    expression of type $\tuple{u, v}=\tuple{u, u}$ on $G$. 
-  \end{enumerate}
-\end{lemma}
-
-\begin{proof}
-  We consider each case individually:
-
-  \begin{enumerate}
-  \item $P_1$ and $P_2$ are simple regular expressions, and we
-    have that
-    $\sigma(P_1),\sigma(P_2) \subseteq \sigma(P) \subseteq
-    \Paths_G(u,v)$ by definition. Therefore, $P_1$ and $P_2$ are
-    path expressions of type $\tuple{u, v}$ on $G$.
-
-  \item Since $P$ is simple, $\sigma(P_1)\ne\emptyset$ and
-    $\sigma(P_2)\ne\emptyset$. Consider any $p_1\in \sigma(P_1)$
-    and $p_2\in \sigma(P_2)$. Since $p_1\cdot p_2$ is a path from
-    $u$ to $v$, clearly, $p_1$ and $p_2$ are paths with $p_1$
-    starting at $u$ and ending at some vertex $w$, and $p_2$
-    starting at $w$ and ending at $v$. Now, consider any
-    ${p_1}^\prime \in \sigma(P_1)$. Since
-    ${p_1}^\prime \cdot p_2$ is also a path from $u$ to $v$,
-    ${p_1}^\prime$ must start at $u$ and end at $w$. Similarly,
-    consider any ${p_2}^\prime \in \sigma(P_2)$. Since
-    $p_1\cdot {p_2}^\prime$ is also a path from $u$ to $v$,
-    ${p_2}^\prime$ must start at $w$ and end at $v$. Therefore,
-    $P_1$ is a path expression of type $\tuple{u, w}$ on $G$ and
-    $P_2$ is a path expression of type $\tuple{w, v}$ on $G$.
-
-  \item $1 \in \sigma(P)$, so $1 \in \Paths_G(u,v)$. Therefore,
-    $u=v$. Furthermore, we have
-    $\sigma(P_1) \subseteq \sigma(P) \subseteq \Paths_G(u,v)$ by
-    definition. So, $P_1$ is a path expression of type
-    $\tuple{u, v} = \tuple{u, u}$ on $G$.
-  \end{enumerate}
-\end{proof}
-
-\begin{corollary}
-  For any path expression $P$ of type $\tuple{u,v}$ on $G$ that
-  does not have 1 as a subexpression, there exists a function
-  $\type: \subexp(P) \to V \times V$ such that the following
-  hold:
+  A \emph{regular expression over $\Sigma$} is an element of the
+  set $RegExp(\Sigma)$, which is the smallest set satisfying the
+  following properties:
 
   \begin{itemize}
-  \item For all $e=\tuple{u,v} \in E$ such that
-    $e \in \subexp(P)$, we have that $\type(e) = \tuple{u,v}$.
-  \item For all $P_1, P_2 \in \subexp(P)$ with $P_1+P_2 \in
-    \subexp(P)$, we have that 
-    $\type(P_1+P_2)=\type(P_1)=\type(P_2)$
-  \item For all $P_1, P_2 \in \subexp(P)$ with
-    $P_1 \cdot P_2 \in \subexp(P)$, we have that if
-    $\type(P_1 \cdot P_2)=\tuple{u^\prime,v^\prime}$ for some
-    $u^\prime,v^\prime \in V$, then there is some $w\in V$ such
-    that $\type(P_1) = \tuple{u^\prime, w}$ and
-    $\type(P_2) = \tuple{w, v^\prime}$.
-  \item For all $P_1 \in \subexp(P)$ with
-    ${P_1}^* \in \subexp(P)$, we have that
-    $\type({P_1}^*) = \type(P_1) = \tuple{w,w}$ for some
-    $w\in V$.
+  \item For all $a \in \Sigma$, $a \in RegExp(\Sigma)$.
+  \item $0, 1 \in RegExp(\Sigma)$.
+  \item For all $R_0 \in RegExp(\Sigma)$,
+    ${R_0}^* \in RegExp(\Sigma)$.
+  \item For all $R_1, R_2 \in RegExp(\Sigma)$,
+    $(R_1 + R_2), (R_1 \cdot R_2) \in RegExp(\Sigma)$.
   \end{itemize}
-\end{corollary}
 
-\begin{proof}
-  Induction using Lemma \ref{pe:type}.
-\end{proof}
+  A regular expression is \emph{simple} if it is 0 or does not
+  have 0 as a subexpression. 
+
+  % taken more or less verbatim from Algebraic Program Analysis +
+  % Fast Algorithms for Solving Path Problems
+  The \emph{standard interpretation} is the function
+  $\si{\cdot}: RegExp(\Sigma) \to \textbf{L}$, where $\textbf{L}$
+  is the regular algebra of languages, such that
+  $\si{0} = \emptyset$, $\si{1} = \{\epsilon\}$, $\si{a} = \{a\}$
+  for all $a \in \Sigma$,
+  $\si{R_1 + R_2} = \si{R_1} \cup \si{R_2}$ and
+  $\si{R_1 \cdot R_2} = \{x_1x_2| x_1 \in \si{R_1}, x_2 \in
+  \si{R_2}\}$ for all $R_1, R_2 \in RegExp(\Sigma)$, and
+  $\si{R^*} = \{x_1x_2\dots x_n| x_1,x_2,\dots,x_n \in \si{R}\}$
+  for all $R \in RegExp(\Sigma)$.
+\end{definition}
+
+\begin{definition}
+  A \emph{control flow graph} $G = \tuple{V, E, r, F}$ is a graph
+  with vertices $V$, edges $E$, a root vertex $r$ of indegree 0
+  from which every vertex $v \in V$ is reachable from $r$, and a
+  function $F: E \to Formula(X, X')$ for
+  $X, X' \in \mathbb{Z}^{Var}$. We use $F_{\tuple{u,v}}(Y, Y')$
+  to denote $F(\tuple{u,v})[X \to Y, X' \to Y']$. We let
+  $\Paths_G(u,v)$ be the set of all (possibly non-simple) paths
+  from $u$ to $v$ in $G$.
+
+\end{definition}
+
+\begin{definition}
+  A \emph{path expression} $P$ of type $\tuple{u, v}$ on
+  $G = \tuple{V, E, r, F}$ is a simple regular expression over
+  $E$ such that $P \subseteq \Paths_G(u,v)$ for some $u,v \in
+  V$. We denote the set of path expressions on $G$ by
+  $PathExp(G)$.
+
+  Let $X$ and $X'$ be sets of integer variables such that for
+  each $x\in X$, there is a corresponding $x' \in X'$. Then, the
+  \emph{transition formula interpretation} is the function
+  $\tf{\cdot}: PathExp(G) \to Formula(X, X')$ where
+  $\tf{0} = false$, $\tf{1} = \wedge_{x \in X} x = x'$,
+  $\tf{e} = F_e(X, X')$ for all $e \in E$,
+  $\tf{P_1 + P_2} = \tf{P_1} \vee \tf{P_2}$ and
+  $\tf{P_1 \cdot P_2} = \exists X''. \tf{P_1}(X, X'') \vee
+  \tf{P_2}(X'', X')$ for all $P_1, P_2 \in PathExp(G)$, and
+  $\tf{P^*}$ is some overapproximation of the reflexive
+  transitive closure of $P$ for all $P \in PathExp(G)$.
+\end{definition}
 
 \begin{definition}
   % todo: find a better name
   A path expression $P$ is well-formed if it does not have 1 as a
-  subexpression and if there exist functions
-  $l, r: \subexp(P) \to \{Open,Closed\}$ and
+  subexpression and if there exists a function
   $LF: \subexp(P) \to PathExp(G)$ such that the following hold:
   \begin{itemize}
   \item For all $e \in E$ such that
-    $e \in \subexp(P)$, we have that $l(e) = r(e) = Open$ and
-    $LF(e)=e$.
-  \item For all $P_1, P_2 \in \subexp(P)$ with
-    $P_1 + P_2 \in \subexp(P)$, we have that
-    $l(P_1 + P_2) = l(P_1) = l(P_2)$,
-    $r(P_1 + P_2) = r(P_1) = r(P_2)$, and
+    $e \in \subexp(P)$, we have that $LF(e)=e$.
+  \item For all $P_1 + P_2 \in \subexp(P)$, we have that
     $LF(P_1+P_2) = LF(P_1) + LF(P_2)$.
-  \item For all $P_1, P_2 \in \subexp(P)$ with
-    $P_1 \cdot P_2 \in \subexp(P)$, we have that
-    $l(P_1 \cdot P_2) = l(P_1)$, $r(P_1 \cdot P_2) = r(P_2)$,
-    $r(P_1) = Open \vee l(P_2) = Open$, and
-    $LF(P_1 \cdot P_2) = LF(P_1) \cdot LF(P_2)$ where for all $p
-    \in \sigma(LF(P_1 \cdot P_2))$, $p$ is either a simple path
-    or a simple cycle in $G$.
-  \item For all $P_1 \in \subexp$ with ${P_1}^* \in \subexp(P)$,
-    we have that $l({P_1}^*) = r({P_1}^*) = Closed$,
-    $l(P_1) = r(P_1) = Open$, and
-    $LF({P_1}^*) = 1_{\tf{{P_1}^*}}$.
+  \item For all $P_1 \cdot P_2 \in \subexp(P)$, we have that
+    $LF(P_1 \cdot P_2) = LF(P_1) \cdot LF(P_2)$ where for all
+    $p \in \si{LF(P_1 \cdot P_2)}$, $p$ repeats no edges.
+  \item For all ${P_1}^* \in \subexp$, we have that
+    $LF({P_1}^*) = 1$.
   \end{itemize}
 \end{definition}
-
-\begin{definition}
-  $\tfp{\cdot}$ is the same as $\tf{\cdot}$ except that
-  $\tfp{1_\phi} = \phi$.
-\end{definition}
-
-\begin{lemma}
-  \label{tf:loopfree}
-  Let $P$ be well-formed. Then, $\tf{P} \equiv \tfp{LF(P)}$.
-\end{lemma}
-
-\begin{proof}
-  We proceed by structural induction on $P$. If $P=e$ for some
-  $e \in E$, $LF(e) = e$, so the claim holds trivially. Now,
-  suppose the claim holds for $P_1$ and $P_2$ and that
-  $P = P_1 + P_2$ is well-formed. Then,
-  $\tfp{LF(P_1+P_2)} \equiv \tfp{LF(P_1) + LF(P_2)} \equiv
-  \tfp{LF(P_1)} \vee \tfp{LF(P_2)} \equiv \tf{P_1} \vee \tf{P_2}
-  \equiv \tf{P_1 + P_2}$. Similarly, suppose the claim holds for
-  $P_1$ and $P_2$ and that $P = P_1 + \cdot P_2$ is
-  well-formed. Then,
-  $\tfp{LF(P_1 \cdot P_2)} \equiv \tfp{LF(P_1) \cdot LF(P_2)}
-  \equiv \exists X^{\prime\prime}. \tfp{LF(P_1)}(X,
-  X^{\prime\prime}) \wedge \tfp{LF(P_2)}(X^{\prime\prime},
-  X^\prime) \equiv \tf{P_1}(X, X^{\prime\prime}) \wedge
-  \tf{P_2}(X^{\prime\prime}, X^\prime) \equiv \tf{P_1 \cdot
-    P_2}$. Finally, suppose the claim holds for $P_1$ and that
-  ${P_1}^*$ is well-formed. Then,
-  $\tfp{LF({P_1}^*)} = \tfp{1_{\tf{{P_1}^*}}} = \tf{{P_1}^*}$.
-  
-\end{proof}
 
 \begin{algorithm}
   \caption{Path Expression DAG to Transition Formula}
@@ -194,11 +129,9 @@
   \SetAlgoLined
   \SetAlgoNoEnd
   
-  \SetKw{Skip}{skip}
-
-  \KwIn{A graph $G=\tuple{V, E}$ and a non-empty, well-formed
-    path expression $P$ whose distinct subexpressions
-    $\{P_1,\dots,P_n\}$ are labeled so that
+  \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ and a
+    non-empty, well-formed path expression $P$ whose distinct
+    subexpressions $\{P_1,\dots,P_n\}$ are labeled so that
     $P_i \in \subexp(P_j) \implies i < j$.}
   
   \KwOut{A formula $\Gamma$ such that for all $1 \le i \le n$,
@@ -207,42 +140,32 @@
   $\Gamma \gets true$
   
   \ForEach{$i = 1$ \KwTo $n$}{
-    $\tuple{u, v} \gets \type(P_i)$ \;
     \Switch{$P_i$}{
-      \lCase{$\tuple{u, v}$}{
-        $\Gamma \gets \Gamma \wedge (b_i \iff F_{\tuple{u,
-            v}}({X_u}^\prime, X_v))$
+      \lCase{$e \in E$}{
+        $\Gamma \gets \Gamma \wedge (b_i \iff F_e(X_i, {X_i}'))$
       }
 
-      \lCase{$P_j + P_k$}{
-        $\Gamma \gets \Gamma \wedge (b_i \iff b_j \vee b_k)$
+      \Case{$P_j + P_k$}{
+        
+        $\Gamma \gets \Gamma \wedge (b_i \iff (b_j \wedge X_i =
+        X_j \wedge {X_i}' = {X_j}') \vee (b_k \wedge X_i = X_k
+        \wedge {X_i}' = {X_k}'))$ \;
+        
       }
 
-      \Case{$P_j \cdot P_k$}{
-
-        \If{$r(P_j) = l(P_k) = Open$}{
-          
-          $\tuple{u,w} \gets \type(P_j)$ \;
-          
-          $\Gamma \gets \Gamma \wedge (b_i \iff b_j \wedge b_k
-          \wedge X_w = {X_w}^\prime)$ \;
-          
-        }
-
-        \Else {
-
-          $\Gamma \gets \Gamma \wedge (b_i \iff b_j \wedge b_k)$
-          \;
-          
-        }
+      \lCase{$P_j \cdot P_k$}{
+        $\Gamma \gets \Gamma \wedge (b_i \iff b_j \wedge b_k
+        \wedge X_i = X_j \wedge {X_i}' = {X_k}' \wedge {X_j}' =
+        X_k))$
       }
 
       \Case{${P_j}^*$}{
 
-        $F \gets \textit{star}(\Gamma, b_j, \tuple{{X_u}^\prime,
-          X_u})$ \;
-        $F^\prime \gets F(X_u, {X_u}^\prime)$ \;
-        $\Gamma \gets \Gamma \wedge (b_i \iff F^\prime)$ \;
+        $F \gets star(\Gamma, b_j, \tuple{X_j, {X_j}'})$ \;
+
+        $F' \gets F(X_i, {X_i}')$ \;
+        
+        $\Gamma \gets \Gamma \wedge (b_i \iff F')$ \;
 
       }
     }
@@ -252,47 +175,28 @@
 
 \end{algorithm}
 
-For each $P_j \in \subexp(P)$ with $\type(P_j) = \tuple{u,v}$,
-let $L_j$ be $X_u$ if $l(P_j) = Closed$ and ${X_u}^\prime$
-otherwise, and let $R_j$ be ${X_v}^\prime$ if $r(P_j) = Closed$
-and $X_v$ otherwise.
-
-\begin{lemma}
-  \label{tf:concat}
-  For all $P_i = P_j \cdot P_k$,
-  $\Gamma \models (\tf{P_i}(L_i, R_i) \iff \tf{P_j}(L_j, R_j)
-  \wedge \tf{P_k}(L_k, R_k) \wedge R_j = L_k)$.
-\end{lemma}
-
-\begin{proof}
-  Note that
-  $\tf{P_i}(L_i, R_i) \equiv \exists X. \tf{P_j}(L_j, X) \wedge
-  \tf{P_k}(X, R_k)$. So, the backwards direction is trivial. By
-  Lemma \ref{tf:loopfree},
-  $\tf{P_i}(L_i, R_i) \equiv \exists X. \tfp{LF(P_j)}(L_j, X)
-  \wedge \tfp{LF(P_k)}(X, R_k)$.
-
-  Proof sketch: Since $\tfp{LF(P_i)}$ is exact (on $LF(P_i)$), I
-  want to say that it is equivalent to show that in each
-  different ``path'' (including the 1's) in $\sigma(LF(P_j))$, it
-  relates $L_j$ to $R_j$, and the same for $P_k$. I want to look
-  at the occurances of $R_j$ and $L_k$ in $\Gamma$; either it
-  came from an edge, in which case it shows up in the path, or it
-  comes from a cycle, which also shows up in the ``path''. I also
-  have to take advantage of the condition that all paths are
-  simple or simple cycles (so variables are only constrained
-  once). 
-\end{proof}
+\begin{definition}
+  Let $S_1, S_2$ be sets of variable vocabularies and
+  $\sigma: S_1 \to S_2$ be a bijection. Then, for all formulas
+  $F$ and $G$, we say that $F \models_\sigma G$ if and only if
+  for all $M \models F$, there exists an $N \models G$ such that
+  $M(X) = N(\sigma(X))$ for all $X \in S_1$. We say that
+  $(F \equiv_\sigma G) \equiv (F \models_\sigma G) \wedge (G
+  \models_{\sigma^{-1}} F)$.
+\end{definition}
 
 \begin{theorem}
-  % might need to add explicit variable arguments for \tf{P_i}
-  For all $1 \le i \le n$, $\Gamma \models (b_i \iff \tf{P_i})$.
+  For all $1 \le i \le n$, there is some $\sigma_i$ such that 
+  $\Gamma \wedge b_i \equiv_{\sigma_i} \tf{P_i}$.
 \end{theorem}
 
 \begin{proof}
   We proceed by induction on the iteration $i$ of the for loop,
   with the hypothesis that before the $i$th iteration, for all
-  $j \le i$, $\Gamma \models (b_j \iff \tf{P_j}(L_j, R_j))$.
+  $j < i$, there is some $\sigma_j$ defined on
+  $S_j \subseteq \bigcup_{1 \ne LF(P_k) \in \subexp(LF(P_j))}
+  \{X_k, {X_k}'\}$ such that
+  $\Gamma \wedge b_j \equiv_{\sigma_j} \exists \tf{P_j}$.
 
   Certainly this is true before the first iteration. Suppose this
   is true before the $i$th iteration of the loop. For $j < i$,
@@ -305,51 +209,39 @@ and $X_v$ otherwise.
 
   \begin{itemize}
   \item $P_i = \tuple{u, v}$: We have that
-    $\tf{\tuple{u, v}} = F_{\tuple{u, v}}$, and after this
+    $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$, and after this
     iteration,
-    $\Gamma \models (b_i \iff F_{\tuple{u, v}}({X_u}^\prime,
-    X_v))$. Since $L_i = {X_u}^\prime$ and $R_i = X_v$, this means
-    $\Gamma \models (b_i \iff \tf{\tuple{u, v}}(L_i, R_i))$.
+    $\Gamma \models (b_i \iff F_{\tuple{u, v}}(X_i, {X_i}'))$.
+    The claim holds trivially with
+    $\sigma_i = [X_i \to X, {X_i}' \to X']$.
     
   \item $P_i = P_j + P_k$:
     $\tf{P_j+P_k} = \tf{P_j} \vee \tf{P_k}$. By the induction
     hypothesis, we know that
-    $\Gamma \models (b_j \iff \tf{P_j}(L_j, R_j))$ and
-    $\Gamma \models (b_k \iff \tf{P_k}(L_k, R_k))$. By the
-    well-formedness of $P$,
-    $\Gamma \models (b_j \iff \tf{P_j}(L_i, R_i))$ and
-    $\Gamma \models (b_k \iff \tf{P_k}(L_i, R_i))$.  After this
-    iteration, $\Gamma \models (b_i \iff b_j \vee b_k)$, so
-    $\Gamma \models (b_i \iff \tf{P_j}(L_i, R_i) \vee
-    \tf{P_k}(L_i, R_i))$, as desired.
+    $\Gamma \wedge b_j \equiv_{\sigma_j} \tf{P_j}(X_j, {X_j}')$
+    for some $\sigma_j$ defined on $S_j$ and
+    $\Gamma \wedge b_k \equiv_{\sigma_k} \tf{P_k}(X_k, {X_k}')$
+    for some $\sigma_k$ defined on $S_k$. 
     
-  \item $P_i = P_j \cdot P_k$: By Lemma \ref{tf:concat},
-    $\Gamma \models (\tf{P_i}(L_i, R_i) \iff \tf{P_j}(L_j, R_j)
-    \wedge \tf{P_k}(L_k, R_k) \wedge R_j = L_k)$. By the
-    induction hypothesis,
-    $\Gamma \models (b_j \iff \tf{P_j}(L_j, R_j))$ and
-    $\Gamma \models (b_k \iff \tf{P_k}(L_k, R_k))$.
-
-    Consider the case that $r(P_j) = l(P_k) = Open$.
-    $\Gamma \models (b_i \iff b_j \wedge b_k \wedge X_w =
-    {X_w}^\prime)$, where $w$ is the unique vertex such that
-    $\type(P_j) = \tuple{u,w}$ and $\type(P_k) = \tuple{w,v}$.
-    So,
-    $\Gamma \models (b_i \iff \tf{P_j}(L_j, R_j) \wedge
-    \tf{P_k}(L_k, R_k) \wedge X_w = {X_w}^\prime)$. But,
-    $R_j = X_w$ and $L_k = {X_w}^\prime$, and by well-formedness,
-    $L_i = L_j$ and $R_i = R_k$. Therefore,
-    $\Gamma \models (b_i \iff \tf{P_i}(L_i, R_i))$.
-
-    In the case that $r(P_j) = Closed$ and $l(P_k) = Open$, we
-    have $R_j = {X_v}^\prime = L_k$; in the case that
-    $r(P_j) = Open$ and $l(P_k) = Closed$, we have
-    $R_j = X_v = L_k$. Either way, $R_j = L_k$. And, by
-    well-formedness, $L_i = L_j$ and $R_i = R_k$. After this
-    iteration,
-    $\Gamma \models (b_i \iff \tf{P_j}(L_j, R_j) \wedge
-    \tf{P_k}(L_k, R_k))$. So,
-    $\Gamma \models (b_i \iff \tf{P_i}(L_i, R_i))$.
+    
+  \item $P_i = P_j \cdot P_k$: By the induction hypothesis, we
+    know that $\Gamma \wedge b_j \equiv_{\sigma_j} \tf{P_j}$ for
+    some $\sigma_j$ defined on $S_j$ and
+    $\Gamma \wedge b_k \equiv_{\sigma_k} \tf{P_k}$ for some
+    $\sigma_k$ defined on $S_k$. Suppose for the sake of
+    contradiction that $S_j \cap S_k \ne \emptyset$. Then, since
+    $LF(P_j)$ and $LF(P_k)$ do not have 0 as a subexpression,
+    there is some
+    $\tuple{u,v} \in \subexp(LF(P_j)) \cap \subexp(LF(P_k))$. So,
+    there is some $p_j \in LF(P_j)$ and $p_k \in LF(P_k)$ where
+    $\tuple{u,v} \in p_j$ and $\tuple{u,v} \in p_k$; but this is
+    a contradiction. Therefore, $S_j \cap S_k = \emptyset$. And,
+    the variables in $\tf{P_j}$ and $\tf{P_k}$ are existentially
+    quantified, meaning they are distinct. So, if we let
+    $\sigma_i(X) = \sigma_j(X)$ if $X \in S_j$ and $\sigma_k(X)$
+    otherwise, then $\sigma_i$ is a bijection. Furthermore,
+    $\Gamma \wedge b_j \equiv_{\sigma_i} \tf{P_j}$ and
+    $\Gamma \wedge b_k \equiv_{\sigma_i} \tf{P_k}$. 
 
   \item $P_i = {P_j}^*$: By the induction hypothesis,
     $\Gamma \models (b_j \iff \tf{P_j}(L_j, R_j))$. But, by the
