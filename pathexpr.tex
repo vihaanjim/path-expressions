@@ -11,7 +11,7 @@
 
 % interpretation of regular expression as a transition formula
 \newcommand{\tf}[1]{\mathscr{I} \llbracket #1 \rrbracket}
-% \newcommand{\si}[1]{\mathscr{L} \llbracket #1 \rrbracket}
+\newcommand{\si}[1]{\mathscr{L} \llbracket #1 \rrbracket}
 
 % define theorems, lemmas, corollaries, and definitions
 \newtheorem{theorem}{Theorem}
@@ -39,19 +39,24 @@
 
   A regular expression is \emph{simple} if it is 0 or does not
   have 0 as a subexpression. 
+\end{definition}
 
+\begin{definition}
   % taken more or less verbatim from Algebraic Program Analysis +
   % Fast Algorithms for Solving Path Problems
-  % The \emph{standard interpretation} is the function
-  % $\si{\cdot}: RegExp(\Sigma) \to \textbf{L}$, where $\textbf{L}$
-  % is the regular algebra of languages, such that
-  % $\si{0} = \emptyset$, $\si{1} = \{\epsilon\}$, $\si{a} = \{a\}$
-  % for all $a \in \Sigma$,
-  % $\si{R_1 + R_2} = \si{R_1} \cup \si{R_2}$ and
-  % $\si{R_1 \cdot R_2} = \{x_1x_2| x_1 \in \si{R_1}, x_2 \in
-  % \si{R_2}\}$ for all $R_1, R_2 \in RegExp(\Sigma)$, and
-  % $\si{R^*} = \{x_1x_2\dots x_n| x_1,x_2,\dots,x_n \in \si{R}\}$
-  % for all $R \in RegExp(\Sigma)$.
+  The \emph{standard interpretation} is the function
+  $\si{\cdot}: RegExp(\Sigma) \to \textbf{L}$, where $\textbf{L}$
+  is the set of regular languages, such that
+  $\si{0} = \emptyset$, $\si{1} = \{\epsilon\}$ where $\epsilon$
+  is the empty string, $\si{a} = \{a\}$ for all $a \in \Sigma$,
+  and
+  \begin{align*}
+  \si{R_1 + R_2} &= \si{R_1} \cup \si{R_2} \\
+  \si{R_1 \cdot R_2} &= \{x_1x_2| x_1 \in \si{R_1}, x_2 \in
+                       \si{R_2}\} \\
+  \si{R^*} &= \{x_1x_2\dots x_n| x_1,x_2,\dots,x_n \in \si{R}\}
+  \end{align*}
+  for all $R, R_1, R_2 \in RegExp(\Sigma)$.
 \end{definition}
 
 \begin{definition}
@@ -69,43 +74,53 @@
 \begin{definition}
   A \emph{path expression} $P$ of type $\tuple{u, v}$ on
   $G = \tuple{V, E, r, F}$ is a simple regular expression over
-  $E$ such that $P \subseteq Paths_G(u,v)$ for some $u,v \in
-  V$. We denote the set of path expressions on $G$ by
+  $E$ such that $\si{P} \subseteq Paths_G(u,v)$ for some
+  $u,v \in V$. We denote the set of path expressions on $G$ by
   $PathExp(G)$.
 
-  Let $X$ and $X'$ be two variable vocabularies such that for
-  each $x\in X$, there is a corresponding $x' \in X'$. Let $star$
-  be a function that takes a formula and the pair of variable
-  vocabulairies that it relates and returns some
-  overapproximation of the reflexive transitive closure of the
-  formula over those vocabularies, containing no other free
-  variables. Then, the \emph{transition formula interpretation}
+\end{definition}
+
+Let $X$ and $X'$ be sets of variables such that for each
+$x\in X$, there is a corresponding $x' \in X'$. As an abuse of
+notation, we use $X = X' \equiv \bigwedge_{x \in X} x = x'$. Let
+$star$ be a function that takes a formula and the pair of
+variable vocabulairies that it relates and returns some
+overapproximation of the reflexive transitive closure of the
+formula over those vocabularies, containing no other free
+variables.
+
+\begin{definition}
+  The \emph{transition formula interpretation}
   is the function $\tf{\cdot}: PathExp(G) \to Formula(X, X')$
-  where $\tf{0} = false$, $\tf{1} = \wedge_{x \in X} x = x'$,
-  $\tf{e} = F_e(X, X')$ for all $e \in E$,
-  $\tf{P_1 + P_2} = \tf{P_1} \vee \tf{P_2}$ and
-  $\tf{P_1 \cdot P_2} = \exists X''. \tf{P_1}(X, X'') \wedge
-  \tf{P_2}(X'', X')$ for all $P_1, P_2 \in PathExp(G)$, and
-  $\tf{P^*} = star(\tf{P}, \tuple{X, X'})$ for all
-  $P \in PathExp(G)$. We use $\tf{P}(Y, Y')$ to denote
+  where $\tf{0} \equiv false$, $\tf{1} \equiv X = X'$,
+  $\tf{e} \equiv F_e(X, X')$ for all $e \in E$, and
+  \begin{align*}
+    \tf{P_1 + P_2} &\equiv \tf{P_1} \vee \tf{P_2} \\
+    \tf{P_1 \cdot P_2} &\equiv \exists X''. \tf{P_1}(X, X'')
+                         \wedge \tf{P_2}(X'', X') \\
+    \tf{P^*} &\equiv star(\tf{P}, \tuple{X, X'}) 
+  \end{align*}
+  for all $P, P_1, P_2 \in PathExp(G)$. 
+
+  We use $\tf{P}(Y, Y')$ to denote
   $\tf{P}[X \mapsto Y, X' \mapsto Y']$.
 \end{definition}
 
 \begin{definition}
   % todo: find a better name
-  A path expression $P$ is well-formed if it does not have 1 as a
-  subexpression and if there exists a function
-  $LF: SubExp(P) \to \mathscr{P}(SubExp(P))$ such that the
-  following hold:
+  A path expression $P$ is \emph{well-formed} if there exists a
+  function $LF: SubExp(P) \to \mathscr{P}(SubExp(P))$ such that
+  the following hold:
   \begin{itemize}
-  \item For all $e \in E$ such that
-    $e \in SubExp(P)$, we have that $LF(e)=\{e\}$.
-  \item For all $P_1 + P_2 \in SubExp(P)$, we have that
+  \item If $1 \in SubExp(P)$, then $LF(1) = \{1\}$
+  \item For all $e = \tuple{u,v} \in SubExp(P)$,
+    $LF(e) = \{e\}$.
+  \item For all $P_1 + P_2 \in SubExp(P)$,
     $LF(P_1+P_2) = LF(P_1) \cup LF(P_2) \cup \{P_1 + P_2\}$.
-  \item For all $P_1 \cdot P_2 \in SubExp(P)$, we have that
+  \item For all $P_1 \cdot P_2 \in SubExp(P)$,
     $LF(P_1 \cdot P_2) = LF(P_1) \cup LF(P_2) \cup \{P_1 \cdot
     P_2\}$ where $LF(P_1) \cap LF(P_2) = \emptyset$.
-  \item For all ${P_1}^* \in SubExp$, we have that
+  \item For all ${P_1}^* \in SubExp$,
     $LF({P_1}^*) = \{{P_1}^*\}$.
   \end{itemize}
 \end{definition}
@@ -129,6 +144,10 @@
   
   \ForEach{$i = 1$ \KwTo $n$}{
     \Switch{$P_i$}{
+      \lCase{1}{
+        $\Gamma_i \gets (b_i \implies X_i = {X_i}')$
+      }
+      
       \lCase{$e \in E$}{
         $\Gamma_i \gets (b_i \implies F_e(X_i, {X_i}'))$
       }
@@ -176,15 +195,15 @@
   and assume the claim holds for each $j < i$. Certainly, this is
   the case before the first iteration. And, for any $i$ and any
   $j < i$, the claim still holds after the $i$th iteration since
-  $\Gamma_j$ is not modified. For $j = i$, if $P_i = e \in E$ or
-  $P_i = {P_k}^*$ for some $k$, then the only free variables in
-  $\Gamma_i$ are $b_i$, $X_i$, and ${X_i}'$, so we are
-  done. Otherwise, $P_i = P_j + P_k$ or $P_i = P_j \cdot P_k$ for
-  some $j$ and $k$, and the free variables in $\Gamma_i$ are
-  exactly those in $\Gamma_j$ or $\Gamma_k$ or
-  $b_i, b_j, b_k, X_i, {X_i}', X_j, {X_j}', X_k$ or ${X_k}'$. By
-  the induction hypothesis and the well-formedness of $P$, the
-  claim holds for $i$.
+  $\Gamma_j$ is not modified. For $j = i$, if $P_i = 1$,
+  $P_i = e \in E$, or $P_i = {P_k}^*$ for some $k$, then the only
+  free variables in $\Gamma_i$ are $b_i$, $X_i$, and ${X_i}'$, so
+  we are done. Otherwise, $P_i = P_j + P_k$ or
+  $P_i = P_j \cdot P_k$ for some $j$ and $k$, and the free
+  variables in $\Gamma_i$ are exactly those in $\Gamma_j$ or
+  $\Gamma_k$ or $b_i, b_j, b_k, X_i, {X_i}', X_j, {X_j}', X_k$ or
+  ${X_k}'$. By the induction hypothesis and the well-formedness
+  of $P$, the claim holds for $i$.
 \end{proof}
 
 Let $V_j = \bigcup_{P_k \in LF(P_j)} \{b_k, X_k, {X_k}'\}$. Note
@@ -237,6 +256,11 @@ $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
   separately:
 
   \begin{itemize}
+  \item $P_i = 1$: We have that $\tf{1} \equiv X = X'$ and
+    $\Gamma_i \equiv (b_i \implies X_i = {X_i}')$.  So,
+    $\exists b_i, X_i, {X_i}'. \Gamma_i \wedge b_i \wedge X_i = X
+    \wedge {X_i}' = X' \equiv X = X' \equiv \tf{P_i}$.
+
   \item $P_i = \tuple{u, v}$: We have that
     $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$ and
     $\Gamma_i \equiv (b_i \implies F_{\tuple{u, v}}(X_i,
@@ -246,8 +270,8 @@ $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
     \tf{P_i}$.
     
   \item $P_i = P_j + P_k$:
-    $\tf{P_j+P_k} = \tf{P_j} \vee \tf{P_k}$. By the induction
-    hypothesis,
+    $\tf{P_j+P_k} \equiv \tf{P_j} \vee \tf{P_k}$. By the
+    induction hypothesis,
     $\tf{P_i} \equiv (\exists V_j. \Gamma_j \wedge b_j \wedge X_j
     = X \wedge {X_j}' = X') \vee (\exists V_k. \Gamma_k \wedge
     b_k\wedge X_k = X \wedge {X_k}' = X')$.
