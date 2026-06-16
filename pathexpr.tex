@@ -198,6 +198,29 @@
   $\subexp(\cdot)$, the claim holds for $i$. 
 \end{proof}
 
+\begin{lemma}
+  \label{pe:ext}
+  For all $1 \le j \le i \le n$, if $P_j \in LF(P_i)$, then for
+  any formula $\varphi$ which does not contain any free variables
+  present in $\Gamma_i$ but not $\Gamma_j$,
+  $Sat(\Gamma_j \wedge \varphi) \equiv Sat(\Gamma_i \wedge
+  \varphi)$.
+\end{lemma}
+
+\begin{proof}
+  Since $\Gamma_i \models \Gamma_j$, the backwards direction is
+  trivial. For the forwards direction, suppose there is some
+  model $M$ such that $M \models \Gamma_j \wedge \varphi$. Let
+  $M'$ be the same as $M$ except that for every $k$ where
+  $P_k \in LF(P_i) \setminus LF(P_j)$, $M(b_k) = false$.  By
+  Lemma \ref{pe:freevars}, $M' \models \Gamma_j \wedge \varphi$,
+  and every $\psi$ such that $\Gamma_i \models \psi$ but
+  $\Gamma_j \not\models \psi$ is of the form
+  $\psi = (b_k \implies \psi')$ for such a $k$. Therefore, since
+  $\Gamma_i \models \Gamma_j$,
+  $M' \models \Gamma_i \wedge \varphi$.
+\end{proof}
+
 \begin{theorem}
   $Sat(\tf{P}) \iff Sat(\Gamma \wedge b_n)$
 \end{theorem}
@@ -228,13 +251,14 @@
   \item $P_i = P_j + P_k$:
     $\tf{P_j+P_k} = \tf{P_j} \vee \tf{P_k}$. By the induction
     hypothesis, this means
-    $\tf{P_j+P_k}(X, X') \equiv Sat(\Gamma_j \wedge b_j \wedge
-    X_j = X \wedge {X_j}' = X') \vee Sat(\Gamma_k \wedge
-    b_k\wedge X_k = X \wedge {X_k}' = X') \equiv Sat((\Gamma_j
-    \wedge b_j \wedge X_j = X \wedge {X_j}' = X') \vee (\Gamma_k
-    \wedge b_k \wedge X_k = X \wedge {X_k}' = X'))$ TODO: justify
-    this step!
-    $\equiv Sat(\Gamma_j \wedge \Gamma_k \wedge ((b_j \wedge X_j
+    $\tf{P_i}(X, X') \equiv Sat(\Gamma_j \wedge b_j \wedge X_j =
+    X \wedge {X_j}' = X') \vee Sat(\Gamma_k \wedge b_k\wedge X_k
+    = X \wedge {X_k}' = X') \equiv Sat((\Gamma_j \wedge b_j
+    \wedge X_j = X \wedge {X_j}' = X') \vee (\Gamma_k \wedge b_k
+    \wedge X_k = X \wedge {X_k}' = X'))$.
+
+    By Lemma \ref{pe:ext}, this means
+    $\tf{P_i}(X, X') \equiv Sat(\Gamma_i \wedge ((b_j \wedge X_j
     = X_i \wedge {X_j}' = {X_i}') \vee (b_k \wedge X_k = X_i
     \wedge {X_k}' = {X_i}')) \wedge X_i = X \wedge {X_i}' = X')
     \equiv Sat(\Gamma_i \wedge b_i \wedge X_i = X \wedge {X_i}' =
