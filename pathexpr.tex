@@ -80,7 +80,7 @@
   $\tf{0} = false$, $\tf{1} = \wedge_{x \in X} x = x'$,
   $\tf{e} = F_e(X, X')$ for all $e \in E$,
   $\tf{P_1 + P_2} = \tf{P_1} \vee \tf{P_2}$ and
-  $\tf{P_1 \cdot P_2} = \exists X''. \tf{P_1}(X, X'') \vee
+  $\tf{P_1 \cdot P_2} = \exists X''. \tf{P_1}(X, X'') \wedge
   \tf{P_2}(X'', X')$ for all $P_1, P_2 \in PathExp(G)$, and
   $\tf{P^*}$ is some overapproximation of the reflexive
   transitive closure of $P$ for all $P \in PathExp(G)$. We use
@@ -172,7 +172,7 @@
   the case before the first iteration. And, for any $i$ and any
   $j < i$, the claim still holds after the $i$th iteration since
   $\Gamma_j$ is not modified. For $j = i$, if $P_i = e \in E$ or
-  $P_i = {P_k}^*$ for some $l$, then the only free variables in
+  $P_i = {P_k}^*$ for some $k$, then the only free variables in
   $\Gamma_i$ are $b_i$, $X_i$, and ${X_i}'$, so we are
   done. Otherwise, $P_i = P_j + P_k$ or $P_i = P_j \cdot P_k$ for
   some $j$ and $k$, and the free variables in $\Gamma_i$ are
