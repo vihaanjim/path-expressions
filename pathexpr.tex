@@ -28,8 +28,7 @@
 
 % interpretation of regular expression as a transition formula
 \newcommand{\tf}[1]{\mathscr{I} \llbracket #1 \rrbracket}
-\newcommand{\tfp}[1]{\mathscr{I}^\prime \llbracket #1 \rrbracket}
-\newcommand{\si}[1]{\mathscr{L} \llbracket #1 \rrbracket}
+% \newcommand{\si}[1]{\mathscr{L} \llbracket #1 \rrbracket}
 
 % define theorems, lemmas, corollaries, and definitions
 \newtheorem{theorem}{Theorem}
@@ -60,16 +59,16 @@
 
   % taken more or less verbatim from Algebraic Program Analysis +
   % Fast Algorithms for Solving Path Problems
-  The \emph{standard interpretation} is the function
-  $\si{\cdot}: RegExp(\Sigma) \to \textbf{L}$, where $\textbf{L}$
-  is the regular algebra of languages, such that
-  $\si{0} = \emptyset$, $\si{1} = \{\epsilon\}$, $\si{a} = \{a\}$
-  for all $a \in \Sigma$,
-  $\si{R_1 + R_2} = \si{R_1} \cup \si{R_2}$ and
-  $\si{R_1 \cdot R_2} = \{x_1x_2| x_1 \in \si{R_1}, x_2 \in
-  \si{R_2}\}$ for all $R_1, R_2 \in RegExp(\Sigma)$, and
-  $\si{R^*} = \{x_1x_2\dots x_n| x_1,x_2,\dots,x_n \in \si{R}\}$
-  for all $R \in RegExp(\Sigma)$.
+  % The \emph{standard interpretation} is the function
+  % $\si{\cdot}: RegExp(\Sigma) \to \textbf{L}$, where $\textbf{L}$
+  % is the regular algebra of languages, such that
+  % $\si{0} = \emptyset$, $\si{1} = \{\epsilon\}$, $\si{a} = \{a\}$
+  % for all $a \in \Sigma$,
+  % $\si{R_1 + R_2} = \si{R_1} \cup \si{R_2}$ and
+  % $\si{R_1 \cdot R_2} = \{x_1x_2| x_1 \in \si{R_1}, x_2 \in
+  % \si{R_2}\}$ for all $R_1, R_2 \in RegExp(\Sigma)$, and
+  % $\si{R^*} = \{x_1x_2\dots x_n| x_1,x_2,\dots,x_n \in \si{R}\}$
+  % for all $R \in RegExp(\Sigma)$.
 \end{definition}
 
 \begin{definition}
@@ -108,17 +107,18 @@
   % todo: find a better name
   A path expression $P$ is well-formed if it does not have 1 as a
   subexpression and if there exists a function
-  $LF: \subexp(P) \to PathExp(G)$ such that the following hold:
+  $LF: \subexp(P) \to \mathscr{P}(\subexp(P))$ such that the
+  following hold:
   \begin{itemize}
   \item For all $e \in E$ such that
-    $e \in \subexp(P)$, we have that $LF(e)=e$.
+    $e \in \subexp(P)$, we have that $LF(e)=\{e\}$.
   \item For all $P_1 + P_2 \in \subexp(P)$, we have that
-    $LF(P_1+P_2) = LF(P_1) + LF(P_2)$.
+    $LF(P_1+P_2) = LF(P_1) \cup LF(P_2) \cup \{P_1 + P_2\}$.
   \item For all $P_1 \cdot P_2 \in \subexp(P)$, we have that
-    $LF(P_1 \cdot P_2) = LF(P_1) \cdot LF(P_2)$ where for all
-    $p \in \si{LF(P_1 \cdot P_2)}$, $p$ repeats no edges.
+    $LF(P_1 \cdot P_2) = LF(P_1) \cup LF(P_2) \cup \{P_1 \cdot
+    P_2\}$ where $LF(P_1) \cap LF(P_2) = \emptyset$.
   \item For all ${P_1}^* \in \subexp$, we have that
-    $LF({P_1}^*) = 1$.
+    $LF({P_1}^*) = \{{P_1}^*\}$.
   \end{itemize}
 \end{definition}
 
@@ -134,504 +134,143 @@
     subexpressions $\{P_1,\dots,P_n\}$ are labeled so that
     $P_i \in \subexp(P_j) \implies i < j$.}
   
-  \KwOut{A formula $\Gamma$ such that for all $1 \le i \le n$,
-    $\Gamma \wedge b_i \equiv_\sigma \tf{P_i}$}
+  \KwOut{A formula $\Gamma$ such that
+    $Sat(\tf{P}) \iff Sat(\Gamma \wedge b_n)$}
 
-  $\Gamma \gets true$
+  $\Gamma \gets \lambda x. true$
   
   \ForEach{$i = 1$ \KwTo $n$}{
     \Switch{$P_i$}{
       \lCase{$e \in E$}{
-        $\Gamma \gets \Gamma \wedge (b_i \iff F_e(X_i, {X_i}'))$
+        $\Gamma_i \gets (b_i \implies F_e(X_i, {X_i}'))$
       }
 
       \Case{$P_j + P_k$}{
         
-        $\Gamma \gets \Gamma \wedge (b_i \iff (b_j \wedge X_i =
-        X_j \wedge {X_i}' = {X_j}') \vee (b_k \wedge X_i = X_k
-        \wedge {X_i}' = {X_k}'))$ \;
+        $\Gamma_i \gets \Gamma_j \wedge \Gamma_k \wedge (b_i
+        \implies (b_j \wedge X_i = X_j \wedge {X_i}' = {X_j}')
+        \vee (b_k \wedge X_i = X_k \wedge {X_i}' = {X_k}'))$ \;
         
       }
 
       \lCase{$P_j \cdot P_k$}{
-        $\Gamma \gets \Gamma \wedge (b_i \iff b_j \wedge b_k
-        \wedge X_i = X_j \wedge {X_i}' = {X_k}' \wedge {X_j}' =
-        X_k))$
+        $\Gamma_i \gets \Gamma_j \wedge \Gamma_k \wedge (b_i
+        \implies b_j \wedge b_k \wedge X_i = X_j \wedge {X_i}' =
+        {X_k}' \wedge {X_j}' = X_k))$
       }
 
       \Case{${P_j}^*$}{
 
-        $F \gets star(\Gamma, b_j, \tuple{X_j, {X_j}'})$ \;
+        $F \gets star(\Gamma_j, b_j, \tuple{X_j, {X_j}'})$ \;
 
-        $F' \gets F(X_i, {X_i}')$ \;
+        $F' \gets F[X_j \mapsto X_i, {X_j}' \mapsto {X_i}']$ \;
         
-        $\Gamma \gets \Gamma \wedge (b_i \iff F')$ \;
+        $\Gamma_i \gets (b_i \implies F')$ \;
 
       }
     }
   }
 
-  \Return $\Gamma$ \;
+  \Return $\Gamma_n$ \;
 
 \end{algorithm}
 
-\begin{definition}
-  Let $S_1, S_2$ be sets of variable vocabularies and
-  $\sigma: S_1 \to S_2$ be a bijection. Then, for all formulas
-  $F$ and $G$, we say that $F \models_\sigma G$ if and only if
-  for all $M \models F$, there exists an $N \models G$ such that
-  $M(X) = N(\sigma(X))$ for all $X \in S_1$. We say that
-  $(F \equiv_\sigma G) \equiv (F \models_\sigma G) \wedge (G
-  \models_{\sigma^{-1}} F)$.
-\end{definition}
+\begin{lemma}
+  \label{pe:freevars}
+  For all $1 \le j \le n$, the only free variables in $\Gamma_j$
+  are of the form $b_k$, $X_k$, or ${X_k}'$ for some $1 \le k \le
+  j$ such that $P_k \in LF(P_j)$.
+\end{lemma}
+
+\begin{proof}
+  We proceed by induction on the iteration $i$ of the for loop
+  and assume the claim holds for each $j < i$. Certainly, this is
+  the case before the first iteration. And, for any $i$ and any
+  $j < i$, the claim still holds after the $i$th iteration since
+  $\Gamma_j$ is not modified. For $j = i$, if $P_i = e \in E$ or
+  $P_i = {P_k}^*$ for some $l$, then the only free variables in
+  $\Gamma_i$ are $b_i$, $X_i$, and ${X_i}'$, so we are
+  done. Otherwise, $P_i = P_j + P_k$ or $P_i = P_j \cdot P_k$ for
+  some $j$ and $k$, and the free variables in $\Gamma_i$ are
+  exactly those in $\Gamma_j$ or $\Gamma_k$ or
+  $b_i, b_j, b_k, X_i, {X_i}', X_j, {X_j}', X_k$ or ${X_k}'$. By
+  the induction hypothesis and the transitivity of
+  $\subexp(\cdot)$, the claim holds for $i$. 
+\end{proof}
 
 \begin{theorem}
-  For all $1 \le i \le n$, there is some $\sigma_i$ such that 
-  $\Gamma \wedge b_i \equiv_{\sigma_i} \tf{P_i}$.
+  $Sat(\tf{P}) \iff Sat(\Gamma \wedge b_n)$
 \end{theorem}
 
 \begin{proof}
   We proceed by induction on the iteration $i$ of the for loop,
   with the hypothesis that before the $i$th iteration, for all
-  $j < i$, there is some $\sigma_j$ defined on
-  $S_j \subseteq \bigcup_{1 \ne LF(P_k) \in \subexp(LF(P_j))}
-  \{X_k, {X_k}'\}$ such that
-  $\Gamma \wedge b_j \equiv_{\sigma_j} \exists \tf{P_j}$.
+  $j < i$, for all $X, X'$,
+  $\tf{P_j}(X, X') \equiv Sat(\Gamma_j \wedge b_j \wedge X_j = X
+  \wedge {X_j}' = X')$.
 
   Certainly this is true before the first iteration. Suppose this
-  is true before the $i$th iteration of the loop. For $j < i$,
-  since we defined $b_j$ in $\Gamma$ by bi-implication, and since
-  the only definition added to $\Gamma$ during this iteration was
-  $b_i \iff \phi_i$ for some formula $\phi_i$ containing only
-  $b_k$ for $k < i$, the claim still holds after this
-  iteration. For $j = i$, let us consider each possible form of
-  $P_i$ separately:
+  is true before the $i$th iteration of the loop. Clearly, the
+  claim still holds for $j < i$ after this iteration. For
+  $j = i$, let us consider each possible form of $P_i$
+  separately:
 
   \begin{itemize}
   \item $P_i = \tuple{u, v}$: We have that
     $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$, and after this
     iteration,
-    $\Gamma \models (b_i \iff F_{\tuple{u, v}}(X_i, {X_i}'))$.
-    The claim holds trivially with
-    $\sigma_i = [X_i \to X, {X_i}' \to X']$.
+    $\Gamma_i \equiv (b_i \implies F_{\tuple{u, v}}(X_i,
+    {X_i}'))$.  So,
+    $Sat(\Gamma_i \wedge b_i \wedge X_j = X \wedge {X_j}' = X')
+    \equiv Sat(F_{\tuple{u, v}}(X_i, {X_i}') \wedge X_j = X
+    \wedge {X_j}' = X') \equiv \tf{P_i}(X, X')$, as desired.
     
   \item $P_i = P_j + P_k$:
     $\tf{P_j+P_k} = \tf{P_j} \vee \tf{P_k}$. By the induction
-    hypothesis, we know that
-    $\Gamma \wedge b_j \equiv_{\sigma_j} \tf{P_j}(X_j, {X_j}')$
-    for some $\sigma_j$ defined on $S_j$ and
-    $\Gamma \wedge b_k \equiv_{\sigma_k} \tf{P_k}(X_k, {X_k}')$
-    for some $\sigma_k$ defined on $S_k$. 
+    hypothesis, this means
+    $\tf{P_j+P_k}(X, X') \equiv Sat(\Gamma_j \wedge b_j \wedge
+    X_j = X \wedge {X_j}' = X') \vee Sat(\Gamma_k \wedge
+    b_k\wedge X_k = X \wedge {X_k}' = X') \equiv Sat((\Gamma_j
+    \wedge b_j \wedge X_j = X \wedge {X_j}' = X') \vee (\Gamma_k
+    \wedge b_k \wedge X_k = X \wedge {X_k}' = X'))$ TODO: justify
+    this step!
+    $\equiv Sat(\Gamma_j \wedge \Gamma_k \wedge ((b_j \wedge X_j
+    = X_i \wedge {X_j}' = {X_i}') \vee (b_k \wedge X_k = X_i
+    \wedge {X_k}' = {X_i}')) \wedge X_i = X \wedge {X_i}' = X')
+    \equiv Sat(\Gamma_i \wedge b_i \wedge X_i = X \wedge {X_i}' =
+    X')$ as desired.
     
-    
-  \item $P_i = P_j \cdot P_k$: By the induction hypothesis, we
-    know that $\Gamma \wedge b_j \equiv_{\sigma_j} \tf{P_j}$ for
-    some $\sigma_j$ defined on $S_j$ and
-    $\Gamma \wedge b_k \equiv_{\sigma_k} \tf{P_k}$ for some
-    $\sigma_k$ defined on $S_k$. Suppose for the sake of
-    contradiction that $S_j \cap S_k \ne \emptyset$. Then, since
-    $LF(P_j)$ and $LF(P_k)$ do not have 0 as a subexpression,
-    there is some
-    $\tuple{u,v} \in \subexp(LF(P_j)) \cap \subexp(LF(P_k))$. So,
-    there is some $p_j \in LF(P_j)$ and $p_k \in LF(P_k)$ where
-    $\tuple{u,v} \in p_j$ and $\tuple{u,v} \in p_k$; but this is
-    a contradiction. Therefore, $S_j \cap S_k = \emptyset$. And,
-    the variables in $\tf{P_j}$ and $\tf{P_k}$ are existentially
-    quantified, meaning they are distinct. So, if we let
-    $\sigma_i(X) = \sigma_j(X)$ if $X \in S_j$ and $\sigma_k(X)$
-    otherwise, then $\sigma_i$ is a bijection. Furthermore,
-    $\Gamma \wedge b_j \equiv_{\sigma_i} \tf{P_j}$ and
-    $\Gamma \wedge b_k \equiv_{\sigma_i} \tf{P_k}$. 
+  \item $P_i = P_j \cdot P_k$: By the induction hypothesis,
+    $\tf{P_i}(X, X') \equiv \exists X''_1, X''_2. \tf{P_j}(X,
+    X''_1) \wedge \tf{P_k}(X''_2, X') \wedge X''_1 = X''_2 \equiv
+    \exists X''_1, X''_2. Sat(\Gamma_j \wedge b_j \wedge X_j = X
+    \wedge {X_j}' = X''_1) \wedge Sat(\Gamma_k \wedge b_k \wedge
+    X_k = X''_2 \wedge {X_k}' = X') \wedge X''_1 = X''_2$.
 
-  \item $P_i = {P_j}^*$: By the induction hypothesis,
-    $\Gamma \models (b_j \iff \tf{P_j}(L_j, R_j))$. But, by the
-    well-formedness of $P$, $L_j = {X_u}^\prime$ and $R_j =
-    X_u$. So, for
-    $F = \textit{star}(\Gamma, b_j, \tuple{{X_u}^\prime, X_u})$,
-    $\Gamma \models (F \iff \tf{{P_j}^*}({X_u}^\prime,
-    X_u))$. Therefore, for $F^\prime = F(X_u, {X_u}^\prime)$,
-    $\Gamma \models (F^\prime \iff \tf{{P_j}^*}(X_u,
-    {X_u}^\prime))$. Since after this iteration
-    $\Gamma \models (b_i \iff F^\prime)$, and since $L_i = X_u$
-    and $R_i = {X_u}^\prime$,
-    $\Gamma \models (b_i \iff \tf{{P_j}^*}(L_i, R_j))$, as
-    desired.
+    If there is a free variable present in both $\Gamma_j$ and
+    $\Gamma_k$, by Lemma \ref{pe:freevars}, there must be some
+    $P_l \in LF(P_j) \cap LF(P_k)$. But, by the well-formedness
+    of $P$, we know that $LF(P_j) \cap LF(P_k) = \emptyset$. So,
+    there are no free variables present in both $\Gamma_j$ and
+    $\Gamma_k$. Therefore,
+    $\tf{P_i}(X, X') \equiv \exists X''_1, X''_2. Sat(\Gamma_j
+    \wedge b_j \wedge X_j = X \wedge {X_j}' = X''_1 \wedge
+    \Gamma_k \wedge b_k \wedge X_k = X''_2 \wedge {X_k}' = X')
+    \wedge X''_1 = X''_2 \equiv Sat(\Gamma_j \wedge b_j \wedge
+    X_j = X \wedge {X_j}' ={X_k}' \wedge \Gamma_k \wedge b_k
+    \wedge {X_k}' = X') \equiv Sat(\Gamma_i \wedge b_i \wedge X_i
+    = X \wedge {X_i}' = X')$.
+
+  \item $P_i = {P_j}^*$: We know by the induction hypothesis that
+    $\tf{P_j}(X_j, {X_j}') \equiv Sat(\Gamma_j \wedge b_j)$.  So,
+    $F = star(\Gamma_j, b_j, \tuple{X_j, {X_j}'}) \equiv
+    \tf{P_i}(X_j, {X_j}')$. Therefore,
+    $F' = F[X_j \mapsto X_i, {X_j}' \mapsto {X_i}'] \equiv
+    \tf{P_i}(X_i, {X_i}')$. So, since
+    $\Gamma_i \equiv (b_i \implies F)$,
+    $Sat(\Gamma_i \wedge b_i \wedge X_i = X \wedge {X_i}' = X')
+    \equiv \tf{P_i}(X, X')$.
   \end{itemize}
-\end{proof}
-
-\newpage
-
-% Let $G = \tuple{V, E, r}$ be a flow graph. A vertex
-% $v \in V$ \emph{dominates} a vertex $u \in V$, written
-% $v \dominates u$, if and only if every path from $r$ to $v$ in
-% $G$ passes through $u$. $v$ \emph{strictly dominates} $u$,
-% written $v \strictlydominates u$, if and only if $v \dominates u$
-% and $v \ne u$. $\idom(u)$ for $u\ne r$ denotes the unique
-% vertex $v\strictlydominates u$ such that for all
-% $v^\prime \strictlydominates u$, $v^\prime \dominates v$. We use
-% $\children(v)$ to denote the set $\{u|\idom(u)=v\}$.
-
-% \begin{lemma}
-%   For all $\tuple{u, v} \in E$, $\idom(v) \dominates u$.
-% \end{lemma}
-
-% \begin{proof}
-%   First, note that $v\ne r$, meaning $\idom(v)$ exists and is
-%   unique. Now, every path from $r$ to $v$ must pass through
-%   $\idom(v)$. Clearly, all paths from $r$ to $u$ followed by
-%   $\tuple{u, v}$ are paths from $r$ to $v$. So, either
-%   $u=\idom(v)$ or all paths from $r$ to $u$ must contain
-%   $\idom(v)$. Therefore, $\idom(v) \dominates u$.
-% \end{proof}
-
-% Now, for every edge $e=\tuple{u, v}\in E$, associate an edge
-% $\tilde{e}$ where if $u=\idom(v)$, then $\tilde{e} = e$, and
-% otherwise $\tilde{e} = \tuple{\tilde{u}, v}$ where
-% $\idom(v) \to \tilde{u} \to^* u$. This is well-defined by the
-% above lemma. Then, let
-% $\tilde{G} = \tuple{V, \tilde{E}, r}$ where
-% $\tilde{E} = \{\tilde{e} | e\in E\}$. Note that $\tilde{G}$ might
-% not be simple.
-
-% $G$ is said to be reducible if every cycle contains an edge
-% $\tuple{u, v}$ such that $v\dominates u$. We arrive at the
-% following lemma:
-
-% \begin{lemma}
-%   $G$ is reducible if and only if all cycles in $\tilde{G}$
-%   are self-loops
-% \end{lemma}
-
-% \begin{proof}
-%   For the forward direction, let $G$ be reducible and suppose
-%   there is some simple cycle
-%   $\tilde{e}_1,\tilde{e}_2,\dots,\tilde{e}_n$ in
-%   $\tilde{G}$. Consider the corresponding $e_1,e_2,\dots,e_n$ in
-%   $G$. By definition, there must be some (possibly empty) path
-%   $p_i$ from $h(\tilde{e}_i)$ to $h(e_i)$ for each $i$, and we
-%   also have that $t(\tilde{e}_i) = t(e_i)$. So, the concatenation
-%   of $p_1,e_1,p_2,e_2,\dots,p_n,e_n$ is a cycle in $G$.
-% \end{proof}
-
-% \textbf{TODOTODOTODO}
-
-\begin{algorithm}
-  \caption{Tarjan's Algorithm (modified)}
-  \label{alg:path-exp}
-  \SetAlgoLined
-
-  \SetAlgoNoEnd
-
-  \KwIn{A reducible flow graph $G = \tuple{V, E, r}$
-    where every $v$ vertex has an associated set of variables
-    $X_v$}
-  
-  \KwOut{A formula $\Gamma$ such that for every vertex $v \in V$,
-    $b_{v_\textit{entry}}$ is consistent with $\Gamma$ if and
-    only if
-    $\exists X,X^\prime.\tf{\textit{eval}(v)}(X, X^\prime)$
-      is satisfiable, where $\textit{eval}(v)$ is guaranteed to
-      be a path expression representing exactly
-      $\textit{Paths}_G(r,v)$. }
-
-  \SetKwFunction{SolveSparse}{solve-reducible}
-
-  children $\gets$ dominator tree for $G$ \;
-  Init compressed weighted forest with vertices $V$ \;
-  \Return \SolveSparse($r$) \;
-
-  \BlankLine
-
-  \SetKwProg{Fn}{Subroutine}{}{}
-  \Fn{\SolveSparse($v$)}{
-    \KwIn{Vertex $v \in V$}
-    
-    \KwOut{A formula $\Gamma_v$ such that for all
-      $w \dominatedby v$, $b_{w_\textit{entry}}$ is consistent
-      with $\Gamma_v$ if and only if
-      $\exists X,X^\prime.\tf{\textit{eval}(w)} (X, X^\prime)$ is
-      satisfiable, where $\textit{eval}(w)$ is an unambiguous
-      path expression recognizing exactly
-      $\textit{Paths}_G(v,w) \cap E|_v^*$.  }
-
-    $\Gamma_v \gets true$
-
-    \ForEach{$u \in \textit{children}(v)$ in topological order of
-      the sibling graph}{
-
-      \tcc{Solve subproblems}
-
-      $\Gamma_u \gets \SolveSparse(u)$\;
-      
-      $W_{\textit{cycle}} \gets \{w \in \textit{pred}(u) | w
-      \dominatedby u\}, W_{\textit{noncycle}} \gets \{w \in
-      \textit{pred}(u) | w \not\dominatedby u\}$ \;
-
-      $\textit{pe-cycle}, \textit{pe-noncycle} \gets 0$\;
-
-      \tcc{Perform the ``star'' operation on cycles}
-      
-      \If{$W_{\textit{cycle}} = \emptyset$}{
-        
-        $F_{\textit{star}} \gets (b_{u_\textit{exit}} \implies
-        X_{u_\textit{exit}} = X_{u_\textit{entry}})$
-        
-      }
-
-      \Else{
-        
-        $\Gamma_{\textit{cycle}} \gets
-        \wedge (b_{u_\textit{cycle}} \implies \bigvee_{w \in
-          W_{\textit{cycle}}} b_{\tuple{w, u}}) \wedge
-        \bigwedge_{w \in W_{\textit{cycle}}} ((b_{\tuple{w, u}}
-        \implies b_{w_\textit{exit}}) \wedge (b_{\tuple{w, u}}
-        \implies F_{\tuple{w, u}}(X_{w_\textit{exit}},
-        X_{u_\textit{entry}})))$ \;
-        
-        $F_{\textit{star}} \gets \textit{star}(\Gamma_u \wedge
-        \Gamma_{\textit{cycle}}, b_{u_\textit{cycle}},
-        \tuple{X_{u_\textit{exit}}, X_{u_\textit{entry}}})$ \;
-
-        $F_{\textit{star}} \gets
-        F_{\textit{star}}(X_{u_\textit{entry}},
-        X_{u_\textit{exit}}) $ \;
-
-        \ForEach{$w \in W_{\textit{cycle}}$}{
-          
-          $\textit{pe-cycle} \gets \textit{pe-cycle} +
-          \textit{eval}(w) \cdot \tuple{w, u}$ \;
-          
-        }
-        
-      }
-
-      \tcc{Collect non-cycle edges}
-
-      $\Gamma_{\textit{noncycle}} \gets \bigwedge_{w \in
-        W_{\textit{noncycle}}} ((b_{\tuple{w, u}} \implies
-      b_{w_\textit{exit}}) \wedge (b_{\tuple{w, u}} \implies
-      F_{\tuple{w, u}}(X_{w_\textit{exit}},
-      X_{u_\textit{entry}})))$ \;
-
-      \ForEach{$w \in W_{\textit{noncycle}}$}{
-        
-        $\textit{pe-noncycle} \gets \textit{pe-noncycle} +
-        \textit{eval}(w) \cdot \tuple{w, u}$ \;
-        
-      }
-
-      \tcc{Add all formulas created during this iteration}
-
-      $\Gamma_v \gets \Gamma_v \wedge \Gamma_u \wedge
-      \Gamma_{\textit{noncycle}} \wedge (b_{u_\textit{exit}}
-      \implies b_{u_\textit{entry}}) \wedge (b_{u_\textit{exit}}
-      \implies F_{\textit{star}}) \wedge (b_{u_\textit{entry}}
-      \implies \bigvee_{w \in W_{\textit{noncycle}}} b_{\tuple{w, u}}) $
-
-      $\textit{link}(u, \textit{pe-noncycle} \cdot
-      \textit{pe-cycle}^*, v)$ \;
-      
-    }
-    \Return $\Gamma_v$ \;
-  }
-\end{algorithm}
-
-\begin{lemma}
-  \label{sr:dominates:literals}
-  All assumption literals in $\Gamma_v = \SolveSparse(v)$ are
-  either $b_{v_\textit{exit}}$, associated with a vertex
-  $w \strictlydominatedby v$, or associated with an edge
-  $e \in E|_v$.
-\end{lemma}
-
-\begin{proof}
-  We proceed by structural induction on the dominator tree rooted
-  at $v$. If $v$ is a leaf node, $\Gamma_v = true$, so the claim
-  holds trivially. Otherwise, by the induction hypothesis,
-  $\Gamma_u$ contains only assumption literals that are
-  associated either with a vertex
-  $w \dominatedby u \dominatedby v$ or with an edge
-  $e \in E|_u \subseteq E|_V$. Note that the claim holds
-  trivially for $\Gamma_{\textit{noncycle}}$,
-  $\Gamma_{\textit{tree}}$, $b_{u_\textit{tree}}$,
-  $(b_{u_\textit{exit}} \implies b_{u_\textit{entry}})$, and
-  $(b_{u_\textit{entry}} \implies \bigvee_{w \in
-    W_{\textit{noncycle}} \cup W_{\textit{tree}}}
-  b_{\tuple{w, u}})$. Thus, the only implication left to check is
-  $(b_{u_\textit{exit}} \implies F_{\textit{star}})$. But, by our
-  assumptions on the \textit{star} operator, since $\Gamma_u$ and
-  $\Gamma_{\textit{cycle}}$ follow the desired properties,
-  $F_{\textit{star}}$ does as well, which completes the proof.
-\end{proof}
-
-\begin{lemma}
-  \label{sr:dominates:entails}
-  Let $\Gamma_v = \SolveSparse(v)$ for some vertex $v\in
-  V$. Then, for any $w\strictlydominatedby v$, $b_{w_\textit{entry}}
-  \wedge \Gamma_v \models b_{v_\textit{exit}}$. 
-\end{lemma}
-
-\begin{proof}
-  We proceed by structural induction on the dominator tree rooted
-  at $v$. If $v$ is a leaf node, then the claim holds
-  vacuously. Now, suppose $v$ is not a leaf node, and take some
-  arbitrary $w\strictlydominatedby v$. There must be some
-  $u \in \children(v)$ such that $u \dominates w$. Suppose that
-  $u \strictlydominates w$; then, by the induction hypothesis,
-  $b_{w_\textit{entry}} \wedge \Gamma_u \models
-  b_{u_\textit{exit}}$, so clearly
-  $b_{w_\textit{entry}} \wedge \Gamma_v \models
-  b_{u_\textit{exit}}$, and we furthermore have
-  $b_{u_\textit{exit}} \wedge \Gamma_v \models
-  b_{u_\textit{entry}}$. Therefore, it is sufficient to prove the
-  claim for $u$, i.e. that
-  $b_{u_\textit{entry}} \wedge \Gamma_v \models
-  b_{v_\textit{exit}}$.
-
-  We proceed by induction on the topological order of the sibling
-  graph. If $u$ is the first child in that order, then $v$ is the
-  only predecessor it doesn't dominate. Therefore, we have that
-  $\Gamma_v \models (b_{u_\textit{entry}} \implies
-  b_{\tuple{v, u}})$. But, we also have that $\Gamma_v \models
-  (b_{\tuple{v, u}} \implies b_{v_\textit{exit}})$, which provides
-  the desired result.
-
-  Now, suppose $u$ is some later child. Since
-  $\Gamma_v \models (b_{\tuple{w^\prime, u}} \implies
-  b_{w^\prime_\textit{exit}}) \wedge (b_{w^\prime_\textit{exit}}
-  \implies b_{w^\prime_\textit{entry}})$ for all
-  $\tuple{w^\prime, u} \in E$, and since, by the induction
-  hypotheses, $\Gamma_v \models (b_{w^\prime_\textit{entry}}
-  \implies b_{v_\textit{exit}})$,
-  $\Gamma_v \models (b_{u_\textit{entry}} \implies \bigvee_{w \in
-    W_{\textit{noncycle}}} b_{v_\textit{exit}}) \equiv
-  (b_{u_\textit{entry}} \implies
-  b_{v_\textit{exit}})$. Therefore,
-  $b_{u_\textit{entry}} \wedge \Gamma_v \models
-  b_{v_\textit{exit}}$, as desired.
-\end{proof}
-
-\begin{lemma}
-  \label{sr:dominates:split}
-  Let $\Gamma_v = \SolveSparse(v)$ for some vertex $v\in
-  V$. Then, for any $u\dominatedby v$ with
-  $\Gamma_u = \SolveSparse(u)$, for all
-  $w \strictlydominatedby u$, $b_{w_\textit{entry}}$ is
-  consistent with $\Gamma_v$ if and only if $b_{u_\textit{exit}}$
-  is consistent with $\Gamma_v$ and $b_{w_\textit{entry}}$ is
-  consistent with $\Gamma_u$.
-\end{lemma}
-
-\begin{proof}
-  Let $u,v,w$ be arbitrary so that
-  $w \strictlydominatedby u \dominatedby v$. If
-  $b_{w_\textit{entry}}$ is consistent with $\Gamma_v$, then it
-  must be consistent with $\Gamma_u$; so, by Lemma
-  \ref{sr:dominates:entails}, $b_{u_\textit{exit}}$ is entailed
-  by $\Gamma_u\wedge b_{w_\textit{entry}}$, meaning it must be
-  consistent with $\Gamma_v$.
-
-  Now, consider the case that $b_{w_\textit{entry}}$ is
-  inconsistent with $\Gamma_v$. We are done if
-  $b_{w_\textit{entry}}$ is not consistent with
-  $\Gamma_u$. Suppose otherwise. Clearly, $\SolveSparse(v)$ must
-  have added some implication of the form $b \implies F$ for some
-  formula $F$ and assumption literal $b$ also present in
-  $\Gamma_u$. But, by Lemma \ref{sr:dominates:literals}, all
-  assumption literals in $\Gamma_u$ are either
-  $b_{u_\textit{exit}}$, associated with a vertex strictly
-  dominated by $u$, or associated with an edge strictly dominated
-  by $u$. By simple analysis of \SolveSparse, we must have that
-  $b = b_{u_\textit{exit}}$ for all such implications. So,
-  $b_{u_\textit{exit}}$ must be inconsistent with $\Gamma_v$.
-\end{proof}
-
-% correctness of algorithm
-\begin{theorem}
-  Let $\Gamma_v = \SolveSparse(v)$ for some vertex $v \in
-  V$. Then, immediately after the call returns, for all
-  $w\strictlydominatedby v$ the following hold:
-
-  \begin{enumerate}
-  \item $\textit{eval}(w)$ is an unambiguous path expression
-    recognizing exactly $\textit{Paths}_G(v,w) \cap E|_v^*$
-  \item If $b_{w_\textit{entry}}$ is consistent with $\Gamma_v$, then
-    $b_{w_\textit{entry}} \wedge \tf{\textit{eval}(w)}
-    (X_{v_\textit{exit}}, X_{w_\textit{entry}})$ is as well
-  \item If
-    $\exists X,X^\prime.\tf{\textit{eval}(w)} (X, X^\prime)$ is
-    satisfiable, then $b_{w_\textit{entry}}$ is consistent with
-    $\Gamma_v$
-  \item
-    $\Gamma_v \wedge b_{w_\textit{entry}} \equiv \exists
-    X,X^\prime.\tf{\textit{eval}(w)} (X, X^\prime)$
-  \end{enumerate}
-\end{theorem}
-
-\begin{proof}
-
-  Note that $(2)\wedge(3)\implies(4)$.
-
-  We proceed by structural induction on the dominator tree. If
-  $v$ is a leaf node, the claim holds vacuously. Now, consider
-  the case that $v$ is not a leaf node, and take some arbitrary
-  $w \strictlydominatedby v$. Then, there must be some
-  $u \in \textit{children}(v)$ such that $u \dominates w$.
-
-  Consider first the case that $u \strictlydominates w$ (which
-  will ultimately reduce to the case that $u=w$):
-
-  \begin{enumerate}
-  \item let $\Gamma_u = \SolveSparse(u)$. By the induction
-    hypothesis, immediately after this call,
-    $\textit{pe}_{(u,w)} = \textit{eval}(w)$ is an unambiguous
-    path expression recognizing exactly
-    $\textit{Paths}_G(u,w) \cap E|_u^*$. After $\textit{link}$ is
-    called on $u$, by definition
-    $\textit{eval}(w) = \textit{pe-noncycle} \cdot
-    \textit{pe-cycle}^* \cdot \textit{eval}_u(w)$. Since
-    $u\strictlydominates w$, $\textit{eval}(w)$ recognizes
-    exactly $\textit{Paths}_G(v,w) \cap E|_v^*$ if
-    $\textit{pe-noncycle} \cdot \textit{pe-cycle}^*$ recognizes
-    exactly $\textit{Paths}_G(v,u) \cap E|_v^*$, i.e. it is
-    sufficient to prove (1) for $u$.
-
-  \item Now, suppose $b_{w_\textit{entry}}$ is consistent with
-    $\Gamma_v$. By Lemma \ref{sr:dominates:split},
-    $b_{w_\textit{entry}}$ is consistent with $\Gamma_u$, and
-    $b_{u_\textit{exit}}$ is consistent with $\Gamma_v$. By the
-    induction hypothesis, we know
-    $b_{w_\textit{entry}} \wedge
-    \tf{\textit{pe}_{(u,w)}}(X_{u_\textit{exit}},
-    X_{w_\textit{entry}})$ is consistent with $\Gamma_u$. We wish
-    to prove that
-    $b_{w_\textit{entry}} \wedge
-    \tf{\textit{eval}(w)}(X_{v_\textit{exit}},
-    X_{w_\textit{entry}}) \wedge \Gamma_v$ is satisfiable; in
-    particular, it is sufficient to prove that
-    $b_{w_\textit{entry}} \wedge
-    \tf{\textit{pe-noncycle}}(X_{v_\textit{exit}},
-    X_{u_\textit{entry}}) \wedge
-    \tf{\textit{pe-cycle}^*}(X_{u_\textit{entry}},
-    X_{u_\textit{exit}}) \wedge
-    \tf{\textit{pe}_{(u,w)}}(X_{u_\textit{exit}},
-    X_{w_\textit{entry}}) \wedge \Gamma_v$ is satisfiable.
-    
-  \item
-
-  \end{enumerate}
-
-  So, it is sufficient to prove each of these properties for the
-  child $u$. We proceed by induction on the topological order of
-  the sibling graph and assume that the claims hold for all
-  $w\dominatedby u^\prime$ for $u^\prime \in \children(v)$ coming
-  before $u$ in the topological order. This is vacuously true for
-  the first child. Suppose we know that this assumption holds. We
-  want to prove that the claims also hold for all $w \dominatedby
-  u$ (TODO: show it still holds for all previous too!). By the
-  above reasoning, it is sufficient to show that the claims hold
-  for $u$. 
-
 \end{proof}
 
 \end{document}
