@@ -73,18 +73,22 @@
   V$. We denote the set of path expressions on $G$ by
   $PathExp(G)$.
 
-  Let $X$ and $X'$ be sets of integer variables such that for
-  each $x\in X$, there is a corresponding $x' \in X'$. Then, the
-  \emph{transition formula interpretation} is the function
-  $\tf{\cdot}: PathExp(G) \to Formula(X, X')$ where
-  $\tf{0} = false$, $\tf{1} = \wedge_{x \in X} x = x'$,
+  Let $X$ and $X'$ be two variable vocabularies such that for
+  each $x\in X$, there is a corresponding $x' \in X'$. Let $star$
+  be a function that takes a formula and the pair of variable
+  vocabulairies that it relates and returns some
+  overapproximation of the reflexive transitive closure of the
+  formula over those vocabularies, containing no other free
+  variables. Then, the \emph{transition formula interpretation}
+  is the function $\tf{\cdot}: PathExp(G) \to Formula(X, X')$
+  where $\tf{0} = false$, $\tf{1} = \wedge_{x \in X} x = x'$,
   $\tf{e} = F_e(X, X')$ for all $e \in E$,
   $\tf{P_1 + P_2} = \tf{P_1} \vee \tf{P_2}$ and
   $\tf{P_1 \cdot P_2} = \exists X''. \tf{P_1}(X, X'') \wedge
   \tf{P_2}(X'', X')$ for all $P_1, P_2 \in PathExp(G)$, and
-  $\tf{P^*}$ is some overapproximation of the reflexive
-  transitive closure of $P$ for all $P \in PathExp(G)$. We use
-  $\tf{P}(Y, Y')$ to denote $\tf{P}[X \mapsto Y, X' \mapsto Y']$.
+  $\tf{P^*} = star(\tf{P}, \tuple{X, X'})$ for all
+  $P \in PathExp(G)$. We use $\tf{P}(Y, Y')$ to denote
+  $\tf{P}[X \mapsto Y, X' \mapsto Y']$.
 \end{definition}
 
 \begin{definition}
@@ -145,7 +149,8 @@
 
       \Case{${P_j}^*$}{
 
-        $F \gets star(\Gamma_j, b_j, \tuple{X_j, {X_j}'})$ \;
+        $F \gets star(\Gamma_j \wedge b_j, \tuple{X_j, {X_j}'})$
+        \;
 
         $F' \gets F[X_j \mapsto X_i, {X_j}' \mapsto {X_i}']$ \;
         
@@ -182,27 +187,36 @@
   claim holds for $i$.
 \end{proof}
 
+Let $V_j = \bigcup_{P_k \in LF(P_j)} \{b_k, X_k, {X_k}'\}$. Note
+that by the above Lemma, if $P_j \in LF(P_i)$, then
+$V_j \subseteq V_i$. As an abuse of notation, we write
+$\exists V_j$ to denote
+$\exists b_{k_1}, \dots, b_{k_l}, X_{k_1}, \dots, X_{k_l},
+{X_{k_1}}', \dots, {X_{k_l}}'$, where
+$LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
+
 \begin{lemma}
   \label{pe:ext}
   For all $1 \le j \le i \le n$, if $P_j \in LF(P_i)$, then for
   any formula $\varphi$ which does not contain any free variables
-  present in $\Gamma_i$ but not $\Gamma_j$,
-  $Sat(\Gamma_j \wedge \varphi) \equiv Sat(\Gamma_i \wedge
-  \varphi)$.
+  in $V_i \setminus V_j$,
+  $(\exists V_j. \Gamma_j \wedge \varphi) \iff (\exists
+  V_i. \Gamma_i \wedge \varphi)$.
 \end{lemma}
 
 \begin{proof}
-  Since $\Gamma_i \models \Gamma_j$, the backwards direction is
-  trivial. For the forwards direction, suppose there is some
-  model $M$ such that $M \models \Gamma_j \wedge \varphi$. Let
-  $M'$ be the same as $M$ except that for every $k$ where
-  $P_k \in LF(P_i) \setminus LF(P_j)$, $M(b_k) = false$.  By
-  Lemma \ref{pe:freevars}, $M' \models \Gamma_j \wedge \varphi$,
-  and every $\psi$ such that $\Gamma_i \models \psi$ but
-  $\Gamma_j \not\models \psi$ is of the form
-  $\psi = (b_k \implies \psi')$ for such a $k$. Therefore, since
-  $\Gamma_i \models \Gamma_j$,
-  $M' \models \Gamma_i \wedge \varphi$.
+  Since $\Gamma_i \models \Gamma_j$ and $V_j \subseteq V_i$, the
+  backwards direction is trivial. For the forwards direction,
+  suppose there are some bindings to the variables in $V_j$ such
+  that $\Gamma_j \wedge \varphi$. Then, extend those bindings to
+  all variables in $V_i$ such that for all $b_k \not\in V_j$,
+  $b_k \equiv false$. Clearly, we still have that
+  $\Gamma_j \wedge \varphi$. Furthermore, consider the case that
+  $\Gamma_i \models \psi$ but $\Gamma_j \not\models \psi$ for
+  some $\psi$. Then, $\psi \equiv b_k \implies \psi'$ for some
+  $\psi'$. Since $b_k \equiv false$, $\psi$ holds
+  vacuously. Therefore, since $\Gamma_i \models \Gamma_j$, we
+  must have that $\Gamma_i \wedge \varphi$ holds. 
 \end{proof}
 
 \begin{theorem}
@@ -212,9 +226,9 @@
 \begin{proof}
   We proceed by induction on the iteration $i$ of the for loop,
   with the hypothesis that before the $i$th iteration, for all
-  $j < i$, for all $X, X'$,
-  $\tf{P_j}(X, X') \equiv Sat(\Gamma_j \wedge b_j \wedge X_j = X
-  \wedge {X_j}' = X')$.
+  $j < i$,
+  $\tf{P_j} \equiv \exists V_j. \Gamma_j \wedge b_j \wedge X_j =
+  X \wedge {X_j}' = X'$.
 
   Certainly this is true before the first iteration. Suppose this
   is true before the $i$th iteration of the loop. Clearly, the
@@ -224,60 +238,66 @@
 
   \begin{itemize}
   \item $P_i = \tuple{u, v}$: We have that
-    $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$, and after this
-    iteration,
+    $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$ and
     $\Gamma_i \equiv (b_i \implies F_{\tuple{u, v}}(X_i,
     {X_i}'))$.  So,
-    $Sat(\Gamma_i \wedge b_i \wedge X_j = X \wedge {X_j}' = X')
-    \equiv Sat(F_{\tuple{u, v}}(X_i, {X_i}') \wedge X_j = X
-    \wedge {X_j}' = X') \equiv \tf{P_i}(X, X')$, as desired.
+    $\exists b_i, X_i, {X_i}'. \Gamma_i \wedge b_i \wedge X_i = X
+    \wedge {X_i}' = X' \equiv F_{\tuple{u, v}}(X, X') \equiv
+    \tf{P_i}$.
     
   \item $P_i = P_j + P_k$:
     $\tf{P_j+P_k} = \tf{P_j} \vee \tf{P_k}$. By the induction
-    hypothesis, this means
-    $\tf{P_i}(X, X') \equiv Sat(\Gamma_j \wedge b_j \wedge X_j =
-    X \wedge {X_j}' = X') \vee Sat(\Gamma_k \wedge b_k\wedge X_k
-    = X \wedge {X_k}' = X') \equiv Sat((\Gamma_j \wedge b_j
-    \wedge X_j = X \wedge {X_j}' = X') \vee (\Gamma_k \wedge b_k
-    \wedge X_k = X \wedge {X_k}' = X'))$.
+    hypothesis,
+    $\tf{P_i} \equiv (\exists V_j. \Gamma_j \wedge b_j \wedge X_j
+    = X \wedge {X_j}' = X') \vee (\exists V_k. \Gamma_k \wedge
+    b_k\wedge X_k = X \wedge {X_k}' = X')$.
 
     By Lemma \ref{pe:ext}, this means
-    $\tf{P_i}(X, X') \equiv Sat(\Gamma_i \wedge ((b_j \wedge X_j
-    = X_i \wedge {X_j}' = {X_i}') \vee (b_k \wedge X_k = X_i
-    \wedge {X_k}' = {X_i}')) \wedge X_i = X \wedge {X_i}' = X')
-    \equiv Sat(\Gamma_i \wedge b_i \wedge X_i = X \wedge {X_i}' =
-    X')$ as desired.
+    $\tf{P_i} \equiv \exists V_i. \Gamma_i \wedge ((b_j \wedge
+    X_j = X_i \wedge {X_j}' = {X_i}') \vee (b_k \wedge X_k = X_i
+    \wedge {X_k}' = {X_i}')) \wedge X_i = X \wedge {X_i}' = X'
+    \equiv \exists V_i. \Gamma_i \wedge b_i \wedge X_i = X \wedge
+    {X_i}' = X'$ as desired.
     
-  \item $P_i = P_j \cdot P_k$: By the induction hypothesis,
-    $\tf{P_i}(X, X') \equiv \exists X''_1, X''_2. \tf{P_j}(X,
-    X''_1) \wedge \tf{P_k}(X''_2, X') \wedge X''_1 = X''_2 \equiv
-    \exists X''_1, X''_2. Sat(\Gamma_j \wedge b_j \wedge X_j = X
-    \wedge {X_j}' = X''_1) \wedge Sat(\Gamma_k \wedge b_k \wedge
-    X_k = X''_2 \wedge {X_k}' = X') \wedge X''_1 = X''_2$.
+  \item $P_i = P_j \cdot P_k$:
+    $\tf{P_j \cdot P_k} \equiv \exists X''_1, X''_2. \tf{P_j}(X,
+    X''_1) \wedge \tf{P_k}(X''_2, X') \wedge X''_1 = X''_2$. So,
+    by the induction hypothesis,
+    $\tf{P_i} \equiv \exists X''_1, X''_2. (\exists V_j. \Gamma_j
+    \wedge b_j \wedge X_j = X \wedge {X_j}' = X''_1) \wedge
+    (\exists V_k. \Gamma_k \wedge b_k \wedge X_k = X''_2 \wedge
+    {X_k}' = X') \wedge X''_1 = X''_2$.
 
-    If there is a free variable present in both $\Gamma_j$ and
-    $\Gamma_k$, by Lemma \ref{pe:freevars}, there must be some
-    $P_l \in LF(P_j) \cap LF(P_k)$. But, by the well-formedness
-    of $P$, we know that $LF(P_j) \cap LF(P_k) = \emptyset$. So,
-    there are no free variables present in both $\Gamma_j$ and
-    $\Gamma_k$. Therefore,
-    $\tf{P_i}(X, X') \equiv \exists X''_1, X''_2. Sat(\Gamma_j
-    \wedge b_j \wedge X_j = X \wedge {X_j}' = X''_1 \wedge
-    \Gamma_k \wedge b_k \wedge X_k = X''_2 \wedge {X_k}' = X')
-    \wedge X''_1 = X''_2 \equiv Sat(\Gamma_j \wedge b_j \wedge
-    X_j = X \wedge {X_j}' ={X_k}' \wedge \Gamma_k \wedge b_k
-    \wedge {X_k}' = X') \equiv Sat(\Gamma_i \wedge b_i \wedge X_i
-    = X \wedge {X_i}' = X')$.
+    Suppose $V_j \cap V_k \ne \emptyset$. Then, there must be
+    some $P_l \in LF(P_j) \cap LF(P_k)$. But, this contradicts
+    the well-formedness of $P$, from which we know that
+    $LF(P_j) \cap LF(P_k) = \emptyset$. So,
+    $V_j \cap V_k = \emptyset$. By Lemma \ref{pe:freevars}, this
+    means there are no free variables present in both $\Gamma_j$
+    and $\Gamma_k$. Therefore,
+    \begin{align*}
+      \tf{P_i}
+      &\equiv \exists X''_1, X''_2. \exists V_i. \Gamma_j
+        \wedge b_j \wedge X_j = X \wedge {X_j}' = X''_1 \wedge
+        \Gamma_k \wedge b_k \wedge X_k = X''_2 \wedge {X_k}' = X'
+        \wedge X''_1 = X''_2 \\
+      &\equiv \exists V_i. \Gamma_j \wedge b_j
+        \wedge X_j = X \wedge {X_j}' = X_k \wedge \Gamma_k \wedge
+        b_k \wedge {X_k}' = X' \\
+      & \equiv \exists V_i. \Gamma_i \wedge
+        b_i \wedge X_i = X \wedge {X_i}' = X'
+    \end{align*}
 
   \item $P_i = {P_j}^*$: We know by the induction hypothesis that
-    $\tf{P_j}(X_j, {X_j}') \equiv Sat(\Gamma_j \wedge b_j)$.  So,
+    $\tf{P_j} \equiv \exists V_j. \Gamma_j \wedge b_j \wedge X_j
+    = X \wedge {X_j}' = X'$.  So,
     $F = star(\Gamma_j, b_j, \tuple{X_j, {X_j}'}) \equiv
     \tf{P_i}(X_j, {X_j}')$. Therefore,
     $F' = F[X_j \mapsto X_i, {X_j}' \mapsto {X_i}'] \equiv
     \tf{P_i}(X_i, {X_i}')$. So, since
     $\Gamma_i \equiv (b_i \implies F)$,
-    $Sat(\Gamma_i \wedge b_i \wedge X_i = X \wedge {X_i}' = X')
-    \equiv \tf{P_i}(X, X')$.
+    $\exists b_i, X_i, {X_i}'. \Gamma_i \wedge b_i \wedge X_i = X
+    \wedge {X_i}' = X' \equiv \tf{P_i}$.
   \end{itemize}
 \end{proof}
 
