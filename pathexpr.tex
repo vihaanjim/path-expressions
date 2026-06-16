@@ -25,20 +25,14 @@
 
 \begin{definition}
   A \emph{regular expression over $\Sigma$} is an element of the
-  set $RegExp(\Sigma)$, which is the smallest set satisfying the
-  following properties:
+  set $RegExp(\Sigma)$, which is the smallest set such that
+  $0, 1 \in RexExp(\Sigma)$, $\Sigma \subseteq RegExp(\Sigma)$,
+  and $(R_1 + R_2), (R_1 \cdot R_2), R^* \in RegExp(\Sigma)$ for
+  all $R, R_1, R_2 \in RegExp(\Sigma)$.
 
-  \begin{itemize}
-  \item For all $a \in \Sigma$, $a \in RegExp(\Sigma)$.
-  \item $0, 1 \in RegExp(\Sigma)$.
-  \item For all $R_0 \in RegExp(\Sigma)$,
-    ${R_0}^* \in RegExp(\Sigma)$.
-  \item For all $R_1, R_2 \in RegExp(\Sigma)$,
-    $(R_1 + R_2), (R_1 \cdot R_2) \in RegExp(\Sigma)$.
-  \end{itemize}
-
-  A regular expression is \emph{simple} if it is 0 or does not
-  have 0 as a subexpression. 
+  $SubExp(R)$ for $R \in RegExp(\Sigma)$ is the set of
+  subexpressions of $R$, including $R$ itself. $R$ is
+  \emph{simple} if $R = 0$ or $0 \not\in SubExp(R)$.
 \end{definition}
 
 \begin{definition}
@@ -59,13 +53,19 @@
   for all $R, R_1, R_2 \in RegExp(\Sigma)$.
 \end{definition}
 
+Let $X$ and $X'$ be sets of variables such that for each
+$x\in X$, there is a corresponding $x' \in X'$. As an abuse of
+notation, we use $X = X' \equiv \bigwedge_{x \in X} x =
+x'$. $Formula(X, X')$ denotes the set of formulas with all free
+variables in either $X$ or $X'$. 
+
 \begin{definition}
   A \emph{control flow graph} $G = \tuple{V, E, r, F}$ is a graph
   with vertices $V$, edges $E$, a root vertex $r$ of indegree 0
   from which every vertex $v \in V$ is reachable from $r$, and a
-  function $F: E \to Formula(X, X')$ for
-  $X, X' \in \mathbb{Z}^{Var}$. We use $F_{\tuple{u,v}}(Y, Y')$
-  to denote $F(\tuple{u,v})[X \mapsto Y, X' \mapsto Y']$. We let
+  function $F: E \to Formula(X, X')$ for some $X, X'$. We use
+  $F_{\tuple{u,v}}(Y, Y')$ to denote
+  $F(\tuple{u,v})[X \mapsto Y, X' \mapsto Y']$. We let
   $Paths_G(u,v)$ be the set of all (possibly non-simple) paths
   from $u$ to $v$ in $G$.
 
@@ -80,10 +80,7 @@
 
 \end{definition}
 
-Let $X$ and $X'$ be sets of variables such that for each
-$x\in X$, there is a corresponding $x' \in X'$. As an abuse of
-notation, we use $X = X' \equiv \bigwedge_{x \in X} x = x'$. Let
-$star$ be a function that takes a formula and the pair of
+Suppose $star$ is a function that takes a formula and the pair of
 variable vocabulairies that it relates and returns some
 overapproximation of the reflexive transitive closure of the
 formula over those vocabularies, containing no other free
@@ -120,9 +117,11 @@ variables.
   \item For all $P_1 \cdot P_2 \in SubExp(P)$,
     $LF(P_1 \cdot P_2) = LF(P_1) \cup LF(P_2) \cup \{P_1 \cdot
     P_2\}$ where $LF(P_1) \cap LF(P_2) = \emptyset$.
-  \item For all ${P_1}^* \in SubExp$,
+  \item For all ${P_1}^* \in SubExp(P)$,
     $LF({P_1}^*) = \{{P_1}^*\}$.
   \end{itemize}
+
+  Note that $P_1 \in LF(P_1)$ for all $P_1 \in SubExp(P)$.
 \end{definition}
 
 \begin{algorithm}
@@ -138,10 +137,8 @@ variables.
     $P_i \in SubExp(P_j) \implies i < j$.}
   
   \KwOut{A formula $\Gamma$ such that
-    $Sat(\tf{P}) \iff Sat(\Gamma \wedge b_n)$}
+    $Sat(\tf{P}) \iff Sat(\Gamma)$}
 
-  $\Gamma \gets \lambda x. true$
-  
   \ForEach{$i = 1$ \KwTo $n$}{
     \Switch{$P_i$}{
       \lCase{1}{
@@ -163,7 +160,7 @@ variables.
       \lCase{$P_j \cdot P_k$}{
         $\Gamma_i \gets \Gamma_j \wedge \Gamma_k \wedge (b_i
         \implies b_j \wedge b_k \wedge X_i = X_j \wedge {X_i}' =
-        {X_k}' \wedge {X_j}' = X_k))$
+        {X_k}' \wedge {X_j}' = X_k)$
       }
 
       \Case{${P_j}^*$}{
@@ -179,7 +176,9 @@ variables.
     }
   }
 
-  \Return $\Gamma_n$ \;
+  $\Gamma \gets \Gamma_n \wedge b_n$ \;
+
+  \Return $\Gamma$ \;
 
 \end{algorithm}
 
@@ -239,7 +238,7 @@ $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
 \end{proof}
 
 \begin{theorem}
-  $Sat(\tf{P}) \iff Sat(\Gamma \wedge b_n)$
+  $Sat(\tf{P}) \iff Sat(\Gamma)$
 \end{theorem}
 
 \begin{proof}
@@ -247,7 +246,10 @@ $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
   with the hypothesis that before the $i$th iteration, for all
   $j < i$,
   $\tf{P_j} \equiv \exists V_j. \Gamma_j \wedge b_j \wedge X_j =
-  X \wedge {X_j}' = X'$.
+  X \wedge {X_j}' = X'$. Since
+  $\Gamma \equiv \Gamma_n \wedge b_n$, and since $X$ and $X'$
+  appear nowhere else in $\Gamma$ by Lemma \ref{pe:freevars},
+  this is sufficient to prove the theorem.
 
   Certainly this is true before the first iteration. Suppose this
   is true before the $i$th iteration of the loop. Clearly, the
@@ -276,7 +278,8 @@ $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
     = X \wedge {X_j}' = X') \vee (\exists V_k. \Gamma_k \wedge
     b_k\wedge X_k = X \wedge {X_k}' = X')$.
 
-    By Lemma \ref{pe:ext}, this means
+    Since $P_j \in LF(P_j) \subseteq LF(P_i)$ and
+    $P_k \in LF(P_k) \subseteq LF(P_i)$, by Lemma \ref{pe:ext},
     $\tf{P_i} \equiv \exists V_i. \Gamma_i \wedge ((b_j \wedge
     X_j = X_i \wedge {X_j}' = {X_i}') \vee (b_k \wedge X_k = X_i
     \wedge {X_k}' = {X_i}')) \wedge X_i = X \wedge {X_i}' = X'
@@ -315,7 +318,7 @@ $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
   \item $P_i = {P_j}^*$: We know by the induction hypothesis that
     $\tf{P_j} \equiv \exists V_j. \Gamma_j \wedge b_j \wedge X_j
     = X \wedge {X_j}' = X'$.  So,
-    $F = star(\Gamma_j, b_j, \tuple{X_j, {X_j}'}) \equiv
+    $F = star(\Gamma_j \wedge b_j, \tuple{X_j, {X_j}'}) \equiv
     \tf{P_i}(X_j, {X_j}')$. Therefore,
     $F' = F[X_j \mapsto X_i, {X_j}' \mapsto {X_i}'] \equiv
     \tf{P_i}(X_i, {X_i}')$. So, since
