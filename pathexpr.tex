@@ -9,23 +9,6 @@
 % wrap in angle brackets
 \newcommand{\tuple}[1]{\langle #1 \rangle}
 
-% get >> with a line under it (dominates)
-\newcommand{\strictlydominates}{\mathrel{\gg}}
-\newcommand{\dominates}{\mathrel{\underline{\strictlydominates}}}
-
-\newcommand{\strictlydominatedby}{\mathrel{\ll}}
-\newcommand{\dominatedby}{\mathrel{\underline{\strictlydominatedby}}}
-\newcommand{\idom}{\textit{idom}}
-\newcommand{\children}{\textit{children}}
-
-% type of path expression
-\newcommand{\type}{\textit{type}}
-
-\newcommand{\subexp}{\textit{SubExp}}
-
-% for Paths_G(u,v)
-\newcommand{\Paths}{\textit{Paths}}
-
 % interpretation of regular expression as a transition formula
 \newcommand{\tf}[1]{\mathscr{I} \llbracket #1 \rrbracket}
 % \newcommand{\si}[1]{\mathscr{L} \llbracket #1 \rrbracket}
@@ -77,8 +60,8 @@
   from which every vertex $v \in V$ is reachable from $r$, and a
   function $F: E \to Formula(X, X')$ for
   $X, X' \in \mathbb{Z}^{Var}$. We use $F_{\tuple{u,v}}(Y, Y')$
-  to denote $F(\tuple{u,v})[X \to Y, X' \to Y']$. We let
-  $\Paths_G(u,v)$ be the set of all (possibly non-simple) paths
+  to denote $F(\tuple{u,v})[X \mapsto Y, X' \mapsto Y']$. We let
+  $Paths_G(u,v)$ be the set of all (possibly non-simple) paths
   from $u$ to $v$ in $G$.
 
 \end{definition}
@@ -86,7 +69,7 @@
 \begin{definition}
   A \emph{path expression} $P$ of type $\tuple{u, v}$ on
   $G = \tuple{V, E, r, F}$ is a simple regular expression over
-  $E$ such that $P \subseteq \Paths_G(u,v)$ for some $u,v \in
+  $E$ such that $P \subseteq Paths_G(u,v)$ for some $u,v \in
   V$. We denote the set of path expressions on $G$ by
   $PathExp(G)$.
 
@@ -100,24 +83,25 @@
   $\tf{P_1 \cdot P_2} = \exists X''. \tf{P_1}(X, X'') \vee
   \tf{P_2}(X'', X')$ for all $P_1, P_2 \in PathExp(G)$, and
   $\tf{P^*}$ is some overapproximation of the reflexive
-  transitive closure of $P$ for all $P \in PathExp(G)$.
+  transitive closure of $P$ for all $P \in PathExp(G)$. We use
+  $\tf{P}(Y, Y')$ to denote $\tf{P}[X \mapsto Y, X' \mapsto Y']$.
 \end{definition}
 
 \begin{definition}
   % todo: find a better name
   A path expression $P$ is well-formed if it does not have 1 as a
   subexpression and if there exists a function
-  $LF: \subexp(P) \to \mathscr{P}(\subexp(P))$ such that the
+  $LF: SubExp(P) \to \mathscr{P}(SubExp(P))$ such that the
   following hold:
   \begin{itemize}
   \item For all $e \in E$ such that
-    $e \in \subexp(P)$, we have that $LF(e)=\{e\}$.
-  \item For all $P_1 + P_2 \in \subexp(P)$, we have that
+    $e \in SubExp(P)$, we have that $LF(e)=\{e\}$.
+  \item For all $P_1 + P_2 \in SubExp(P)$, we have that
     $LF(P_1+P_2) = LF(P_1) \cup LF(P_2) \cup \{P_1 + P_2\}$.
-  \item For all $P_1 \cdot P_2 \in \subexp(P)$, we have that
+  \item For all $P_1 \cdot P_2 \in SubExp(P)$, we have that
     $LF(P_1 \cdot P_2) = LF(P_1) \cup LF(P_2) \cup \{P_1 \cdot
     P_2\}$ where $LF(P_1) \cap LF(P_2) = \emptyset$.
-  \item For all ${P_1}^* \in \subexp$, we have that
+  \item For all ${P_1}^* \in SubExp$, we have that
     $LF({P_1}^*) = \{{P_1}^*\}$.
   \end{itemize}
 \end{definition}
@@ -132,7 +116,7 @@
   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ and a
     non-empty, well-formed path expression $P$ whose distinct
     subexpressions $\{P_1,\dots,P_n\}$ are labeled so that
-    $P_i \in \subexp(P_j) \implies i < j$.}
+    $P_i \in SubExp(P_j) \implies i < j$.}
   
   \KwOut{A formula $\Gamma$ such that
     $Sat(\tf{P}) \iff Sat(\Gamma \wedge b_n)$}
@@ -194,8 +178,8 @@
   some $j$ and $k$, and the free variables in $\Gamma_i$ are
   exactly those in $\Gamma_j$ or $\Gamma_k$ or
   $b_i, b_j, b_k, X_i, {X_i}', X_j, {X_j}', X_k$ or ${X_k}'$. By
-  the induction hypothesis and the transitivity of
-  $\subexp(\cdot)$, the claim holds for $i$. 
+  the induction hypothesis and the well-formedness of $P$, the
+  claim holds for $i$.
 \end{proof}
 
 \begin{lemma}
