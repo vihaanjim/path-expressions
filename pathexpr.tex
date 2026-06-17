@@ -24,7 +24,7 @@
 \begin{document}
 
 \begin{definition}
-  A \emph{regular expression over $\Sigma$} is an element of the
+  A \emph{regular expression} over $\Sigma$ is an element of the
   set $RegExp(\Sigma)$, which is the smallest set such that
   $0, 1 \in RexExp(\Sigma)$, $\Sigma \subseteq RegExp(\Sigma)$,
   and $(R_1 + R_2), (R_1 \cdot R_2), R^* \in RegExp(\Sigma)$ for
@@ -191,7 +191,7 @@ variables.
 
 \begin{proof}
   We proceed by induction on the iteration $i$ of the for loop
-  and assume the claim holds for each $j < i$. Certainly, this is
+  and assume the claim holds for each $j < i$. This is obviously
   the case before the first iteration. And, for any $i$ and any
   $j < i$, the claim still holds after the $i$th iteration since
   $\Gamma_j$ is not modified. For $j = i$, if $P_i = 1$,
@@ -205,36 +205,73 @@ variables.
   of $P$, the claim holds for $i$.
 \end{proof}
 
-Let $V_j = \bigcup_{P_k \in LF(P_j)} \{b_k, X_k, {X_k}'\}$. Note
-that by the above Lemma, if $P_j \in LF(P_i)$, then
+Let
+$V_j = \bigcup_{P_k \in LF(P_j)} \{b_k\} \cup X_k \cup
+{X_k}'$. Note that by the above Lemma, if $P_j \in LF(P_i)$, then
 $V_j \subseteq V_i$. As an abuse of notation, we write
 $\exists V_j$ to denote
 $\exists b_{k_1}, \dots, b_{k_l}, X_{k_1}, \dots, X_{k_l},
 {X_{k_1}}', \dots, {X_{k_l}}'$, where
-$LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
+$LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$, and
+$\exists V_j \setminus V_k$ to denote the same but on the set
+$V_j \setminus V_k$.
 
 \begin{lemma}
   \label{pe:ext}
   For all $1 \le j \le i \le n$, if $P_j \in LF(P_i)$, then for
   any formula $\varphi$ which does not contain any free variables
   in $V_i \setminus V_j$,
-  $(\exists V_j. \Gamma_j \wedge \varphi) \iff (\exists
-  V_i. \Gamma_i \wedge \varphi)$.
+  $\Gamma_j \wedge \varphi \equiv \exists V_i \setminus
+  V_j. \Gamma_i \wedge \varphi$.
 \end{lemma}
 
 \begin{proof}
-  Since $\Gamma_i \models \Gamma_j$ and $V_j \subseteq V_i$, the
-  backwards direction is trivial. For the forwards direction,
-  suppose there are some bindings to the variables in $V_j$ such
-  that $\Gamma_j \wedge \varphi$. Then, extend those bindings to
-  all variables in $V_i$ such that for all $b_k \not\in V_j$,
-  $b_k \equiv false$. Clearly, we still have that
-  $\Gamma_j \wedge \varphi$. Furthermore, consider the case that
-  $\Gamma_i \models \psi$ but $\Gamma_j \not\models \psi$ for
-  some $\psi$. Then, $\psi \equiv b_k \implies \psi'$ for some
-  $\psi'$. Since $b_k \equiv false$, $\psi$ holds
-  vacuously. Therefore, since $\Gamma_i \models \Gamma_j$, we
-  must have that $\Gamma_i \wedge \varphi$ holds. 
+  Todo: make this slightly more rigorous!
+
+  By Lemma \ref{pe:freevars}, $\Gamma_j \wedge \varphi$ contains
+  no free variables in $V_i \setminus V_j$, so since
+  $\Gamma_i \models \Gamma_j$, the backwards direction holds.
+
+  For the forwards direction, we wish to prove the stronger claim
+  that
+  $\Gamma_j \wedge \varphi \models \exists V_i \setminus
+  V_j. \Gamma_i \wedge \varphi \wedge \forall k. (P_k \in LF(P_i)
+  \setminus LF(P_j) \implies NULL(k))$, where
+  $NULL(k) \equiv b_k = false \wedge \forall x \in X_k, x' \in
+  {X_k}'. x = x' = 0$; i.e. we can extend a solution for $j$ to a
+  solution for $i$ in a predictable manner. If $P_i = P_j$, then
+  the claim holds trivially. Otherwise, $P_i = P_l + P_r$ or
+  $P_i = P_l \cdot P_r$ for some $1 \le l,r \le n$.
+
+  Suppose that $P_j \in LF(P_l) \cap LF(P_r)$. Since
+  $V_l \setminus V_j, V_r \setminus V_j \subseteq V_i \setminus
+  V_j$, by the induction hypothesis
+  $\Gamma_j \wedge \varphi \models \exists V_l \setminus
+  V_j. \Gamma_l \wedge \varphi \wedge \forall k. (P_k \in LF(P_l)
+  \setminus LF(P_j) \implies NULL(k))$ and
+  $\Gamma_j \wedge \varphi \models \exists V_r \setminus
+  V_j. \Gamma_r \wedge \varphi \wedge \forall k. (P_k \in LF(P_r)
+  \setminus LF(P_j) \implies NULL(k))$. We know that
+  $\Gamma_i \equiv \Gamma_j \wedge \Gamma_k \wedge (b_i \implies
+  \psi)$ for some $\psi$ and that
+  $V_i \setminus V_j = (V_l \setminus V_j) \cup (V_r \setminus
+  V_j) \cup \{b_i\} \cup X_i \cup {X_i}'$. So,
+  $\Gamma_j \wedge \varphi \models \exists V_i \setminus
+  V_j. \Gamma_l \wedge \Gamma_r \wedge \varphi \wedge (false
+  \implies \psi) \wedge \forall k. (P_k \in LF(P_i) \setminus
+  LF(P_j) \implies NULL(k)) \models \Gamma_i \wedge \varphi
+  \wedge \forall k. (P_k \in LF(P_i) \setminus LF(P_j) \implies
+  NULL(k))$.
+
+  If $P_j$ is a member of only one of $LF(P_l)$ and $LF(P_r)$,
+  then an analogous argument proves the same result (it is easy
+  to show through induction that the assignment that sets each
+  $b_k = false$ satisfies $\Gamma_l$ or $\Gamma_r$). Note that
+  the above induction is well founded because for all
+  $P_j \in LF(P_i)$, with $P_j \ne P_i$,
+  $LF(P_j) \subset LF(P_i)$.
+  
+
 \end{proof}
 
 \begin{theorem}
