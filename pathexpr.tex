@@ -32,7 +32,8 @@
 
   $SubExp(R)$ for $R \in RegExp(\Sigma)$ is the set of
   subexpressions of $R$, including $R$ itself. $R$ is
-  \emph{simple} if $R = 0$ or $0 \not\in SubExp(R)$.
+  \emph{simple} if $R = 0$ or $0 \not\in SubExp(R)$. $R$ is
+  \emph{non-empty} if $R \ne 0$.
 \end{definition}
 
 \begin{definition}
@@ -62,8 +63,8 @@ variables in either $X$ or $X'$.
 \begin{definition}
   A \emph{control flow graph} $G = \tuple{V, E, r, F}$ is a graph
   with vertices $V$, edges $E$, a root vertex $r$ of indegree 0
-  from which every vertex $v \in V$ is reachable from $r$, and a
-  function $F: E \to Formula(X, X')$ for some $X, X'$. We use
+  from which every vertex $v \in V$ is reachable, and a function
+  $F: E \to Formula(X, X')$ for some $X, X'$. We use
   $F_{\tuple{u,v}}(Y, Y')$ to denote
   $F(\tuple{u,v})[X \mapsto Y, X' \mapsto Y']$. We let
   $Paths_G(u,v)$ be the set of all (possibly non-simple) paths
@@ -200,7 +201,7 @@ variables.
   we are done. Otherwise, $P_i = P_j + P_k$ or
   $P_i = P_j \cdot P_k$ for some $j$ and $k$, and the free
   variables in $\Gamma_i$ are exactly those in $\Gamma_j$ or
-  $\Gamma_k$ or $b_i, b_j, b_k, X_i, {X_i}', X_j, {X_j}', X_k$ or
+  $\Gamma_k$ or $b_i, b_j, b_k, X_i, X_j, X_k, {X_i}', {X_j}'$ or
   ${X_k}'$. By the induction hypothesis and the well-formedness
   of $P$, the claim holds for $i$.
 \end{proof}
@@ -363,6 +364,107 @@ $V_j \setminus V_k$.
     $\exists b_i, X_i, {X_i}'. \Gamma_i \wedge b_i \wedge X_i = X
     \wedge {X_i}' = X' \equiv \tf{P_i}$.
   \end{itemize}
+\end{proof}
+
+% taken from Tarjan / Termination Analysis Without the Tears
+\begin{algorithm}
+  \caption{Gaussian Elimination}
+  \label{alg:gauss}
+
+  \SetAlgoLined
+  \SetAlgoNoEnd
+  
+  \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ with vertices
+    labeled $1, \dots, n-1, n = r$}
+  
+  \KwOut{A function $pe: V \to PathExp(G)$ such that for all
+    $v \in V$, $pe(v)$ is a well-formed path expression
+    recognizing exactly $Paths_G(r, v)$}
+
+  \tcc{$\si{P(u, v)} \subseteq Paths_G(u, v)$ for all
+    $u, v \in V$}
+
+  $P \gets \lambda \tuple{u, v}. 0$ \;
+
+  \lForEach{$\tuple{u, v} \in E$}{
+    $P(u, v) \gets P(u, v) \cdot \tuple{u, v}$
+  }
+
+  \For{$v = 1$ \KwTo $n-1$}{
+    \For{$u = v + 1$ \KwTo $n$}{
+      $P(u, v) \gets P(u, v) \cdot P(v, v)^*$ \;
+      \For{$w = 1$ \KwTo $n$, $w \ne v$}{
+        $P(u, w) \gets P(u, w) + P(u, v) \cdot P(v, w)$ \;
+      }
+    }
+  }
+
+  $pe \gets \lambda v. P(r, v)$ \;
+
+  \Return $pe$ \;
+
+\end{algorithm}
+
+\begin{lemma}
+  After the $v$th iteration of the outer loop, for all
+  $u, w \in V$, the following hold:
+  \begin{enumerate}
+  \item If $u \le v$, then $P(u,w)$ is a well-formed path
+    expression recognizing exactly the paths from $u$ to $w$ in
+    $G$ whose intermediate vertices are smaller than $u$.
+  \item If $u > v$, then $P(u,w)$ is a well-formed path
+    expression recognizing exactly the paths from $u$ to $w$ in
+    $G$ whose intermediate vertices are smaller than
+    $\min \{u, v+1\}$
+  \end{enumerate}
+\end{lemma}
+
+\begin{proof}
+  We proceed by induction on $v$, and assume that before the
+  $v$th iteration, (1) holds for $u < v$ and (2) holds for
+  $u \ge v$ and intermediate vertices smaller than
+  $\min \{u, v\}$. This is clearly true before the first
+  iteration since all path expressions are either empty or
+  edges. Consider any $u < v$; by the structure of the for loops,
+  $P(u, w)$ for all $w$ is unchanged during this iteration, so
+  (1) still holds at the end of this iteration.  Similarly, for
+  all $w$, $P(v, w)$ is left unchanged, and we know the
+  intermediate vertices in the paths it recognizes are smaller
+  than $\min \{v, v\} = v$; ergo, (1) holds for such $w$ at the
+  end of this iteration.
+
+  Therefore, it only remains to prove (2) for any $u > v$. Note
+  that $\min\{u, v\} = v$ and $\min\{u, v+1\} = v+1$. First, the
+  only assignment to $P(u, v)$ this iteration is to concatenate
+  $P(v, v)^*$ to it. $P(v, v)^*$ is well-formed with
+  $LF(P(v, v)^*) = \{P(v, v)^*\}$, and
+  $P(v, v)^* \not\in LF(P(u, v))$ before this iteration by the
+  induction hypotheses. So, $P(u, v)$ is
+  well-formed. Furthermore, consider any path from $u$ to $v$
+  whose intermediate vertices are smaller than $v+1$. It must be
+  the concatenation of a non-empty path $p_0$ from $u$ to $v$
+  whose intermediate vertices are smaller than $v$ and $k$ paths
+  $p_1, \dots, p_k$ from $v$ to $v$ whose intermediate vertices
+  are smaller than $v$. By the induction hypothesis, $p_0$ is
+  recognized by the previous $P(u, v)$, and each $p_i$ for
+  $1 \le i \le k$ is recognized by $P(v, v)$. Thus, after this
+  iteration $P(u, v)$ recognizes exactly the paths from $u$ to
+  $v$ in $G$ whose intermediate vertices are smaller than $v+1$.
+
+  Consider any $w \ne v$ and any path from $u$ to $w$ whose
+  intermediate vertices are smaller than $v+1$. Either it is a
+  path whose intermediate vertices are smaller than $v$, or it is
+  the concatenation of a non-empty path $p_1$ from $u$ to $v$
+  whose intermediate vertices are smaller than $v+1$ and a
+  non-empty path $p_2$ from $v$ to $w$ whose intermediate
+  vertices are smaller than $v$. Thus, $P(u, w) + P(u, v) \cdot
+  P(v, w)$ recognizes exactly these paths by the induction
+  hypothesis and our previous analysis of $P(u, v)$. Furthermore,
+  we know that $P(u, w)$, $P(u, v)$, and $P(v, w)$ at this point
+  are well-formed. Suppose for the sake of contradiction that
+  there is some $P \in LF(P(u, v)) \cap LF(P(v, w))$.
+
+  Note: it turns out this can be the case!
 \end{proof}
 
 \end{document}
