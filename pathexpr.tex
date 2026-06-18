@@ -137,57 +137,50 @@ variables.
     subexpressions $\{P_1,\dots,P_n\}$ are labeled so that
     $P_i \in SubExp(P_j) \implies i < j$.}
   
-  \KwOut{A formula $\Gamma$ such that
-    $Sat(\tf{P}) \iff Sat(\Gamma)$}
+  \KwOut{A formula $F$ such that
+    $Sat(\tf{P}) \iff Sat(F)$}
 
   \ForEach{$i = 1$ \KwTo $n$}{
     \Switch{$P_i$}{
       \lCase{1}{
-        $\Gamma_i \gets (b_i \implies X_i = {X_i}')$
+        $F_i \gets X_i = {X_i}'$
       }
       
       \lCase{$e \in E$}{
-        $\Gamma_i \gets (b_i \implies F_e(X_i, {X_i}'))$
+        $F_i \gets F_e(X_i, {X_i}')$
       }
 
-      \Case{$P_j + P_k$}{
-        
-        $\Gamma_i \gets \Gamma_j \wedge \Gamma_k \wedge (b_i
-        \implies (b_j \wedge X_i = X_j \wedge {X_i}' = {X_j}')
-        \vee (b_k \wedge X_i = X_k \wedge {X_i}' = {X_k}'))$ \;
-        
+      \lCase{$P_j + P_k$}{
+        $F_i \gets (F_j \wedge X_i = X_j \wedge {X_i}' = {X_j}')
+        \vee (F_k \wedge X_i = X_k \wedge {X_i}' = {X_k}')$
       }
 
       \lCase{$P_j \cdot P_k$}{
-        $\Gamma_i \gets \Gamma_j \wedge \Gamma_k \wedge (b_i
-        \implies b_j \wedge b_k \wedge X_i = X_j \wedge {X_i}' =
+        $F_i \gets F_j \wedge F_k \wedge X_i = X_j \wedge {X_i}' =
         {X_k}' \wedge {X_j}' = X_k)$
       }
 
       \Case{${P_j}^*$}{
 
-        $F \gets star(\Gamma_j \wedge b_j, \tuple{X_j, {X_j}'})$
-        \;
+        $F^* \gets star(F_j, \tuple{X_j, {X_j}'})$ \;
 
-        $F' \gets F[X_j \mapsto X_i, {X_j}' \mapsto {X_i}']$ \;
+        $F_i \gets F^*[X_j \mapsto X_i, {X_j}' \mapsto {X_i}']$ \;
         
-        $\Gamma_i \gets (b_i \implies F')$ \;
-
       }
     }
   }
 
-  $\Gamma \gets \Gamma_n \wedge b_n$ \;
+  $F \gets F_n$ \;
 
-  \Return $\Gamma$ \;
+  \Return $F$ \;
 
 \end{algorithm}
 
 \begin{lemma}
   \label{pe:freevars}
-  For all $1 \le j \le n$, the only free variables in $\Gamma_j$
-  are of the form $b_k$, $X_k$, or ${X_k}'$ for some $1 \le k \le
-  j$ such that $P_k \in LF(P_j)$.
+  For all $1 \le j \le n$, the only free variables in $F_j$ are
+  of the form $X_k$ or ${X_k}'$ for some $1 \le k \le j$ such
+  that $P_k \in LF(P_j)$.
 \end{lemma}
 
 \begin{proof}
@@ -195,99 +188,35 @@ variables.
   and assume the claim holds for each $j < i$. This is obviously
   the case before the first iteration. And, for any $i$ and any
   $j < i$, the claim still holds after the $i$th iteration since
-  $\Gamma_j$ is not modified. For $j = i$, if $P_i = 1$,
+  $F_j$ is not modified. For $j = i$, if $P_i = 1$,
   $P_i = e \in E$, or $P_i = {P_k}^*$ for some $k$, then the only
-  free variables in $\Gamma_i$ are $b_i$, $X_i$, and ${X_i}'$, so
-  we are done. Otherwise, $P_i = P_j + P_k$ or
-  $P_i = P_j \cdot P_k$ for some $j$ and $k$, and the free
-  variables in $\Gamma_i$ are exactly those in $\Gamma_j$ or
-  $\Gamma_k$ or $b_i, b_j, b_k, X_i, X_j, X_k, {X_i}', {X_j}'$ or
+  free variables in $F_i$ are $X_i$, and ${X_i}'$, so we are
+  done. Otherwise, $P_i = P_j + P_k$ or $P_i = P_j \cdot P_k$ for
+  some $j$ and $k$, and the free variables in $F_i$ are exactly
+  those in $F_j$ or $F_k$ or $X_i, X_j, X_k, {X_i}', {X_j}'$ or
   ${X_k}'$. By the induction hypothesis and the well-formedness
   of $P$, the claim holds for $i$.
 \end{proof}
 
-Let
-$V_j = \bigcup_{P_k \in LF(P_j)} \{b_k\} \cup X_k \cup
-{X_k}'$. Note that by the above Lemma, if $P_j \in LF(P_i)$, then
+Let $V_j = \bigcup_{P_k \in LF(P_j)} X_k \cup {X_k}'$. Note that
+by the above Lemma, if $P_j \in LF(P_i)$, then
 $V_j \subseteq V_i$. As an abuse of notation, we write
 $\exists V_j$ to denote
-$\exists b_{k_1}, \dots, b_{k_l}, X_{k_1}, \dots, X_{k_l},
-{X_{k_1}}', \dots, {X_{k_l}}'$, where
-$LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$, and
-$\exists V_j \setminus V_k$ to denote the same but on the set
-$V_j \setminus V_k$.
-
-\begin{lemma}
-  \label{pe:ext}
-  For all $1 \le j \le i \le n$, if $P_j \in LF(P_i)$, then for
-  any formula $\varphi$ which does not contain any free variables
-  in $V_i \setminus V_j$,
-  $\Gamma_j \wedge \varphi \equiv \exists V_i \setminus
-  V_j. \Gamma_i \wedge \varphi$.
-\end{lemma}
-
-\begin{proof}
-  Todo: make this slightly more rigorous!
-
-  By Lemma \ref{pe:freevars}, $\Gamma_j \wedge \varphi$ contains
-  no free variables in $V_i \setminus V_j$, so since
-  $\Gamma_i \models \Gamma_j$, the backwards direction holds.
-
-  For the forwards direction, we wish to prove the stronger claim
-  that
-  $\Gamma_j \wedge \varphi \models \exists V_i \setminus
-  V_j. \Gamma_i \wedge \varphi \wedge \forall k. (P_k \in LF(P_i)
-  \setminus LF(P_j) \implies NULL(k))$, where
-  $NULL(k) \equiv b_k = false \wedge \forall x \in X_k, x' \in
-  {X_k}'. x = x' = 0$; i.e. we can extend a solution for $j$ to a
-  solution for $i$ in a predictable manner. If $P_i = P_j$, then
-  the claim holds trivially. Otherwise, $P_i = P_l + P_r$ or
-  $P_i = P_l \cdot P_r$ for some $1 \le l,r \le n$.
-
-  Suppose that $P_j \in LF(P_l) \cap LF(P_r)$. Since
-  $V_l \setminus V_j, V_r \setminus V_j \subseteq V_i \setminus
-  V_j$, by the induction hypothesis
-  $\Gamma_j \wedge \varphi \models \exists V_l \setminus
-  V_j. \Gamma_l \wedge \varphi \wedge \forall k. (P_k \in LF(P_l)
-  \setminus LF(P_j) \implies NULL(k))$ and
-  $\Gamma_j \wedge \varphi \models \exists V_r \setminus
-  V_j. \Gamma_r \wedge \varphi \wedge \forall k. (P_k \in LF(P_r)
-  \setminus LF(P_j) \implies NULL(k))$. We know that
-  $\Gamma_i \equiv \Gamma_j \wedge \Gamma_k \wedge (b_i \implies
-  \psi)$ for some $\psi$ and that
-  $V_i \setminus V_j = (V_l \setminus V_j) \cup (V_r \setminus
-  V_j) \cup \{b_i\} \cup X_i \cup {X_i}'$. So,
-  $\Gamma_j \wedge \varphi \models \exists V_i \setminus
-  V_j. \Gamma_l \wedge \Gamma_r \wedge \varphi \wedge (false
-  \implies \psi) \wedge \forall k. (P_k \in LF(P_i) \setminus
-  LF(P_j) \implies NULL(k)) \models \Gamma_i \wedge \varphi
-  \wedge \forall k. (P_k \in LF(P_i) \setminus LF(P_j) \implies
-  NULL(k))$.
-
-  If $P_j$ is a member of only one of $LF(P_l)$ and $LF(P_r)$,
-  then an analogous argument proves the same result (it is easy
-  to show through induction that the assignment that sets each
-  $b_k = false$ satisfies $\Gamma_l$ or $\Gamma_r$). Note that
-  the above induction is well founded because for all
-  $P_j \in LF(P_i)$, with $P_j \ne P_i$,
-  $LF(P_j) \subset LF(P_i)$.
-  
-
-\end{proof}
+$\exists X_{k_1}, \dots, X_{k_l}, {X_{k_1}}', \dots, {X_{k_l}}'$,
+where $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
 
 \begin{theorem}
-  $Sat(\tf{P}) \iff Sat(\Gamma)$
+  $Sat(\tf{P}) \iff Sat(F)$
 \end{theorem}
 
 \begin{proof}
   We proceed by induction on the iteration $i$ of the for loop,
   with the hypothesis that before the $i$th iteration, for all
   $j < i$,
-  $\tf{P_j} \equiv \exists V_j. \Gamma_j \wedge b_j \wedge X_j =
-  X \wedge {X_j}' = X'$. Since
-  $\Gamma \equiv \Gamma_n \wedge b_n$, and since $X$ and $X'$
-  appear nowhere else in $\Gamma$ by Lemma \ref{pe:freevars},
-  this is sufficient to prove the theorem.
+  $\tf{P_j} \equiv \exists V_j. F_j \wedge X_j = X \wedge {X_j}'
+  = X'$. Since $F \equiv F_n$, and since $X$ and $X'$ appear
+  nowhere else in $F$ by Lemma \ref{pe:freevars}, this is
+  sufficient to prove the theorem.
 
   Certainly this is true before the first iteration. Suppose this
   is true before the $i$th iteration of the loop. Clearly, the
@@ -297,72 +226,63 @@ $V_j \setminus V_k$.
 
   \begin{itemize}
   \item $P_i = 1$: We have that $\tf{1} \equiv X = X'$ and
-    $\Gamma_i \equiv (b_i \implies X_i = {X_i}')$.  So,
-    $\exists b_i, X_i, {X_i}'. \Gamma_i \wedge b_i \wedge X_i = X
-    \wedge {X_i}' = X' \equiv X = X' \equiv \tf{P_i}$.
+    $F_i \equiv X_i = {X_i}')$.  So,
+    $\exists X_i, {X_i}'. F_i \wedge X_i = X \wedge {X_i}' = X'
+    \equiv X = X' \equiv \tf{P_i}$.
 
   \item $P_i = \tuple{u, v}$: We have that
     $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$ and
-    $\Gamma_i \equiv (b_i \implies F_{\tuple{u, v}}(X_i,
-    {X_i}'))$.  So,
-    $\exists b_i, X_i, {X_i}'. \Gamma_i \wedge b_i \wedge X_i = X
-    \wedge {X_i}' = X' \equiv F_{\tuple{u, v}}(X, X') \equiv
-    \tf{P_i}$.
+    $F_i \equiv F_{\tuple{u, v}}(X_i, {X_i}')$.  So,
+    $\exists X_i, {X_i}'. F_i \wedge X_i = X \wedge {X_i}' = X'
+    \equiv F_{\tuple{u, v}}(X, X') \equiv \tf{P_i}$.
     
   \item $P_i = P_j + P_k$:
     $\tf{P_j+P_k} \equiv \tf{P_j} \vee \tf{P_k}$. By the
     induction hypothesis,
-    $\tf{P_i} \equiv (\exists V_j. \Gamma_j \wedge b_j \wedge X_j
-    = X \wedge {X_j}' = X') \vee (\exists V_k. \Gamma_k \wedge
-    b_k\wedge X_k = X \wedge {X_k}' = X')$.
+    $\tf{P_i} \equiv (\exists V_j. F_j \wedge X_j = X \wedge
+    {X_j}' = X') \vee (\exists V_k. F_k \wedge X_k = X \wedge
+    {X_k}' = X')$.
 
-    Since $P_j \in LF(P_j) \subseteq LF(P_i)$ and
-    $P_k \in LF(P_k) \subseteq LF(P_i)$, by Lemma \ref{pe:ext},
-    $\tf{P_i} \equiv \exists V_i. \Gamma_i \wedge ((b_j \wedge
-    X_j = X_i \wedge {X_j}' = {X_i}') \vee (b_k \wedge X_k = X_i
-    \wedge {X_k}' = {X_i}')) \wedge X_i = X \wedge {X_i}' = X'
-    \equiv \exists V_i. \Gamma_i \wedge b_i \wedge X_i = X \wedge
-    {X_i}' = X'$ as desired.
+    Since $V_i = V_j \cup V_k \cup X_i \cup {X_i}'$, we have
+    $\tf{P_i} \equiv \exists V_i. (F_j \wedge X_j = X_i \wedge
+    {X_j}' = {X_i}') \vee (F_k \wedge X_k = X_i \wedge {X_k}' =
+    {X_i}') \wedge X_i = X \wedge {X_i}' = X'$, as desired.
     
   \item $P_i = P_j \cdot P_k$:
     $\tf{P_j \cdot P_k} \equiv \exists X''_1, X''_2. \tf{P_j}(X,
     X''_1) \wedge \tf{P_k}(X''_2, X') \wedge X''_1 = X''_2$. So,
     by the induction hypothesis,
-    $\tf{P_i} \equiv \exists X''_1, X''_2. (\exists V_j. \Gamma_j
-    \wedge b_j \wedge X_j = X \wedge {X_j}' = X''_1) \wedge
-    (\exists V_k. \Gamma_k \wedge b_k \wedge X_k = X''_2 \wedge
-    {X_k}' = X') \wedge X''_1 = X''_2$.
+    $\tf{P_i} \equiv \exists X''_1, X''_2. (\exists V_j. F_j
+    \wedge X_j = X \wedge {X_j}' = X''_1) \wedge (\exists
+    V_k. F_k \wedge X_k = X''_2 \wedge {X_k}' = X') \wedge X''_1
+    = X''_2$.
 
     Suppose $V_j \cap V_k \ne \emptyset$. Then, there must be
     some $P_l \in LF(P_j) \cap LF(P_k)$. But, this contradicts
     the well-formedness of $P$, from which we know that
     $LF(P_j) \cap LF(P_k) = \emptyset$. So,
     $V_j \cap V_k = \emptyset$. By Lemma \ref{pe:freevars}, this
-    means there are no free variables present in both $\Gamma_j$
-    and $\Gamma_k$. Therefore,
+    means there are no free variables present in both $F_j$
+    and $F_k$. Therefore,
     \begin{align*}
       \tf{P_i}
-      &\equiv \exists X''_1, X''_2. \exists V_i. \Gamma_j
-        \wedge b_j \wedge X_j = X \wedge {X_j}' = X''_1 \wedge
-        \Gamma_k \wedge b_k \wedge X_k = X''_2 \wedge {X_k}' = X'
-        \wedge X''_1 = X''_2 \\
-      &\equiv \exists V_i. \Gamma_j \wedge b_j
-        \wedge X_j = X \wedge {X_j}' = X_k \wedge \Gamma_k \wedge
-        b_k \wedge {X_k}' = X' \\
-      & \equiv \exists V_i. \Gamma_i \wedge
-        b_i \wedge X_i = X \wedge {X_i}' = X'
+      &\equiv \exists X''_1, X''_2. \exists V_i. F_j \wedge
+        X_j = X \wedge {X_j}' = X''_1 \wedge F_k \wedge
+        X_k = X''_2 \wedge {X_k}' = X' \wedge X''_1 = X''_2 \\
+      &\equiv \exists V_i. F_j \wedge X_j = X \wedge
+        {X_j}' = X_k \wedge F_k \wedge {X_k}' = X' \\
+      & \equiv \exists V_i. F_i \wedge X_i = X \wedge {X_i}' = X'
     \end{align*}
 
   \item $P_i = {P_j}^*$: We know by the induction hypothesis that
-    $\tf{P_j} \equiv \exists V_j. \Gamma_j \wedge b_j \wedge X_j
-    = X \wedge {X_j}' = X'$.  So,
-    $F = star(\Gamma_j \wedge b_j, \tuple{X_j, {X_j}'}) \equiv
-    \tf{P_i}(X_j, {X_j}')$. Therefore,
-    $F' = F[X_j \mapsto X_i, {X_j}' \mapsto {X_i}'] \equiv
-    \tf{P_i}(X_i, {X_i}')$. So, since
-    $\Gamma_i \equiv (b_i \implies F)$,
-    $\exists b_i, X_i, {X_i}'. \Gamma_i \wedge b_i \wedge X_i = X
-    \wedge {X_i}' = X' \equiv \tf{P_i}$.
+    $\tf{P_j} \equiv \exists V_j. F_j \wedge X_j = X \wedge
+    {X_j}' = X'$.  So,
+    $F^* = star(F_j, \tuple{X_j, {X_j}'}) \equiv \tf{P_i}(X_j,
+    {X_j}')$. Therefore,
+    $F = F^*[X_j \mapsto X_i, {X_j}' \mapsto {X_i}'] \equiv
+    \tf{P_i}(X_i, {X_i}')$. So,
+    $\exists X_i, {X_i}'. F_i \wedge X_i = X \wedge {X_i}' = X'
+    \equiv \tf{P_i}$.
   \end{itemize}
 \end{proof}
 
