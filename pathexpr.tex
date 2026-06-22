@@ -125,12 +125,12 @@ variables.
   Note that $P_1 \in LF(P_1)$ for all $P_1 \in SubExp(P)$.
 \end{definition}
 
-\begin{algorithm}[H]
+\begin{algorithm}
   \caption{Path Expression DAG to Transition Formula}
   \label{alg:path-exp-to-tf}
 
   \SetAlgoLined
-  % \SetAlgoNoEnd
+  \SetAlgoNoEnd
   
   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ and a
     non-empty, well-formed path expression $P$ whose distinct
@@ -140,53 +140,31 @@ variables.
   \KwOut{A formula $F$ such that
     $Sat(\tf{P}) \iff Sat(F)$}
 
-  \tcc{Eliminate redundant variable vocabularies}
-
-  Initialize UF over $\{X_1,\dots,X_n,{X_1}',\dots,{X_n}'\}$ \;
-
-  \ForEach{$i = 1$ \KwTo $n$}{
-    \Switch{$P_i$}{
-      \lCase{$P_j + P_k$}{
-        $union(X_i, X_j)$,
-        $union(X_i, X_k)$,
-        $union({X_i}', {X_j}')$,
-        $union({X_i}', {X_k}')$
-      }
-
-      \lCase{$P_j \cdot P_k$}{
-        $union(X_i, X_j)$,
-        $union({X_j}', X_k)$,
-        $union({X_i}', {X_k}')$
-      }
-    }
-  }
-
-  \tcc{Create the formulas}
-
   \ForEach{$i = 1$ \KwTo $n$}{
     \Switch{$P_i$}{
       \lCase{1}{
-        $F_i \gets find(X_i) = find({X_i}')$
+        $F_i \gets X_i = {X_i}'$
       }
       
-      \lCase{$\tuple{u,v}$}{
-        $F_i \gets F_{\tuple{u,v}}(find(X_i), find({X_i}'))$
+      \lCase{$e \in E$}{
+        $F_i \gets F_e(X_i, {X_i}')$
       }
 
       \lCase{$P_j + P_k$}{
-        $F_i \gets F_j \vee F_k$
+        $F_i \gets (F_j \wedge X_i = X_j \wedge {X_i}' = {X_j}')
+        \vee (F_k \wedge X_i = X_k \wedge {X_i}' = {X_k}')$
       }
 
       \lCase{$P_j \cdot P_k$}{
-        $F_i \gets F_j \wedge F_k$
+        $F_i \gets F_j \wedge F_k \wedge X_i = X_j \wedge {X_i}' =
+        {X_k}' \wedge {X_j}' = X_k)$
       }
 
       \Case{${P_j}^*$}{
 
-        $F^* \gets star(F_j, \tuple{find(X_j), find({X_j}')})$ \;
+        $F^* \gets star(F_j, \tuple{X_j, {X_j}'})$ \;
 
-        $F_i \gets F^*[find(X_j) \mapsto find(X_i), find({X_j}')
-        \mapsto find({X_i}')]$ \;
+        $F_i \gets F^*[X_j \mapsto X_i, {X_j}' \mapsto {X_i}']$ \;
         
       }
     }
@@ -200,9 +178,9 @@ variables.
 
 \begin{lemma}
   \label{pe:freevars}
-  For all $1 \le j \le n$, all free variables in $F_j$ are
-  members of $find(X_k)$ or $find({X_k}')$ for some
-  $1 \le k \le j$ such that $P_k \in LF(P_j)$.
+  For all $1 \le j \le n$, the only free variables in $F_j$ are
+  of the form $X_k$ or ${X_k}'$ for some $1 \le k \le j$ such
+  that $P_k \in LF(P_j)$.
 \end{lemma}
 
 \begin{proof}
@@ -210,14 +188,14 @@ variables.
   and assume the claim holds for each $j < i$. This is obviously
   the case before the first iteration. And, for any $i$ and any
   $j < i$, the claim still holds after the $i$th iteration since
-  $F_j$ is not modified. For $j = i$, if $P_i = 1$ or
-  $P_i = e \in E$, the claim holds trivially. Likewise, if
-  $P_i = {P_k}^*$ for some $k$, by our assumptions on the $star$
-  operator, $F^*$ only has free variables in $find(X_j)$ and
-  $find({X_j}')$, so the claim holds for $F_i$. Otherwise,
-  $P_i = P_j + P_k$ or $P_i = P_j \cdot P_k$ for some $j$ and
-  $k$, and the free variables in $F_i$ are exactly those in $F_j$
-  or $F_k$. By the induction hypothesis, the claim holds for $i$.
+  $F_j$ is not modified. For $j = i$, if $P_i = 1$,
+  $P_i = e \in E$, or $P_i = {P_k}^*$ for some $k$, then the only
+  free variables in $F_i$ are $X_i$, and ${X_i}'$, so we are
+  done. Otherwise, $P_i = P_j + P_k$ or $P_i = P_j \cdot P_k$ for
+  some $j$ and $k$, and the free variables in $F_i$ are exactly
+  those in $F_j$ or $F_k$ or $X_i, X_j, X_k, {X_i}', {X_j}'$ or
+  ${X_k}'$. By the induction hypothesis and the well-formedness
+  of $P$, the claim holds for $i$.
 \end{proof}
 
 Let $V_j = \bigcup_{P_k \in LF(P_j)} X_k \cup {X_k}'$. Note that
@@ -226,36 +204,6 @@ $V_j \subseteq V_i$. As an abuse of notation, we write
 $\exists V_j$ to denote
 $\exists X_{k_1}, \dots, X_{k_l}, {X_{k_1}}', \dots, {X_{k_l}}'$,
 where $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
-
-\begin{lemma}
-  \label{pe:varsconcat}
-  Let $P_{i'} = P_{j'} \cdot P_{k'} \in SubExp(P)$. Then,
-  $V_{j'} \cap V_{k'} = \{find({X_{j'}}')\} = \{find(X_{k'})\}$.
-\end{lemma}
-
-\begin{proof}
-  TODO
-  % We proceed by induction on the iteration of the first for
-  % loop. By the well-formedness of $P$, the claim must have held
-  % before the first iteration. Suppose the claim held before
-  % iteration $i$ for all $i', j', k' < i$. We consider both forms
-  % of $P_i$:
-
-  % \begin{itemize}
-  % \item $P_i = P_j + P_k$: We now have that
-  %   $find(X_i) = find(X_j) = find(X_k)$ and
-  %   $find({X_i}') = find({X_j}') = find({X_k}')$. Suppose this
-  %   introduces a contradiction for some $i', j', k' < i$, where
-  %   $i'$ is maximal. 
-
-  % \item $P_i = P_j \cdot P_k$: We know by the induction
-  %   hypothesis that the
-  %   $V_j \cap V_k \subseteq \{find({X_{j'}}')\} =
-  %   \{find(X_{k'})\}$. For $union(X_i, X_j)$ and $union(X_i, X_k)$,
-  %   this is the first time we are performing a union operation
-  %   on $X_i$, . 
-  % \end{itemize}
-\end{proof}
 
 \begin{theorem}
   $Sat(\tf{P}) \iff Sat(F)$
