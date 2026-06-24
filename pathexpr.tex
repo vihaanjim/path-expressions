@@ -121,9 +121,9 @@ variables.
 
 \begin{definition}
   % todo: find a better name
-  A path expression $P$ is \emph{well-formed} if there do not
-  exist some $P_1, P_2 \in SubExp(P)$ such that
-  $P_1 = P_2 \cdot P_2$.
+  A path expression $P$ is \emph{well-formed} if for all
+  $P_1 \cdot P_2 \in SubExp(P)$,
+  $LF(P_1) \cap LF(P_2) = \emptyset$.
 \end{definition}
 
 \begin{algorithm}
