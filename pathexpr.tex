@@ -105,24 +105,25 @@ variables.
 \end{definition}
 
 \begin{definition}
-  % todo: find a better name
-  A path expression $P$ is \emph{well-formed} if there exists a
-  function $LF: SubExp(P) \to \mathscr{P}(SubExp(P))$ such that
-  the following hold:
-  \begin{itemize}
-  \item If $1 \in SubExp(P)$, then $LF(1) = \{1\}$
-  \item For all $e = \tuple{u,v} \in SubExp(P)$,
-    $LF(e) = \{e\}$.
-  \item For all $P_1 + P_2 \in SubExp(P)$,
-    $LF(P_1+P_2) = LF(P_1) \cup LF(P_2) \cup \{P_1 + P_2\}$.
-  \item For all $P_1 \cdot P_2 \in SubExp(P)$,
-    $LF(P_1 \cdot P_2) = LF(P_1) \cup LF(P_2) \cup \{P_1 \cdot
-    P_2\}$ where $LF(P_1) \cap LF(P_2) = \emptyset$.
-  \item For all ${P_1}^* \in SubExp(P)$,
-    $LF({P_1}^*) = \{{P_1}^*\}$.
-  \end{itemize}
+  The \emph{loop-free subexpressions} of $P$ are given by $LF(P)$
+  where
+  \begin{align*}
+    LF(1) &= \{1\} \\
+    LF(\tuple{u,v}) &= \tuple{u,v} \\
+    LF(P_1 + P_2) &= LF(P_1) \cup LF(P_2) \cup \{P_1 + P_2\} \\
+    LF(P_1 \cdot P_2) &= LF(P_1) \cup LF(P_2) \cup \{P_1 \cdot
+                        P_2\} \\
+    LF(P^*) &= \{P^*\} 
+  \end{align*}
 
-  Note that $P_1 \in LF(P_1)$ for all $P_1 \in SubExp(P)$.
+  Note that $P \in LF(P)$ for all $P$.
+\end{definition}
+
+\begin{definition}
+  % todo: find a better name
+  A path expression $P$ is \emph{well-formed} if there do not
+  exist some $P_1, P_2 \in SubExp(P)$ such that
+  $P_1 = P_2 \cdot P_2$.
 \end{definition}
 
 \begin{algorithm}
@@ -288,11 +289,11 @@ where $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
 
 % taken from Tarjan / Termination Analysis Without the Tears
 \begin{algorithm}
-  \caption{Gaussian Elimination}
+  \caption{Modified Gaussian Elimination}
   \label{alg:gauss}
 
   \SetAlgoLined
-  \SetAlgoNoEnd
+  % \SetAlgoNoEnd
   
   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ with vertices
     labeled $1, \dots, n-1, n = r$}
@@ -312,8 +313,12 @@ where $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
 
   \For{$v = 1$ \KwTo $n-1$}{
     \For{$u = v + 1$ \KwTo $n$}{
+      
       $P(u, v) \gets P(u, v) \cdot P(v, v)^*$ \;
-      \For{$w = 1$ \KwTo $n$, $w \ne v$}{
+
+      $P(u, u) \gets P(u, w) + (P(u, v) \cdot P(v, w))^*$ \;
+      
+      \For{$w = 1$ \KwTo $n$, $w \not\in \{u, v\}$}{
         $P(u, w) \gets P(u, w) + P(u, v) \cdot P(v, w)$ \;
       }
     }
@@ -329,13 +334,14 @@ where $LF(P_j) = \{P_{k_1}, \dots, P_{k_l}\}$.
   After the $v$th iteration of the outer loop, for all
   $u, w \in V$, the following hold:
   \begin{enumerate}
-  \item If $u \le v$, then $P(u,w)$ is a well-formed path
-    expression recognizing exactly the paths from $u$ to $w$ in
-    $G$ whose intermediate vertices are smaller than $u$.
-  \item If $u > v$, then $P(u,w)$ is a well-formed path
+  \item If $w \ne u$, then $P(u,w)$ is a well-formed path
     expression recognizing exactly the paths from $u$ to $w$ in
     $G$ whose intermediate vertices are smaller than
     $\min \{u, v+1\}$
+  \item If $w = u$, then $P(u,w)=P(u,u)$ is a well-formed path
+    expression recognizing exactly the cycles starting and ending
+    at $u$ whose intermediate vertices are smaller than
+    $\min \{u+1, v+1\}$
   \end{enumerate}
 \end{lemma}
 
