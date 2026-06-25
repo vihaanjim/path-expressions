@@ -106,56 +106,32 @@ variables.
 
 \begin{definition}
   % todo: better name
-  The \emph{loop-free subexpressions} of $P$ are given by $LF(P)$
-  where
+  Suppose every vertex $v \in V$ is associated with variable
+  vocabularies $X_v$ and $X'_v$. Then, the \emph{loop-free
+    vocabularies} of a path expression $P$ with type
+  $\tuple{u, v}$ are given by $LF(P)$ where
   \begin{align*}
-    LF(1) &= \{1\} \\
-    LF(\tuple{u,v}) &= \{\tuple{u,v}\} \\
-    LF(P_a + P_b) &= LF(P_a) \cup LF(P_b) \cup \{P_a + P_b\} \\
-    LF(P_a \cdot P_b) &= LF(P_a) \cup LF(P_b) \cup \{P_a \cdot
-                        P_b\} \\
-    LF(P^*) &= \{P^*\} 
-  \end{align*}
-
-  Note that $P \in LF(P)$ for all $P$.
-\end{definition}
-
-\begin{definition}
-  % todo: better name
-  The \emph{vertex entry-exit cover} of a path expression $P$
-  with type $\tuple{u, v}$ is given by $VEC(P)$ where
-  \begin{align*}
-    VEC(\tuple{u,v}) &= \{\tuple{u, \top}, \tuple{v, \bot}\} \\
-    VEC(1) = VEC(P^*) &= \{\tuple{u, \bot}, \tuple{v, \top}\} \\
-    VEC(P_a + P_b) = VEC(P_a \cdot P_b) &= VEC(P_a) \cup VEC(P_b)
+    LF(\tuple{u,v}) &= \{X'_u, X_v\} \\
+    LF(1) = LF(P^*) &= \{X_u, X'_v\} \\
+    LF(P_a + P_b) = LF(P_a \cdot P_b) &= LF(P_a) \cup LF(P_b)
   \end{align*}
 \end{definition}
 
-\begin{lemma}
-  For all path expressions $P$,
-  $VEC(P) = \displaystyle\bigcup_{P' \in LF(P)} VEC(P')$
-\end{lemma}
-
-\begin{proof}
-  $P \in LF(P)$, so clearly the left hand side is a subset of the
-  right hand side. It remains to show the other direction. We
-  proceed by structural induction on $P$. The claim holds
-  trivially when $P = 1$, $P = \tuple{u, v}$, or $P =
-  {P_a}^*$. If $P = P_a + P_b$ or $P = P_a \cdot P_b$, then
-  $LF(P) = LF(P_a) \cup LF(P_b) \cup \{P\}$. We know by the
-  induction hypothesis that
-  $\bigcup_{P' \in LF(P_a)} VEC(P') \subseteq VEC(P_a)$ and that
-  $\bigcup_{P' \in LF(P_b)} VEC(P') \subseteq VEC(P_b)$, so
-  clearly
-  $\bigcup_{P' \in LF(P)} VEC(P') \subseteq VEC(P_a) \cup
-  VEC(P_b) \cup VEC(P) = VEC(P)$.
-\end{proof}
-
 \begin{definition}
-  A path expression $P$ is \emph{well-formed} if for all
-  $P_a \cdot P_b \in P$ where $P_a$ is of type $\tuple{u, v}$,
-  $VEC(P_a) \cap VEC(P_b) \in \{\emptyset, \{\tuple{v, \bot}\},
-  \{\tuple{v, \top}\}\}$.
+  A non-empty path expression $P$ is \emph{well-formed} if the
+  following hold:
+  \begin{itemize}
+  \item $1 \not \in SubExp(P)$
+  \item There exist functions $L$ and $R$ mapping $SubExp(P)$ to
+    variable vocabularies such that $L(\tuple{u,v}) = X'_u$ and
+    $R(\tuple{u,v}) = X_v$; $L(P_a + P_b) = L(P_a) = L(P_b)$ and
+    $R(P_a + P_b) = R(P_a) = R(P_b)$; $L(P_a \cdot P_b) = L(P_a)$
+    and $R(P_a \cdot P_b) = R(P_b)$; and $L({P_a}^*) = R(P_a)$
+    and $R({P_a}^*) = L(P_a)$.
+  \item For all $P_a \cdot P_b \in P$ where $P_a$ is of type
+    $LF(P_a) \cap LF(P_b)$ is either $\emptyset$ or
+    $\{R(P_a)\} = \{L(P_b)\}$.
+  \end{itemize}
 \end{definition}
 
 \begin{algorithm}[H]
@@ -166,76 +142,38 @@ variables.
   % \SetAlgoNoEnd
   
   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ and a
-    non-empty, well-formed path expression $P$ whose distinct
-    subexpressions $\{P_1,\dots,P_n\}$ are labeled so that
+    well-formed path expression $P$ whose distinct subexpressions
+    $\{P_1,\dots,P_n\}$ are labeled so that
     $P_i \in SubExp(P_j) \implies i < j$.}
   
   \KwOut{A formula $F$ such that
     $Sat(\tf{P}) \iff Sat(F)$}
 
-  \tcc{Eliminate redundant variable vocabularies}
-
-  Initialize UF over
-  $\{X_i,X'_i|1\le i \le n\} \cup \{Y_v, Y'_v, |v \in V\}$ \;
-  
   \ForEach{$i = 1$ \KwTo $n$}{
     \Switch{$P_i$}{
-      \lCase{$1$ of type $\tuple{u,v}$}{
-        $union(X_i, Y_u)$,
-        $union(X'_i, Y'_v)$
-      }
-      
-      \lCase{$\tuple{u,v} \in E$}{
-        $union(X_i, Y'_u)$,
-        $union(X'_i, Y_v)$
-      }
-      
-      \lCase{$P_j + P_k$}{
-        $union(X_i, X_j)$,
-        $union(X_i, X_k)$,
-        $union(X'_i, X'_j)$,
-        $union(X'_i, X'_k)$
-      }
-
-      \lCase{$P_j \cdot P_k$}{
-        $union(X_i, X_j)$,
-        $union(X'_i, X'_k)$
-      }
-
-      \lCase{${P_j}^*$}{
-        $union(X_i, X'_j)$,
-        $union(X'_i, X_j)$.
-      }
-    }
-  }
-
-  \tcc{Create the formulas. For notational simplicity, we let
-    $[X] = find(X)$.}
-
-  \ForEach{$i = 1$ \KwTo $n$}{
-    \Switch{$P_i$}{
-      \lCase{1}{
-        $F_i \gets [X_i] = [X'_i]$
-      }
-      
-      \lCase{$e \in E$}{
-        $F_i \gets F_e([X_i], [X'_i])$
+      \lCase{$\tuple{u, v} \in E$}{
+        $F_i \gets F_e(X'_u, X_v)$
       }
 
       \lCase{$P_j + P_k$}{
         $F_i \gets F_j \vee F_k$
       }
 
-      \lCase{$P_j \cdot P_k$}{
-        $F_i \gets F_j \wedge F_k \wedge [X'_j] = [X_k]$
+      \Case{$P_j \cdot P_k$}{
+        \lIf{$R(P_j) \ne L(P_k)$} {
+          $F_i \gets F_j \wedge F_k \wedge R(P_j) = L(P_k)$
+        }
+        \lElse{
+          $F_i \gets F_j \wedge F_k$
+        }
       }
 
       \Case{${P_j}^*$}{
 
-        $F^* \gets star(F_j, \tuple{[X_j], [X'_j]})$ \;
+        $F^* \gets star(F_j, \tuple{L(P_j), R(P_j)})$ \;
 
-        $F_i \gets F^*[[X_j] \mapsto [X_i], [X'_j] \mapsto
-        [X'_i]]$ \;
+        $F_i \gets F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto
+        R(P_i)]$ \;
         
       }
     }
@@ -250,53 +188,25 @@ variables.
 \begin{lemma}
   \label{pe:freevars}
   For all $1 \le i \le n$, the only free variables in $F_i$ are
-  members of $[X_k]$ or $[X'_k]$ for some $P_k \in LF(P_i)$.
+  members of $\bigcup LF(P_i)$.
 \end{lemma}
 
 \begin{proof}
   We proceed by induction on $i$ and assume the claim holds for
   each $l < i$. This is trivially the case for $i = 1$. For
-  $l = i$, if $P_i = 1$, $P_i = e \in E$, or $P_i = {P_k}^*$ for
-  some $k$, then the only free variables in $F_i$ are $[X_i]$,
-  and $[X'_i]$, so we are done. Otherwise, $P_i = P_j + P_k$ or
+  $l = i$, if $P_i = e \in E$, or $P_i = {P_k}^*$ for some $k$,
+  then the only free variables in $F_i$ are $L(P_i)$, and
+  $R(P_i)$, so we are done. Otherwise, $P_i = P_j + P_k$ or
   $P_i = P_j \cdot P_k$ for some $j$ and $k$, and the free
-  variables in $F_i$ are exactly those in $F_j$ or $F_k$. By the
-  induction hypothesis and the well-formedness of $P$, the claim
-  holds for $i$.
+  variables in $F_i$ are exactly those in $F_j$ or $F_k$, plus
+  possibly $R(P_j)$ and $L(P_i)$. By the induction hypothesis and
+  the well-formedness of $P$, the claim holds for $i$.
 \end{proof}
 
-Let $V_j = \bigcup_{P_k \in LF(P_j)} [X_k] \cup [X'_k]$. It is
-easy to show that $V_i = \bigcup_{P_j \in LF(P_i)} V_j$. As an
-abuse of notation, we write $\exists V_j$ to denote
-$\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
-
-\begin{lemma}
-  For all $1 \le i \le n$,
-  $V_i = \{[Y_v]|\tuple{v, \bot} \in VEC(P_i)\} \cup
-  \{[Y'_v]|\tuple{v, \top} \in VEC(P_i)\}$. 
-\end{lemma}
-
-\begin{proof}
-  We proceed by induction on the iteration $i$ of the first for
-  loop and suppose the claim holds for all $l < i$. Certainly
-  this is true before the first iteration. Then, if the claim
-  held for $l < i$ in the last iteration, it must hold in the
-  current iteration as well because the equivalence classes do
-  cannot lose elements. Thus, it remains to prove the claim for
-  $l = i$. Consider each possible form of $P_i$:
-
-  \begin{itemize}
-  \item $P_i = 1$: We know that
-    $VEC(P_i) = \{\tuple{u, \bot}, \tuple{v, \top}\}$, and we
-    have performed $union(X_i, Y_u)$ and $union(X'_i, Y'_v)$, so
-    the claim holds trivially.
-  \item $P_i = \tuple{u, v}$: We know that
-    $VEC(P_i) = \{\tuple{u, \top}, \tuple{v, \bot}\}$, and we
-    have performed $union(X_i, Y'_u)$ and $union(X'_i, Y_v)$, so
-    the claim holds trivially.
-  \item $P_i = P_j + P_k$: 
-  \end{itemize}
-\end{proof}
+Let $V_j = \bigcup LF(P_j)$. By definition, if $P_j \in LF(P_i)$,
+then $V_j \subseteq V_i$. As an abuse of notation, we write
+$\exists V_j$ to denote $\exists x_1, \dots, x_m$, where
+$V_j = \{x_1, \dots, x_m\}$.
 
 \begin{theorem}
   $Sat(\tf{P}) \iff Sat(F)$
@@ -306,80 +216,74 @@ $\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
   We proceed by induction on the iteration $i$ of the for loop,
   with the hypothesis that before the $i$th iteration, for all
   $j < i$,
-  $\tf{P_j} \equiv \exists V_j. F_j \wedge [X_j] = X \wedge
-  [X'_j] = X'$. Since $F \equiv F_n$, and since $X$ and $X'$
-  appear nowhere else in $F$ by Lemma \ref{pe:freevars}, this is
+  $\tf{P_j} \equiv \exists V_j. F_j \wedge X = L(P_j) \wedge X' =
+  R(P_j)$. Since $F \equiv F_n$, and since $X$ and $X'$ appear
+  nowhere else in $F$ by Lemma \ref{pe:freevars}, this is
   sufficient to prove the theorem.
 
   Certainly this is true before the first iteration. Suppose this
   is true before the $i$th iteration of the loop. Clearly, the
   claim still holds for $j < i$ after this iteration since $F_j$
   is not modified. For $j = i$, let us consider each possible
-  form of $P_i$ separately:
+  form of $P_i$:
 
   \begin{itemize}
-  \item $P_i = 1$: We have that $\tf{1} \equiv X = X'$ and
-    $F_i \equiv [X_i] = [X'_i])$.  So,
-    $\exists V_i. F_i \wedge [X_i] = X \wedge [X'_i] = X' \equiv
-    X = X' \equiv \tf{P_i}$.
-
   \item $P_i = \tuple{u, v}$: We have that
     $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$ and
-    $F_i \equiv F_{\tuple{u, v}}([X_i], [X'_i])$.  So,
-    $\exists V_i. F_i \wedge [X_i] = X \wedge [X'_i] = X' \equiv
+    $F_i \equiv F_{\tuple{u, v}}(X'_u, X_v) \equiv F_{\tuple{u,
+        v}}(L(P_i), R(P_i))$ by definition.  So,
+    $\exists V_i. F_i \wedge X = L(P_i) \wedge X' = R(P_i) \equiv
     F_{\tuple{u, v}}(X, X') \equiv \tf{P_i}$.
     
   \item $P_i = P_j + P_k$:
     $\tf{P_j+P_k} \equiv \tf{P_j} \vee \tf{P_k}$. By the
     induction hypothesis,
-    $\tf{P_i} \equiv (\exists V_j. F_j \wedge [X_j] = X \wedge
-    [X'_j] = X') \vee (\exists V_k. F_k \wedge [X_k] = X \wedge
-    [X'_k] = X')$.
+    $\tf{P_i} \equiv (\exists V_j. F_j \wedge X = L(P_j) \wedge
+    X' = R(P_j)) \vee (\exists V_k. F_k \wedge X = L(P_k) \wedge
+    X' = R(P_k))$.
 
-    Since $V_i = V_j \cup V_k \cup X_i \cup [X'_i]$, we have
-    $\tf{P_i} \equiv \exists V_i. (F_j \wedge [X_j] = [X_i]
-    \wedge [X'_j] = [X'_i]) \vee (F_k \wedge [X_k] = [X_i] \wedge
-    [X'_k] = [X'_i]) \wedge [X_i] = X \wedge [X'_i] =
-    X'$. However, we know that $[X_j] = [X_i]$,
-    $[X'_j] = [X'_i]$, $[X_k] = [X_i]$, and $[X'_k] =
-    [X'_i]$. Therefore,
-    $\tf{P_i} \equiv \exists V_i. F_j \vee F_k \wedge [X_i] = X
-    \wedge [X'_i] = X'$, as desired. 
+    Since $V_i = V_j \cup V_k$, and since
+    $L(P_i) = L(P_j) = L(P_k)$ and $R(P_i) = R(P_j) = R(P_k)$ we
+    have that
+    $\tf{P_i} \equiv \exists V_i. (F_j \vee F_k) \wedge X =
+    L(P_i) \wedge X' = R(P_i)$, as desired.
     
   \item $P_i = P_j \cdot P_k$:
     $\tf{P_j \cdot P_k} \equiv \exists X''_1, X''_2. \tf{P_j}(X,
     X''_1) \wedge \tf{P_k}(X''_2, X') \wedge X''_1 = X''_2$. So,
     by the induction hypothesis,
     $\tf{P_i} \equiv \exists X''_1, X''_2. (\exists V_j. F_j
-    \wedge [X_j] = X \wedge [X'_j] = X''_1) \wedge (\exists
-    V_k. F_k \wedge [X_k] = X''_2 \wedge [X'_k] = X') \wedge
+    \wedge X = L(P_j) \wedge X''_1 = R(P_j)) \wedge (\exists
+    V_k. F_k \wedge X''_2 = L(P_k) \wedge X' = R(P_k)) \wedge
     X''_1 = X''_2$.
 
-    By Corollary \ref{pe:nonintersect},
-    $V_j \cap V_k = \emptyset$. By Lemma \ref{pe:freevars}, this
-    means there are no free variables present in both $F_j$ and
-    $F_k$. Therefore,
+    By well-formedness,
+    $LF(P_j) \cap LF(P_k) \subseteq \{R(P_j)\} = \{L(P_k)\}$. So,
+    $V_j \cap V_k \subseteq R(P_j) = L(P_k)$. However, due to the
+    conditions $X''_1 = R(P_j)$, $X''_2 = L(P_k)$ and
+    $X''_1 = X''_2$, by Lemma \ref{pe:freevars}, there are no
+    free variables present in both $F_j$ and $F_k$ that can take
+    on different values. Therefore,
     \begin{align*}
       \tf{P_i}
       &\equiv \exists X''_1, X''_2. \exists V_i. F_j \wedge
-        [X_j] = X \wedge [X'_j] = X''_1 \wedge F_k \wedge
-        [X_k] = X''_2 \wedge [X'_k] = X' \wedge X''_1 = X''_2 \\
-      &\equiv \exists V_i. F_j \wedge [X_j] = X \wedge
-        [X'_j] = [X_k] \wedge F_k \wedge [X'_k] = X' \\
-      & \equiv \exists V_i. F_i \wedge [X_i] = X \wedge [X'_i] = X'
+        X = L(P_j) \wedge X''_1 = R(P_j) \wedge F_k \wedge
+        X''_2 = L(P_k) \wedge X' = R(P_k) \wedge X''_1 = X''_2 \\
+      &\equiv \exists V_i. F_j \wedge X = L(P_j) \wedge
+        R(P_j) = L(P_k) \wedge F_k \wedge X' = R(P_k) \\
+      & \equiv \exists V_i. F_i \land X = L(P_i) \land X' = R(P_i)
     \end{align*}
 
-    since we know that $[X_j] = [X_i]$, $[X'_j] = [X_k]$, and
-    $[X'_k] = [X'_i]$.
+    since $L(P_i) = L(P_j)$, $R(P_i) = R(P_k)$, and
+    $F_i \equiv F_j \wedge F_k \wedge R(P_j) = L(P_k)$.
 
   \item $P_i = {P_j}^*$: We know by the induction hypothesis that
-    $\tf{P_j} \equiv \exists V_j. F_j \wedge [X_j] = X \wedge
-    [X'_j] = X'$.  So,
-    $F^* = star(F_j, \tuple{[X_j], [X'_j]}) \equiv
-    \tf{P_i}([X_j], [X'_j])$. Therefore,
-    $F = F^*[[X_j] \mapsto [X_i], [X'_j] \mapsto [X'_i]] \equiv
-    \tf{P_i}([X_i], [X'_i])$. So,
-    $\exists V_i. F_i \wedge [X_i] = X \wedge [X'_i] = X' \equiv
+    $\tf{P_j} \equiv \exists V_j. F_j \wedge X = L(P_j) \wedge X'
+    = R(P_j)$.  So,
+    $F^* = star(F_j, \tuple{L(P_j), R(P_j)}) \equiv
+    \tf{P_i}(L(P_j), R(P_j))$. Therefore, for
+    $F_i = F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto R(P_i)]$,
+    $\exists V_i. F_i \wedge X = L(P_i) \wedge X' = R(P_i) \equiv
     \tf{P_i}$.
   \end{itemize}
 \end{proof}
