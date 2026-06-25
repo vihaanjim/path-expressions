@@ -105,6 +105,7 @@ variables.
 \end{definition}
 
 \begin{definition}
+  % todo: better name
   The \emph{loop-free subexpressions} of $P$ are given by $LF(P)$
   where
   \begin{align*}
@@ -120,20 +121,41 @@ variables.
 \end{definition}
 
 \begin{definition}
-  The \emph{star-free restriction} of $P$ is given by
-  $SFR(P)$ where
+  % todo: better name
+  The \emph{vertex entry-exit cover} of a path expression $P$
+  with type $\tuple{u, v}$ is given by $VEC(P)$ where
   \begin{align*}
-    SFR(1) &= SFR(P^*) = 1 \\
-    SFR(\tuple{u,v}) &= \tuple{u,v} \\
-    SFR(P_a + P_b) &= SFR(P_a) + SFR(P_b) \\
-    SFR(P_a \cdot P_b) &= SFR(P_a) \cdot SFR(P_b) \\
+    VEC(\tuple{u,v}) &= \{\tuple{u, \top}, \tuple{v, \bot}\} \\
+    VEC(1) = VEC(P^*) &= \{\tuple{u, \bot}, \tuple{v, \top}\} \\
+    VEC(P_a + P_b) = VEC(P_a \cdot P_b) &= VEC(P_a) \cup VEC(P_b)
   \end{align*}
 \end{definition}
 
+\begin{lemma}
+  For all path expressions $P$,
+  $VEC(P) = \displaystyle\bigcup_{P' \in LF(P)} VEC(P')$
+\end{lemma}
+
+\begin{proof}
+  $P \in LF(P)$, so clearly the left hand side is a subset of the
+  right hand side. It remains to show the other direction. We
+  proceed by structural induction on $P$. The claim holds
+  trivially when $P = 1$, $P = \tuple{u, v}$, or $P =
+  {P_a}^*$. If $P = P_a + P_b$ or $P = P_a \cdot P_b$, then
+  $LF(P) = LF(P_a) \cup LF(P_b) \cup \{P\}$. We know by the
+  induction hypothesis that
+  $\bigcup_{P' \in LF(P_a)} VEC(P') \subseteq VEC(P_a)$ and that
+  $\bigcup_{P' \in LF(P_b)} VEC(P') \subseteq VEC(P_b)$, so
+  clearly
+  $\bigcup_{P' \in LF(P)} VEC(P') \subseteq VEC(P_a) \cup
+  VEC(P_b) \cup VEC(P) = VEC(P)$.
+\end{proof}
+
 \begin{definition}
   A path expression $P$ is \emph{well-formed} if for all
-  $P' \in P$, $SFR(P')$ recognizes only simple paths or simple
-  cycles.
+  $P_a \cdot P_b \in P$ where $P_a$ is of type $\tuple{u, v}$,
+  $VEC(P_a) \cap VEC(P_b) \in \{\emptyset, \{\tuple{v, \bot}\},
+  \{\tuple{v, \top}\}\}$.
 \end{definition}
 
 \begin{algorithm}[H]
@@ -153,10 +175,21 @@ variables.
 
   \tcc{Eliminate redundant variable vocabularies}
 
-  Initialize UF over $\{X_1,\dots,X_n,X'_1,\dots,X'_n\}$ \;
+  Initialize UF over
+  $\{X_i,X'_i|1\le i \le n\} \cup \{Y_v, Y'_v, |v \in V\}$ \;
   
   \ForEach{$i = 1$ \KwTo $n$}{
     \Switch{$P_i$}{
+      \lCase{$1$ of type $\tuple{u,v}$}{
+        $union(X_i, Y_u)$,
+        $union(X'_i, Y'_v)$
+      }
+      
+      \lCase{$\tuple{u,v} \in E$}{
+        $union(X_i, Y'_u)$,
+        $union(X'_i, Y_v)$
+      }
+      
       \lCase{$P_j + P_k$}{
         $union(X_i, X_j)$,
         $union(X_i, X_k)$,
@@ -166,8 +199,12 @@ variables.
 
       \lCase{$P_j \cdot P_k$}{
         $union(X_i, X_j)$,
-        $union(X'_j, X_k)$,
         $union(X'_i, X'_k)$
+      }
+
+      \lCase{${P_j}^*$}{
+        $union(X_i, X'_j)$,
+        $union(X'_i, X_j)$.
       }
     }
   }
@@ -190,7 +227,7 @@ variables.
       }
 
       \lCase{$P_j \cdot P_k$}{
-        $F_i \gets F_j \wedge F_k$
+        $F_i \gets F_j \wedge F_k \wedge [X'_j] = [X_k]$
       }
 
       \Case{${P_j}^*$}{
@@ -212,83 +249,53 @@ variables.
 
 \begin{lemma}
   \label{pe:freevars}
-  For all $1 \le j \le n$, the only free variables in $F_j$ are
-  members of $[X_k]$ or $[X'_k]$ for some $P_k \in LF(P_j)$.
+  For all $1 \le i \le n$, the only free variables in $F_i$ are
+  members of $[X_k]$ or $[X'_k]$ for some $P_k \in LF(P_i)$.
 \end{lemma}
 
 \begin{proof}
-  We proceed by induction on the iteration $i$ of the for loop
-  and assume the claim holds for each $j < i$. This is obviously
-  the case before the first iteration. And, for any $i$ and any
-  $j < i$, the claim still holds after the $i$th iteration since
-  $F_j$ is not modified. For $j = i$, if $P_i = 1$,
-  $P_i = e \in E$, or $P_i = {P_k}^*$ for some $k$, then the only
-  free variables in $F_i$ are $[X_i]$, and $[X'_i]$, so we are
-  done. Otherwise, $P_i = P_j + P_k$ or $P_i = P_j \cdot P_k$ for
-  some $j$ and $k$, and the free variables in $F_i$ are exactly
-  those in $F_j$ or $F_k$. By the induction hypothesis and the
-  well-formedness of $P$, the claim holds for $i$.
+  We proceed by induction on $i$ and assume the claim holds for
+  each $l < i$. This is trivially the case for $i = 1$. For
+  $l = i$, if $P_i = 1$, $P_i = e \in E$, or $P_i = {P_k}^*$ for
+  some $k$, then the only free variables in $F_i$ are $[X_i]$,
+  and $[X'_i]$, so we are done. Otherwise, $P_i = P_j + P_k$ or
+  $P_i = P_j \cdot P_k$ for some $j$ and $k$, and the free
+  variables in $F_i$ are exactly those in $F_j$ or $F_k$. By the
+  induction hypothesis and the well-formedness of $P$, the claim
+  holds for $i$.
 \end{proof}
 
-Let $V_j = \bigcup_{P_k \in LF(P_j)} [X_k] \cup [X'_k]$. Note that
-by the above Lemma, if $P_j \in LF(P_i)$, then
-$V_j \subseteq V_i$. As an abuse of notation, we write
-$\exists V_j$ to denote $\exists x_1, \dots, x_m$, where
-$V_j = \{x_1, \dots, x_m\}$.
+Let $V_j = \bigcup_{P_k \in LF(P_j)} [X_k] \cup [X'_k]$. It is
+easy to show that $V_i = \bigcup_{P_j \in LF(P_i)} V_j$. As an
+abuse of notation, we write $\exists V_j$ to denote
+$\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
 
 \begin{lemma}
-  \label{pe:vertex}
-  There is a function $vertex$ mapping the equivalence classes of
-  variable vocabularies to $V$ such that for all
-  $P_i \in SubExp(P)$ of type $\tuple{u, v}$, $vertex([X_i]) = u$
-  and $vertex([X'_i]) = v$.
+  For all $1 \le i \le n$,
+  $V_i = \{[Y_v]|\tuple{v, \bot} \in VEC(P_i)\} \cup
+  \{[Y'_v]|\tuple{v, \top} \in VEC(P_i)\}$. 
 \end{lemma}
 
 \begin{proof}
   We proceed by induction on the iteration $i$ of the first for
-  loop. Since each $X_j$ and $X'_j$ starts off with its own
-  equivalence class, the claim holds before the first
-  iteration. Suppose the claim holds before the $i$th
-  iteration for some function $vertex$. If $P_i = 1$, $P_i =
-  \tuple{u, v}$, or $P_i = {P_j}^*$ for some $j$, no union
-  operations are performed, and the claim holds for $vertex$.
+  loop and suppose the claim holds for all $l < i$. Certainly
+  this is true before the first iteration. Then, if the claim
+  held for $l < i$ in the last iteration, it must hold in the
+  current iteration as well because the equivalence classes do
+  cannot lose elements. Thus, it remains to prove the claim for
+  $l = i$. Consider each possible form of $P_i$:
 
-  Consider the case that $P_i = P_j + P_k$. Then, the types of
-  $P_i$, $P_j$, and $P_k$ are the same. So,
-  $vertex([X_i]) = vertex([X_j]) = vertex([X_k]) = u$ and
-  $vertex([X'_i]) = vertex([X'_j]) = vertex([X'_k]) = v$ for some
-  $u, v\in V$ prior to this iteration by the induction
-  hypothesis. Therefore, the function $vertex'$ that agrees with
-  $vertex$ on all unmodified equivalence classes and that sets
-  $vertex'([X_i]) = u$ and $vertex'([X'_i]) = v$ proves the
-  claim.
-
-  Similarly, consider the case that $P_i = P_j \cdot P_k$. Then,
-  $from(P_i) = from(P_j) = u$, $to(P_j) = from(P_k) = w$, and
-  $to(P_i) = to(P_k) = v$ for some some $u, v, w \in V$. So,
-  $vertex([X_i]) = vertex([X_j])$,
-  $vertex([X'_j]) = vertex([X_k])$, and
-  $vertex([X'_i]) = vertex([X'_k])$ prior to this iteration by
-  the induction hypothesis. Therefore, the function $vertex'$
-  that agrees with $vertex$ on all unmodified equivalence classes
-  and that sets $vertex'([X_i]) = u$, $vertex'([X'_j]) = w$, and
-  $vertex'([X'_i]) = v$ proves the claim.
-\end{proof}
-
-\begin{corollary}
-  \label{pe:nonintersect}
-  For all $P_j \cdot P_k \in SubExp(P)$,
-  $V_j \cap V_k = \{[X'_j]\} = \{[X_k]\}$.
-\end{corollary}
-
-\begin{proof}
-  For any $P_j \cdot P_k \in SubExp(P)$, let
-  $X \in V_j \cap V_k$. Then, by Lemma \ref{pe:freevars}, there
-  is some $P_a \in LF(P_j)$ and $P_b \in LF(P_k)$ such that
-  either (1) $[X_a] = [X_b]$, (2) $[X_a] = [X'_b]$, (3)
-  $[X'_a] = [X_b]$, or (4) $[X'_a] = [X'_b]$. Take the function
-  $vertex$ given by Lemma \ref{pe:vertex}. In case (1) we have
-  that
+  \begin{itemize}
+  \item $P_i = 1$: We know that
+    $VEC(P_i) = \{\tuple{u, \bot}, \tuple{v, \top}\}$, and we
+    have performed $union(X_i, Y_u)$ and $union(X'_i, Y'_v)$, so
+    the claim holds trivially.
+  \item $P_i = \tuple{u, v}$: We know that
+    $VEC(P_i) = \{\tuple{u, \top}, \tuple{v, \bot}\}$, and we
+    have performed $union(X_i, Y'_u)$ and $union(X'_i, Y_v)$, so
+    the claim holds trivially.
+  \item $P_i = P_j + P_k$: 
+  \end{itemize}
 \end{proof}
 
 \begin{theorem}
