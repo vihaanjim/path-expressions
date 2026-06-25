@@ -93,9 +93,9 @@ variables.
   where $\tf{0} \equiv false$, $\tf{1} \equiv X = X'$,
   $\tf{e} \equiv F_e(X, X')$ for all $e \in E$, and
   \begin{align*}
-    \tf{P_a + P_b} &\equiv \tf{P_a} \vee \tf{P_b} \\
+    \tf{P_a + P_b} &\equiv \tf{P_a} \lor \tf{P_b} \\
     \tf{P_a \cdot P_b} &\equiv \exists X''. \tf{P_a}(X, X'')
-                         \wedge \tf{P_b}(X'', X') \\
+                         \land \tf{P_b}(X'', X') \\
     \tf{P^*} &\equiv star(\tf{P}, \tuple{X, X'}) 
   \end{align*}
   for all $P, P_a, P_b \in PathExp(G)$. 
@@ -156,15 +156,15 @@ variables.
       }
 
       \lCase{$P_j + P_k$}{
-        $F_i \gets F_j \vee F_k$
+        $F_i \gets F_j \lor F_k$
       }
 
       \Case{$P_j \cdot P_k$}{
         \lIf{$R(P_j) \ne L(P_k)$} {
-          $F_i \gets F_j \wedge F_k \wedge R(P_j) = L(P_k)$
+          $F_i \gets F_j \land F_k \land R(P_j) = L(P_k)$
         }
         \lElse{
-          $F_i \gets F_j \wedge F_k$
+          $F_i \gets F_j \land F_k$
         }
       }
 
@@ -216,7 +216,7 @@ $V_j = \{x_1, \dots, x_m\}$.
   We proceed by induction on the iteration $i$ of the for loop,
   with the hypothesis that before the $i$th iteration, for all
   $j < i$,
-  $\tf{P_j} \equiv \exists V_j. F_j \wedge X = L(P_j) \wedge X' =
+  $\tf{P_j} \equiv \exists V_j. F_j \land X = L(P_j) \land X' =
   R(P_j)$. Since $F \equiv F_n$, and since $X$ and $X'$ appear
   nowhere else in $F$ by Lemma \ref{pe:freevars}, this is
   sufficient to prove the theorem.
@@ -232,30 +232,30 @@ $V_j = \{x_1, \dots, x_m\}$.
     $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$ and
     $F_i \equiv F_{\tuple{u, v}}(X'_u, X_v) \equiv F_{\tuple{u,
         v}}(L(P_i), R(P_i))$ by definition.  So,
-    $\exists V_i. F_i \wedge X = L(P_i) \wedge X' = R(P_i) \equiv
+    $\exists V_i. F_i \land X = L(P_i) \land X' = R(P_i) \equiv
     F_{\tuple{u, v}}(X, X') \equiv \tf{P_i}$.
     
   \item $P_i = P_j + P_k$:
-    $\tf{P_j+P_k} \equiv \tf{P_j} \vee \tf{P_k}$. By the
+    $\tf{P_j+P_k} \equiv \tf{P_j} \lor \tf{P_k}$. By the
     induction hypothesis,
-    $\tf{P_i} \equiv (\exists V_j. F_j \wedge X = L(P_j) \wedge
-    X' = R(P_j)) \vee (\exists V_k. F_k \wedge X = L(P_k) \wedge
-    X' = R(P_k))$.
+    $\tf{P_i} \equiv (\exists V_j. F_j \land X = L(P_j) \land X'
+    = R(P_j)) \lor (\exists V_k. F_k \land X = L(P_k) \land X' =
+    R(P_k))$.
 
     Since $V_i = V_j \cup V_k$, and since
     $L(P_i) = L(P_j) = L(P_k)$ and $R(P_i) = R(P_j) = R(P_k)$ we
     have that
-    $\tf{P_i} \equiv \exists V_i. (F_j \vee F_k) \wedge X =
-    L(P_i) \wedge X' = R(P_i)$, as desired.
+    $\tf{P_i} \equiv \exists V_i. (F_j \lor F_k) \land X = L(P_i)
+    \land X' = R(P_i)$, as desired.
     
   \item $P_i = P_j \cdot P_k$:
     $\tf{P_j \cdot P_k} \equiv \exists X''_1, X''_2. \tf{P_j}(X,
-    X''_1) \wedge \tf{P_k}(X''_2, X') \wedge X''_1 = X''_2$. So,
-    by the induction hypothesis,
+    X''_1) \land \tf{P_k}(X''_2, X') \land X''_1 = X''_2$. So, by
+    the induction hypothesis,
     $\tf{P_i} \equiv \exists X''_1, X''_2. (\exists V_j. F_j
-    \wedge X = L(P_j) \wedge X''_1 = R(P_j)) \wedge (\exists
-    V_k. F_k \wedge X''_2 = L(P_k) \wedge X' = R(P_k)) \wedge
-    X''_1 = X''_2$.
+    \land X = L(P_j) \land X''_1 = R(P_j)) \land (\exists
+    V_k. F_k \land X''_2 = L(P_k) \land X' = R(P_k)) \land X''_1
+    = X''_2$.
 
     By well-formedness,
     $LF(P_j) \cap LF(P_k) \subseteq \{R(P_j)\} = \{L(P_k)\}$. So,
@@ -266,24 +266,24 @@ $V_j = \{x_1, \dots, x_m\}$.
     on different values. Therefore,
     \begin{align*}
       \tf{P_i}
-      &\equiv \exists X''_1, X''_2. \exists V_i. F_j \wedge
-        X = L(P_j) \wedge X''_1 = R(P_j) \wedge F_k \wedge
-        X''_2 = L(P_k) \wedge X' = R(P_k) \wedge X''_1 = X''_2 \\
-      &\equiv \exists V_i. F_j \wedge X = L(P_j) \wedge
-        R(P_j) = L(P_k) \wedge F_k \wedge X' = R(P_k) \\
+      &\equiv \exists X''_1, X''_2. \exists V_i. F_j \land
+        X = L(P_j) \land X''_1 = R(P_j) \land F_k \land
+        X''_2 = L(P_k) \land X' = R(P_k) \land X''_1 = X''_2 \\
+      &\equiv \exists V_i. F_j \land X = L(P_j) \land
+        R(P_j) = L(P_k) \land F_k \land X' = R(P_k) \\
       & \equiv \exists V_i. F_i \land X = L(P_i) \land X' = R(P_i)
     \end{align*}
 
     since $L(P_i) = L(P_j)$, $R(P_i) = R(P_k)$, and
-    $F_i \equiv F_j \wedge F_k \wedge R(P_j) = L(P_k)$.
+    $F_i \equiv F_j \land F_k \land R(P_j) = L(P_k)$.
 
   \item $P_i = {P_j}^*$: We know by the induction hypothesis that
-    $\tf{P_j} \equiv \exists V_j. F_j \wedge X = L(P_j) \wedge X'
-    = R(P_j)$.  So,
+    $\tf{P_j} \equiv \exists V_j. F_j \land X = L(P_j) \land X' =
+    R(P_j)$.  So,
     $F^* = star(F_j, \tuple{L(P_j), R(P_j)}) \equiv
     \tf{P_i}(L(P_j), R(P_j))$. Therefore, for
     $F_i = F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto R(P_i)]$,
-    $\exists V_i. F_i \wedge X = L(P_i) \wedge X' = R(P_i) \equiv
+    $\exists V_i. F_i \land X = L(P_i) \land X' = R(P_i) \equiv
     \tf{P_i}$.
   \end{itemize}
 \end{proof}
