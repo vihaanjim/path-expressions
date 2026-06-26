@@ -31,9 +31,7 @@
   all $R, R_1, R_2 \in RegExp(\Sigma)$.
 
   $SubExp(R)$ for $R \in RegExp(\Sigma)$ is the set of
-  subexpressions of $R$, including $R$ itself. $R$ is
-  \emph{simple} if $R = 0$ or $0 \not\in SubExp(R)$. $R$ is
-  \emph{non-empty} if $R \ne 0$.
+  subexpressions of $R$, including $R$ itself.
 \end{definition}
 
 \begin{definition}
@@ -74,7 +72,7 @@ variables in either $X$ or $X'$.
 
 \begin{definition}
   A \emph{path expression} $P$ of type $\tuple{u, v}$ on
-  $G = \tuple{V, E, r, F}$ is a simple regular expression over
+  $G = \tuple{V, E, r, F}$ is a regular expression over
   $E$ such that $\si{P} \subseteq Paths_G(u,v)$ for some
   $u,v \in V$. We denote the set of path expressions on $G$ by
   $PathExp(G)$.
@@ -106,31 +104,37 @@ variables.
 
 \begin{definition}
   % todo: better name
-  Suppose every vertex $v \in V$ is associated with variable
-  vocabularies $X_v$ and $X'_v$. Then, the \emph{loop-free
-    vocabularies} of a path expression $P$ with type
-  $\tuple{u, v}$ are given by $LF(P)$ where
+  The \emph{loop-free subexpressions} of $P$ are given by $LF(P)$
+  where
   \begin{align*}
-    LF(\tuple{u,v}) &= \{X'_u, X_v\} \\
-    LF(1) = LF(P^*) &= \{X_u, X'_v\} \\
-    LF(P_a + P_b) = LF(P_a \cdot P_b) &= LF(P_a) \cup LF(P_b)
+    LF(1) &= \{1\} \\
+    LF(\tuple{u,v}) &= \{\tuple{u,v}\} \\
+    LF(P_a + P_b) &= LF(P_a) \cup LF(P_b) \cup \{P_a + P_b\} \\
+    LF(P_a \cdot P_b) &= LF(P_a) \cup LF(P_b) \cup \{P_a \cdot
+                        P_b\} \\
+    LF(P^*) &= \{P^*\} 
   \end{align*}
+
+  Note that $P \in LF(P)$ for all $P$.
 \end{definition}
 
 \begin{definition}
-  A non-empty path expression $P$ is \emph{well-formed} if the
-  following hold:
+  Suppose every vertex $v \in V$ is associated with variable
+  vocabularies $X_v$ and $X'_v$. Then, a path expression $P$ is
+  \emph{well-formed} if the following hold:
   \begin{itemize}
-  \item $1 \not \in SubExp(P)$
+  \item $0, 1 \not \in SubExp(P)$
+  \item For all $P_a \cdot P_b \in P$,
+    $LF(P_a) \cap LF(P_b) = \emptyset$.    
   \item There exist functions $L$ and $R$ mapping $SubExp(P)$ to
-    variable vocabularies such that $L(\tuple{u,v}) = X'_u$ and
-    $R(\tuple{u,v}) = X_v$; $L(P_a + P_b) = L(P_a) = L(P_b)$ and
-    $R(P_a + P_b) = R(P_a) = R(P_b)$; $L(P_a \cdot P_b) = L(P_a)$
-    and $R(P_a \cdot P_b) = R(P_b)$; and $L({P_a}^*) = R(P_a)$
-    and $R({P_a}^*) = L(P_a)$.
-  \item For all $P_a \cdot P_b \in P$ where $P_a$ is of type
-    $LF(P_a) \cap LF(P_b)$ is either $\emptyset$ or
-    $\{R(P_a)\} = \{L(P_b)\}$.
+    variable vocabularies such that
+    $L(\tuple{u,v}) \in \{X_u, X'_u\}$ and
+    $R(\tuple{u,v}) \in \{X_v, X'_v\}$;
+    $L(P_a + P_b) = L(P_a) = L(P_b)$ and
+    $R(P_a + P_b) = R(P_a) = R(P_b)$;
+    $L(P_a \cdot P_b) = L(P_a)$, $R(P_a \cdot P_b) = R(P_b)$, and
+    $R(P_a) = L(P_b)$ for $P_a \cdot P_b \in SubExp(P)$; and
+    $L({P_a}^*) = R(P_a)$ and $R({P_a}^*) = L(P_a)$.
   \end{itemize}
 \end{definition}
 
@@ -152,20 +156,15 @@ variables.
   \ForEach{$i = 1$ \KwTo $n$}{
     \Switch{$P_i$}{
       \lCase{$\tuple{u, v} \in E$}{
-        $F_i \gets F_e(X'_u, X_v)$
+        $F_i \gets F_e(L(P_i), R(P_i))$
       }
 
       \lCase{$P_j + P_k$}{
         $F_i \gets F_j \lor F_k$
       }
 
-      \Case{$P_j \cdot P_k$}{
-        \lIf{$R(P_j) \ne L(P_k)$} {
-          $F_i \gets F_j \land F_k \land R(P_j) = L(P_k)$
-        }
-        \lElse{
-          $F_i \gets F_j \land F_k$
-        }
+      \lCase{$P_j \cdot P_k$}{
+        $F_i \gets F_j \land F_k$
       }
 
       \Case{${P_j}^*$}{
@@ -187,26 +186,26 @@ variables.
 
 \begin{lemma}
   \label{pe:freevars}
-  For all $1 \le i \le n$, the only free variables in $F_i$ are
-  members of $\bigcup LF(P_i)$.
+  For all $1 \le i \le n$, all free variables in $F_i$ are
+  members of $\bigcup_{P_a \in LF(P_i)} (L(P_a) \cup R(P_a))$.
 \end{lemma}
 
 \begin{proof}
   We proceed by induction on $i$ and assume the claim holds for
   each $l < i$. This is trivially the case for $i = 1$. For
   $l = i$, if $P_i = e \in E$, or $P_i = {P_k}^*$ for some $k$,
-  then the only free variables in $F_i$ are $L(P_i)$, and
+  then the only free variables in $F_i$ are in $L(P_i)$ and
   $R(P_i)$, so we are done. Otherwise, $P_i = P_j + P_k$ or
   $P_i = P_j \cdot P_k$ for some $j$ and $k$, and the free
-  variables in $F_i$ are exactly those in $F_j$ or $F_k$, plus
-  possibly $R(P_j)$ and $L(P_i)$. By the induction hypothesis and
-  the well-formedness of $P$, the claim holds for $i$.
+  variables in $F_i$ are exactly those in $F_j$ or $F_k$. By the
+  induction hypothesis and the definition of $LF$, the claim
+  holds for $i$.
 \end{proof}
 
-Let $V_j = \bigcup LF(P_j)$. By definition, if $P_j \in LF(P_i)$,
-then $V_j \subseteq V_i$. As an abuse of notation, we write
-$\exists V_j$ to denote $\exists x_1, \dots, x_m$, where
-$V_j = \{x_1, \dots, x_m\}$.
+Let $V_j = \bigcup_{P_a \in LF(P_j)} (L(P_a) \cup R(P_a))$. By
+definition, if $P_j \in LF(P_i)$, then $V_j \subseteq V_i$. As an
+abuse of notation, we write $\exists V_j$ to denote
+$\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
 
 \begin{theorem}
   $Sat(\tf{P}) \iff Sat(F)$
@@ -230,8 +229,7 @@ $V_j = \{x_1, \dots, x_m\}$.
   \begin{itemize}
   \item $P_i = \tuple{u, v}$: We have that
     $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$ and
-    $F_i \equiv F_{\tuple{u, v}}(X'_u, X_v) \equiv F_{\tuple{u,
-        v}}(L(P_i), R(P_i))$ by definition.  So,
+    $F_i \equiv F_{\tuple{u, v}}(L(P_i), R(P_i))$.  So,
     $\exists V_i. F_i \land X = L(P_i) \land X' = R(P_i) \equiv
     F_{\tuple{u, v}}(X, X') \equiv \tf{P_i}$.
     
@@ -242,7 +240,7 @@ $V_j = \{x_1, \dots, x_m\}$.
     = R(P_j)) \lor (\exists V_k. F_k \land X = L(P_k) \land X' =
     R(P_k))$.
 
-    Since $V_i = V_j \cup V_k$, and since
+    Since $V_i = V_j \cup V_k$ by definition, and since
     $L(P_i) = L(P_j) = L(P_k)$ and $R(P_i) = R(P_j) = R(P_k)$ we
     have that
     $\tf{P_i} \equiv \exists V_i. (F_j \lor F_k) \land X = L(P_i)
@@ -257,13 +255,10 @@ $V_j = \{x_1, \dots, x_m\}$.
     V_k. F_k \land X''_2 = L(P_k) \land X' = R(P_k)) \land X''_1
     = X''_2$.
 
-    By well-formedness,
-    $LF(P_j) \cap LF(P_k) \subseteq \{R(P_j)\} = \{L(P_k)\}$. So,
-    $V_j \cap V_k \subseteq R(P_j) = L(P_k)$. However, due to the
-    conditions $X''_1 = R(P_j)$, $X''_2 = L(P_k)$ and
-    $X''_1 = X''_2$, by Lemma \ref{pe:freevars}, there are no
-    free variables present in both $F_j$ and $F_k$ that can take
-    on different values. Therefore,
+    By well-formedness, $LF(P_j) \cap LF(P_k) = \emptyset$. So,
+    by Lemma \ref{pe:freevars}, there are no free variables
+    present in both $F_j$ and $F_k$. Therefore, since
+    $L(P_i) = L(P_j)$, $R(P_i) = R(P_k)$, and $R(P_j) = L(P_k)$,
     \begin{align*}
       \tf{P_i}
       &\equiv \exists X''_1, X''_2. \exists V_i. F_j \land
@@ -273,9 +268,6 @@ $V_j = \{x_1, \dots, x_m\}$.
         R(P_j) = L(P_k) \land F_k \land X' = R(P_k) \\
       & \equiv \exists V_i. F_i \land X = L(P_i) \land X' = R(P_i)
     \end{align*}
-
-    since $L(P_i) = L(P_j)$, $R(P_i) = R(P_k)$, and
-    $F_i \equiv F_j \land F_k \land R(P_j) = L(P_k)$.
 
   \item $P_i = {P_j}^*$: We know by the induction hypothesis that
     $\tf{P_j} \equiv \exists V_j. F_j \land X = L(P_j) \land X' =
@@ -288,13 +280,14 @@ $V_j = \{x_1, \dots, x_m\}$.
   \end{itemize}
 \end{proof}
 
-% taken from Tarjan / Termination Analysis Without the Tears
-\begin{algorithm}
-  \caption{Modified Gaussian Elimination}
+\begin{algorithm}[H]
+  \caption{Path Expression Finding}
   \label{alg:gauss}
 
   \SetAlgoLined
   % \SetAlgoNoEnd
+
+  \SetKw{KwDownTo}{downto}
   
   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ with vertices
     labeled $1, \dots, n-1, n = r$}
@@ -303,95 +296,79 @@ $V_j = \{x_1, \dots, x_m\}$.
     $v \in V$, $pe(v)$ is a well-formed path expression
     recognizing exactly $Paths_G(r, v)$}
 
-  \tcc{$\si{P(u, v)} \subseteq Paths_G(u, v)$ for all
-    $u, v \in V$}
+  \tcc{After iteration $v$, $\si{to(u)} \subseteq Paths_G(v, u)$,
+    $\si{from(u)} \subseteq Paths_G(u, v)$, and
+    $\si{cycle(u)} \subseteq Paths_G(u, u)$}
+  
+  $to, from, cycle \gets \lambda u. 0$ \;
 
-  $P \gets \lambda \tuple{u, v}. 0$ \;
-
-  \lForEach{$\tuple{u, v} \in E$}{
-    $P(u, v) \gets P(u, v) \cdot \tuple{u, v}$
-  }
-
-  \For{$v = 1$ \KwTo $n-1$}{
-    \For{$u = v + 1$ \KwTo $n$}{
+  \For{$v = 1$ \KwTo $n$}{
+    \For{$u = 1$ \KwTo $v$}{
       
-      $P(u, v) \gets P(u, v) \cdot P(v, v)^*$ \;
-
-      $P(u, u) \gets P(u, w) + (P(u, v) \cdot P(v, w))^*$ \;
-      
-      \For{$w = 1$ \KwTo $n$, $w \not\in \{u, v\}$}{
-        $P(u, w) \gets P(u, w) + P(u, v) \cdot P(v, w)$ \;
+      \lIf{$\tuple{v, u} \in E$}{
+        $to(u) \gets \tuple{v, u}$
       }
+      \lElse{
+        $to(u) \gets 0$
+      }
+
+      \lForEach{$w \in pred(u), w < u$}{
+        $to(u) \gets to(u) + to(w) \cdot \tuple{w, u}$
+      }
+
+      $to(u) \gets to(u) \cdot cycle(u)^*$ \;
+
+    }
+
+    $cycle(v) \gets to(v)$ \;
+
+    $from(v) \gets 1$ \;
+
+    \For{$u = v-1$ \KwDownTo $1$}{
+
+      $from(u) \gets 0$ \;
+
+      \lForEach{$w \in succ(u), u < w \le v$}{
+        $from(u) \gets from(u) + \tuple{u, w} \cdot scratch(w)$
+      }
+
+      $temp \gets from(u)$ \;
+
+      $from(u) \gets cycle(u)^* \cdot from(u)$ \;
+
+      $cycle(u) \gets cycle(u) + temp \cdot to(u)$ \;
+
     }
   }
 
-  $pe \gets \lambda v. P(r, v)$ \;
+  $pe \gets to$ \;
 
   \Return $pe$ \;
-
 \end{algorithm}
 
 \begin{lemma}
   After the $v$th iteration of the outer loop, for all
-  $u, w \in V$, the following hold:
+  $u \le v$, the following hold:
   \begin{enumerate}
-  \item If $w \ne u$, then $P(u,w)$ is a well-formed path
-    expression recognizing exactly the paths from $u$ to $w$ in
-    $G$ whose intermediate vertices are smaller than
-    $\min \{u, v+1\}$
-  \item If $w = u$, then $P(u,w)=P(u,u)$ is a well-formed path
-    expression recognizing exactly the cycles starting and ending
-    at $u$ whose intermediate vertices are smaller than
-    $\min \{u+1, v+1\}$
+  \item $to(u)$ is a well-formed path expression recognizing
+    exactly the paths from $v$ to $u$ in $G$ whose intermediate
+    vertices are less than $v$.
+  \item $cycle(u)$ is a well-formed path expression recognizing
+    exactly the cycles starting and ending at $u$ in $G$ whose
+    intermediate vertices are at most $v$ but not equal to $u$.
   \end{enumerate}
 \end{lemma}
 
 \begin{proof}
-  We proceed by induction on $v$, and assume that before the
-  $v$th iteration, (1) holds for $u < v$ and (2) holds for
-  $u \ge v$ and intermediate vertices smaller than
-  $\min \{u, v\}$. This is clearly true before the first
-  iteration since all path expressions are either empty or
-  edges. Consider any $u < v$; by the structure of the for loops,
-  $P(u, w)$ for all $w$ is unchanged during this iteration, so
-  (1) still holds at the end of this iteration.  Similarly, for
-  all $w$, $P(v, w)$ is left unchanged, and we know the
-  intermediate vertices in the paths it recognizes are smaller
-  than $\min \{v, v\} = v$; ergo, (1) holds for such $w$ at the
-  end of this iteration.
+  We proceed by induction on $v$, and assume that (2) holds for
+  all $u < v$ before the $v$th iteration. This is vacuously true
+  when $v = 1$.
 
-  Therefore, it only remains to prove (2) for any $u > v$. Note
-  that $\min\{u, v\} = v$ and $\min\{u, v+1\} = v+1$. First, the
-  only assignment to $P(u, v)$ this iteration is to concatenate
-  $P(v, v)^*$ to it. $P(v, v)^*$ is well-formed with
-  $LF(P(v, v)^*) = \{P(v, v)^*\}$, and
-  $P(v, v)^* \not\in LF(P(u, v))$ before this iteration by the
-  induction hypotheses. So, $P(u, v)$ is
-  well-formed. Furthermore, consider any path from $u$ to $v$
-  whose intermediate vertices are smaller than $v+1$. It must be
-  the concatenation of a non-empty path $p_0$ from $u$ to $v$
-  whose intermediate vertices are smaller than $v$ and $k$ paths
-  $p_1, \dots, p_k$ from $v$ to $v$ whose intermediate vertices
-  are smaller than $v$. By the induction hypothesis, $p_0$ is
-  recognized by the previous $P(u, v)$, and each $p_i$ for
-  $1 \le i \le k$ is recognized by $P(v, v)$. Thus, after this
-  iteration $P(u, v)$ recognizes exactly the paths from $u$ to
-  $v$ in $G$ whose intermediate vertices are smaller than $v+1$.
-
-  Consider any $w \ne v$ and any path from $u$ to $w$ whose
-  intermediate vertices are smaller than $v+1$. Either it is a
-  path whose intermediate vertices are smaller than $v$, or it is
-  the concatenation of a non-empty path $p_1$ from $u$ to $v$
-  whose intermediate vertices are smaller than $v+1$ and a
-  non-empty path $p_2$ from $v$ to $w$ whose intermediate
-  vertices are smaller than $v$. Thus, $P(u, w) + P(u, v) \cdot
-  P(v, w)$ recognizes exactly these paths by the induction
-  hypothesis and our previous analysis of $P(u, v)$. Furthermore,
-  we know that $P(u, w)$, $P(u, v)$, and $P(v, w)$ at this point
-  are well-formed. Suppose for the sake of contradiction that
-  there is some $P \in LF(P(u, v)) \cap LF(P(v, w))$.
-
-  Note: it turns out this can be the case!
+  Suppose (2) holds for all $u < v$ before the $v$th iteration.
+  We now wish to prove (1) holds for $u \le v$, by induction on
+  $u$. We assume that before the $u$th iteration, (1) holds for
+  all $w < u$, which is vacuously true when $u = 1$. Supposing
+  the induction hypothesis holds
 \end{proof}
 
 \end{document}
