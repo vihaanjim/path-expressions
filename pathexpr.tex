@@ -290,58 +290,52 @@ $\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
   \SetKw{KwDownTo}{downto}
   
   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ with vertices
-    labeled $1, \dots, n-1, n = r$}
+    labeled $1 = r, 2, \dots, n$}
   
   \KwOut{A function $pe: V \to PathExp(G)$ such that for all
     $v \in V$, $pe(v)$ is a well-formed path expression
     recognizing exactly $Paths_G(r, v)$}
 
-  \tcc{After iteration $v$, $\si{to(u)} \subseteq Paths_G(v, u)$,
-    $\si{from(u)} \subseteq Paths_G(u, v)$, and
-    $\si{cycle(u)} \subseteq Paths_G(u, u)$}
+  \tcc{$\si(P(u, v)) \subseteq Paths_G(u, v)$}
   
-  $to, from, cycle \gets \lambda u. 0$ \;
+  $P \gets \lambda \tuple{u,v}. 0$ \;
 
-  \For{$v = 1$ \KwTo $n$}{
-    \For{$u = 1$ \KwTo $v$}{
-      
-      \lIf{$\tuple{v, u} \in E$}{
-        $to(u) \gets \tuple{v, u}$
+  \For{$i = 1$ \KwTo $n-1$}{
+    \For{$j = i + 1$ \KwTo $n$}{
+      \For{$k = i + 1$ \KwTo $n$}{
+        $P(j, k) \gets P(j, k) + P(j, i) \cdot P(i, i)^* \cdot
+        P(i, k)$ \;
       }
-      \lElse{
-        $to(u) \gets 0$
-      }
-
-      \lForEach{$w \in pred(u), w < u$}{
-        $to(u) \gets to(u) + to(w) \cdot \tuple{w, u}$
-      }
-
-      $to(u) \gets to(u) \cdot cycle(u)^*$ \;
-
-    }
-
-    $cycle(v) \gets to(v)$ \;
-
-    $from(v) \gets 1$ \;
-
-    \For{$u = v-1$ \KwDownTo $1$}{
-
-      $from(u) \gets 0$ \;
-
-      \lForEach{$w \in succ(u), u < w \le v$}{
-        $from(u) \gets from(u) + \tuple{u, w} \cdot scratch(w)$
-      }
-
-      $temp \gets from(u)$ \;
-
-      $from(u) \gets cycle(u)^* \cdot from(u)$ \;
-
-      $cycle(u) \gets cycle(u) + temp \cdot to(u)$ \;
-
     }
   }
 
-  $pe \gets to$ \;
+  % B*(C\Delta*DB*)*
+
+  $P(n, n) \gets P(n, n)^*$ \;
+
+  \For{$i = n - 1$ \KwDownTo $1$}{
+
+    $X \gets 0$ \;
+
+    $C', D' \gets \lambda v. 0$ \;
+    
+    \For{$j = i + 1$ \KwTo $n$}{
+      \For{$k = i + 1$ \KwTo $n$}{
+        $C'(k) \gets C'(k) + P(i, j) \cdot P(j, k)$ \;
+        $D'(j) \gets D'(j) + P(j, k) \cdot P(k, i)$ \;
+        $X \gets X + P(i, j) \cdot P(j, k) \cdot P(k, i)$ \;
+      }
+    }
+
+    \For{$j = i + 1$ \KwTo $n$}{
+      $P(i, j) \gets P(i, i)^* \cdot C'(j)$ \;
+      $P(j, i) \gets D'(j) \cdot P(i, i)^*$ \;
+    }
+
+    $P(i, i) \gets P(i, i)^* \cdot (X \cdot P(i, i)^*)^*$ \;
+  }
+  
+  $pe \gets \lambda v. P(r, v)$
 
   \Return $pe$ \;
 \end{algorithm}
