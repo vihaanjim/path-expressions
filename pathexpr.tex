@@ -121,20 +121,20 @@ variables.
 \begin{definition}
   Suppose every vertex $v \in V$ is associated with variable
   vocabularies $X_v$ and $X'_v$. Then, a path expression $P$ is
-  \emph{well-formed} if the following hold:
+  \emph{well-formed} if $0, 1 \not \in SubExp(P)$ and there exist
+  functions $L$ and $R$ mapping $SubExp(P)$ to variable
+  vocabularies such that the following hold:
   \begin{itemize}
-  \item $0, 1 \not \in SubExp(P)$
-  \item For all $P_a \cdot P_b \in P$,
-    $LF(P_a) \cap LF(P_b) = \emptyset$.    
-  \item There exist functions $L$ and $R$ mapping $SubExp(P)$ to
-    variable vocabularies such that
-    $L(\tuple{u,v}) \in \{X_u, X'_u\}$ and
-    $R(\tuple{u,v}) \in \{X_v, X'_v\}$;
-    $L(P_a + P_b) = L(P_a) = L(P_b)$ and
-    $R(P_a + P_b) = R(P_a) = R(P_b)$;
-    $L(P_a \cdot P_b) = L(P_a)$, $R(P_a \cdot P_b) = R(P_b)$, and
-    $R(P_a) = L(P_b)$ for $P_a \cdot P_b \in SubExp(P)$; and
-    $L({P_a}^*) = R(P_a)$ and $R({P_a}^*) = L(P_a)$.
+  \item $L(\tuple{u,v}) \in \{X_u, X'_u\}$ and
+    $R(\tuple{u,v}) \in \{X_v, X'_v\}$
+  \item $L(P_a + P_b) = L(P_a) = L(P_b)$ and
+    $R(P_a + P_b) = R(P_a) = R(P_b)$
+  \item $L(P_a \cdot P_b) = L(P_a)$, $R(P_a \cdot P_b) = R(P_b)$,
+    and
+    $(\bigcup_{P_c \in LF(P_a)} (L(P_c) \cup R(P_c))) \cap
+    (\bigcup_{P_c \in LF(P_b)} (L(P_c) \cup R(P_c))) = \{R(P_a)\}
+    = \{L(P_b)\}$ for all $P_a \cdot P_b \in SubExp(P)$
+  \item $L({P_a}^*) = R(P_a)$ and $R({P_a}^*) = L(P_a)$.
   \end{itemize}
 \end{definition}
 
@@ -255,10 +255,13 @@ $\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
     V_k. F_k \land X''_2 = L(P_k) \land X' = R(P_k)) \land X''_1
     = X''_2$.
 
-    By well-formedness, $LF(P_j) \cap LF(P_k) = \emptyset$. So,
-    by Lemma \ref{pe:freevars}, there are no free variables
-    present in both $F_j$ and $F_k$. Therefore, since
-    $L(P_i) = L(P_j)$, $R(P_i) = R(P_k)$, and $R(P_j) = L(P_k)$,
+    By well-formedness,
+    $V_j \cap V_k = \{R(P_j)\} = \{L(P_k)\}$. But, note that by
+    the condition $X''_1 = X''_2$, $R(P_j)$ and $L(P_k)$ must
+    take on the same value. So, by Lemma \ref{pe:freevars}, there
+    are no free variables present in both $F_j$ and $F_k$ that
+    may take on different values. Therefore, since
+    $L(P_i) = L(P_j)$ and $R(P_j) = L(P_k)$,
     \begin{align*}
       \tf{P_i}
       &\equiv \exists X''_1, X''_2. \exists V_i. F_j \land
