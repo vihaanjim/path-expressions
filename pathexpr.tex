@@ -288,7 +288,7 @@ $\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
   \label{alg:gauss}
 
   \SetAlgoLined
-  \SetAlgoNoEnd
+  % \SetAlgoNoEnd
   
   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ with vertices
     labeled $1, \dots, n-1, n = r$}
@@ -303,7 +303,7 @@ $\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
   $P \gets \lambda \tuple{u, v}. 0$ \;
 
   \lForEach{$\tuple{u, v} \in E$}{
-    $P(u, v) \gets P(u, v) \cdot \tuple{u, v}$
+    $P(u, v) \gets P(u, v) + \tuple{u, v}$
   }
 
   \For{$v = 1$ \KwTo $n-1$}{
