@@ -125,16 +125,13 @@ variables.
   functions $L$ and $R$ mapping $SubExp(P)$ to variable
   vocabularies such that the following hold:
   \begin{itemize}
-  \item $L(\tuple{u,v}) \in \{X_u, X'_u\}$ and
-    $R(\tuple{u,v}) \in \{X_v, X'_v\}$
   \item $L(P_a + P_b) = L(P_a) = L(P_b)$ and
     $R(P_a + P_b) = R(P_a) = R(P_b)$
   \item $L(P_a \cdot P_b) = L(P_a)$, $R(P_a \cdot P_b) = R(P_b)$,
     and
     $(\bigcup_{P_c \in LF(P_a)} (L(P_c) \cup R(P_c))) \cap
-    (\bigcup_{P_c \in LF(P_b)} (L(P_c) \cup R(P_c))) = \{R(P_a)\}
-    = \{L(P_b)\}$ for all $P_a \cdot P_b \in SubExp(P)$
-  \item $L({P_a}^*) = R(P_a)$ and $R({P_a}^*) = L(P_a)$.
+    (\bigcup_{P_c \in LF(P_b)} (L(P_c) \cup R(P_c))) = R(P_a) =
+    L(P_b)$ for all $P_a \cdot P_b \in SubExp(P)$
   \end{itemize}
 \end{definition}
 
@@ -255,13 +252,13 @@ $\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
     V_k. F_k \land X''_2 = L(P_k) \land X' = R(P_k)) \land X''_1
     = X''_2$.
 
-    By well-formedness,
-    $V_j \cap V_k = \{R(P_j)\} = \{L(P_k)\}$. But, note that by
-    the condition $X''_1 = X''_2$, $R(P_j)$ and $L(P_k)$ must
-    take on the same value. So, by Lemma \ref{pe:freevars}, there
-    are no free variables present in both $F_j$ and $F_k$ that
-    may take on different values. Therefore, since
-    $L(P_i) = L(P_j)$ and $R(P_j) = L(P_k)$,
+    By well-formedness, $V_j \cap V_k = R(P_j) = L(P_k)$. But,
+    note that by the condition $X''_1 = X''_2$, $R(P_j)$ and
+    $L(P_k)$ must take on the same values. So, by Lemma
+    \ref{pe:freevars}, there are no free variables present in
+    both $F_j$ and $F_k$ that may take on different
+    values. Therefore, since $L(P_i) = L(P_j)$ and
+    $R(P_j) = L(P_k)$,
     \begin{align*}
       \tf{P_i}
       &\equiv \exists X''_1, X''_2. \exists V_i. F_j \land
@@ -274,10 +271,12 @@ $\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
 
   \item $P_i = {P_j}^*$: We know by the induction hypothesis that
     $\tf{P_j} \equiv \exists V_j. F_j \land X = L(P_j) \land X' =
-    R(P_j)$.  So,
+    R(P_j)$. So,
     $F^* = star(F_j, \tuple{L(P_j), R(P_j)}) \equiv
-    \tf{P_i}(L(P_j), R(P_j))$. Therefore, for
-    $F_i = F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto R(P_i)]$,
+    \tf{P_i}(L(P_j), R(P_j))$. Therefore,
+    $F_i = F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto R(P_i)]
+    \equiv \tf{P_i}(L(P_i), R(P_i))$. Since
+    $V_i = L(P_i) \cup R(P_i)$,
     $\exists V_i. F_i \land X = L(P_i) \land X' = R(P_i) \equiv
     \tf{P_i}$.
   \end{itemize}
