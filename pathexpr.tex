@@ -282,89 +282,91 @@ $\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
   \end{itemize}
 \end{proof}
 
-\begin{algorithm}[H]
-  \caption{Path Expression Finding}
+% taken from Tarjan / Termination Analysis Without the Tears
+\begin{algorithm}
+  \caption{Gaussian Elimination}
   \label{alg:gauss}
 
   \SetAlgoLined
-  % \SetAlgoNoEnd
-
-  \SetKw{KwDownTo}{downto}
+  \SetAlgoNoEnd
   
   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ with vertices
-    labeled $1 = r, 2, \dots, n$}
+    labeled $1, \dots, n-1, n = r$}
   
   \KwOut{A function $pe: V \to PathExp(G)$ such that for all
     $v \in V$, $pe(v)$ is a well-formed path expression
     recognizing exactly $Paths_G(r, v)$}
 
-  \tcc{$\si(P(u, v)) \subseteq Paths_G(u, v)$}
-  
-  $P \gets \lambda \tuple{u,v}. 0$ \;
+  \tcc{$\si{P(u, v)} \subseteq Paths_G(u, v)$ for all
+    $u, v \in V$}
 
-  \For{$i = 1$ \KwTo $n-1$}{
-    \For{$j = i + 1$ \KwTo $n$}{
-      \For{$k = i + 1$ \KwTo $n$}{
-        $P(j, k) \gets P(j, k) + P(j, i) \cdot P(i, i)^* \cdot
-        P(i, k)$ \;
+  $P \gets \lambda \tuple{u, v}. 0$ \;
+
+  \lForEach{$\tuple{u, v} \in E$}{
+    $P(u, v) \gets P(u, v) \cdot \tuple{u, v}$
+  }
+
+  \For{$v = 1$ \KwTo $n-1$}{
+    \For{$u = v + 1$ \KwTo $n$}{
+      $P(u, v) \gets P(u, v) \cdot P(v, v)^*$ \;
+      \For{$w = 1$ \KwTo $n$, $w \ne v$}{
+        $P(u, w) \gets P(u, w) + P(u, v) \cdot P(v, w)$ \;
       }
     }
   }
 
-  % B*(C\Delta*DB*)*
-
-  $P(n, n) \gets P(n, n)^*$ \;
-
-  \For{$i = n - 1$ \KwDownTo $1$}{
-
-    $X \gets 0$ \;
-
-    $C', D' \gets \lambda v. 0$ \;
-    
-    \For{$j = i + 1$ \KwTo $n$}{
-      \For{$k = i + 1$ \KwTo $n$}{
-        $C'(k) \gets C'(k) + P(i, j) \cdot P(j, k)$ \;
-        $D'(j) \gets D'(j) + P(j, k) \cdot P(k, i)$ \;
-        $X \gets X + P(i, j) \cdot P(j, k) \cdot P(k, i)$ \;
-      }
-    }
-
-    \For{$j = i + 1$ \KwTo $n$}{
-      $P(i, j) \gets P(i, i)^* \cdot C'(j)$ \;
-      $P(j, i) \gets D'(j) \cdot P(i, i)^*$ \;
-    }
-
-    $P(i, i) \gets P(i, i)^* \cdot (X \cdot P(i, i)^*)^*$ \;
-  }
-  
-  $pe \gets \lambda v. P(r, v)$
+  $pe \gets \lambda v. P(r, v)$ \;
 
   \Return $pe$ \;
+
 \end{algorithm}
 
 \begin{lemma}
   After the $v$th iteration of the outer loop, for all
-  $u \le v$, the following hold:
-  \begin{enumerate}
-  \item $to(u)$ is a well-formed path expression recognizing
-    exactly the paths from $v$ to $u$ in $G$ whose intermediate
-    vertices are less than $v$.
-  \item $cycle(u)$ is a well-formed path expression recognizing
-    exactly the cycles starting and ending at $u$ in $G$ whose
-    intermediate vertices are at most $v$ but not equal to $u$.
-  \end{enumerate}
+  $u, w \in V$, $P(u, w)$ is a well-formed path expression
+  recognizing exactly the paths from $u$ to $w$ in $G$ whose
+  intermediate vertices are smaller than $\min\{u, v+1\}$. 
+
 \end{lemma}
 
 \begin{proof}
-  We proceed by induction on $v$, and assume that (2) holds for
-  all $u < v$ before the $v$th iteration. This is vacuously true
-  when $v = 1$.
+  TODO: Modify algorithm to create well-formed expressions
+  through duplication. 
+  We proceed by induction on $v$, and assume that the claim holds
+  before the $v$th iteration. This is clearly true before the
+  first iteration since all path expressions are either empty or
+  edges. Consider any $u < v$; by the structure of the for loops,
+  $P(u, w)$ for all $w$ is unchanged during this iteration, and
+  $\min\{u, v+1\} = \min\{u, v\} = u$, so the claim holds at the
+  end of this iteration. Similarly, for all $w$, $P(v, w)$ is
+  left unchanged, and we know by the induction hypothesis the
+  intermediate vertices in the paths it recognizes are smaller
+  than $\min \{v, v\} = v$; ergo, the claim holds for such $w$ at
+  the end of this iteration.
 
-  Suppose (2) holds for all $u < v$ before the $v$th iteration.
-  We now wish to prove (1) holds for $u \le v$, by induction on
-  $u$. We assume that before the $u$th iteration, (1) holds for
-  all $w < u$, which is vacuously true when $u = 1$. Supposing
-  the induction hypothesis holds
+  Therefore, it only remains to prove the claim for any $u >
+  v$. Note that $\min\{u, v\} = v$ and $\min\{u, v+1\} =
+  v+1$. First, the only assignment to $P(u, v)$ this iteration is
+  to concatenate $P(v, v)^*$ to it. Consider any path from $u$ to
+  $v$ whose intermediate vertices are smaller than $v+1$. It must
+  be the concatenation of a non-empty path $p_0$ from $u$ to $v$
+  whose intermediate vertices are smaller than $v$ and $k$ paths
+  $p_1, \dots, p_k$ from $v$ to $v$ whose intermediate vertices
+  are smaller than $v$. By the induction hypothesis, $p_0$ is
+  recognized by the previous $P(u, v)$, and each $p_i$ for
+  $1 \le i \le k$ is recognized by $P(v, v)$. Thus, after this
+  iteration $P(u, v)$ recognizes exactly the paths from $u$ to
+  $v$ in $G$ whose intermediate vertices are smaller than $v+1$.
+
+  Consider any $w \ne v$ and any path from $u$ to $w$ whose
+  intermediate vertices are smaller than $v+1$. Either it is a
+  path whose intermediate vertices are smaller than $v$, or it is
+  the concatenation of a non-empty path $p_1$ from $u$ to $v$
+  whose intermediate vertices are smaller than $v+1$ and a
+  non-empty path $p_2$ from $v$ to $w$ whose intermediate
+  vertices are smaller than $v$. Thus, $P(u, w) + P(u, v) \cdot
+  P(v, w)$ recognizes exactly these paths by the induction
+  hypothesis and our previous analysis of $P(u, v)$.
 \end{proof}
 
 \end{document}
