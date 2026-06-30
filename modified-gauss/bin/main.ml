@@ -45,10 +45,12 @@ let collides (v1, _) (v2, _) =
 
 (* simplification procedures *)
 let empty_bitset = BatBitSet.create 50
+let ops = ref 0
 
-let zero = (empty_bitset, Zero)
-let one = (empty_bitset, One)
+let zero = ops := !ops + 1 ; (empty_bitset, Zero)
+let one = ops := !ops + 1 ; (empty_bitset, One)
 let letter (u, v) =
+  ops := !ops + 1 ;
   let set =
     empty_bitset
     |> BatBitSet.add (2 * u + 1) |> BatBitSet.add (2 * v)
@@ -56,6 +58,7 @@ let letter (u, v) =
   (set, Letter (u, v))
 
 let plus p1 p2 =
+  ops := !ops + 1 ;
   let (v1, e1) = p1 and (v2, e2) = p2 in
   match (e1, e2) with
   | (Zero, e2) -> (v2, e2)
@@ -63,6 +66,7 @@ let plus p1 p2 =
   | _ -> (BatBitSet.union v1 v2, Plus (p1, p2))
 
 let times p1 p2 =
+  ops := !ops + 1 ;
   let (v1, e1) = p1 and (v2, e2) = p2 in
   match (e1, e2) with
   | (Zero, _) -> zero
@@ -75,50 +79,61 @@ let times p1 p2 =
      (BatBitSet.union v1 v2, Times (p1, p2))
 
 let star p =
+  ops := !ops + 1 ;
   match p with 
   | (_, Zero) -> one
   | (_, One) -> one
   | _ -> (empty_bitset, Star p) (* todo: ban repeats *)
 
-(* Suppose p has type <v, w>. Then, split u p returns (l, r, b)
-   where l has type <v, u>, r has type <u, w>, no path recognized
-   by b passes through u (unless it passes through a star), and p
-   is equivalent to lr + b. We assume that p is well-formed. *)
-let rec split u p =
-  let (vs, e) = p and u_vert = u / 2 in
-  match ((BatBitSet.mem vs u), e) with 
-  | true, Letter (v, w) ->
-     if v = u_vert then (one, p, zero)
-     else if w = u_vert then (p, one, zero)
-     else (zero, zero, p)
-  | true, Plus (p1, p2) ->
-     let (l1, r1, b1) = split u p1 in
-     let (l2, r2, b2) = split u p2 in
-     (plus l1 l2, plus r1 r2, plus b1 b2)
-  | true, Times (p1, p2) ->
-     let (l1, r1, b1) = split u p1 in
-     (* if l1 is non empty, then it was split. by well-formedness,
-        p2 does not contain u (except possibly inside stars). *)
-     if nonzero l1 then (l1, times r1 p2, times b1 p2)
-     else
-       let (l2, r2, b2) = split u p2 in
-       (times p1 l2, r2, times p1 b2)
-  | _ -> (zero, zero, p)
-
-let rec concat_well_formed p1 p2 =
-  match collides p1 p2 with
-  | Some x ->
-     let (l1, r1, b1) = split x p1 in
-     let (l2, r2, b2) = split x p2 in
-     plus
-       (times l1 (times (star (times r1 l2)) r2))
-       (concat_well_formed b1 b2)
-  | _ -> times p1 p2
-
 (* Gaussian elimination *)
 let gauss n graph =
   let size = n + 1 in
   let paths = Array.make_matrix size size zero in
+  (* Suppose p has type <v, w>. Then, split u p returns (l, r, b)
+     where l has type <v, u>, r has type <u, w>, no path
+     recognized by b passes through u (unless it passes through a
+     star), and p is equivalent to lr + b. We assume that p is
+     well-formed. *)
+  let split_memo = Hashtbl.create (size * size) in
+  let rec split u p =
+    if Hashtbl.mem split_memo (u, p) then
+      Hashtbl.find split_memo (u, p)
+    else
+      let res = 
+        let (vs, e) = p and u_vert = u / 2 in
+        match ((BatBitSet.mem vs u), e) with 
+        | true, Letter (v, w) ->
+           if v = u_vert then (one, p, zero)
+           else if w = u_vert then (p, one, zero)
+           else (zero, zero, p)
+        | true, Plus (p1, p2) ->
+           let (l1, r1, b1) = split u p1 in
+           let (l2, r2, b2) = split u p2 in
+           (plus l1 l2, plus r1 r2, plus b1 b2)
+        | true, Times (p1, p2) ->
+           let (l1, r1, b1) = split u p1 in
+           (* if l1 is non empty, then it was split. by well-
+              formedness, p2 does not contain u (except possibly
+              inside stars). *)
+           if nonzero l1 then (l1, times r1 p2, times b1 p2)
+           else
+             let (l2, r2, b2) = split u p2 in
+             (times p1 l2, r2, times p1 b2)
+        | _ -> (zero, zero, p)
+      in
+      Hashtbl.add split_memo (u, p) res ;
+      res
+  in
+  let rec concat_well_formed p1 p2 =
+    match collides p1 p2 with
+    | Some x ->
+       let (l1, r1, b1) = split x p1 in
+       let (l2, r2, b2) = split x p2 in
+       plus
+         (times l1 (times (star (times r1 l2)) r2))
+         (concat_well_formed b1 b2)
+    | _ -> times p1 p2
+  in
   (* add edges *)
   List.iteri
     (fun u out ->
@@ -177,12 +192,14 @@ let test_to n =
   for i = 2 to n do
     complete i |> gauss i |> Array.map count
     |> Array.fold_left Int.max 0 (* find max *)
-    |> Printf.printf "n=%d: %d\n" i ;
-    flush stdout
+    |> Printf.printf "n=%d:\t%d\t%d\n" i !ops ;
+    flush stdout ;
+    ops := 0
   done
 
 let () =
   let n = 15 in
   Printf.printf "Processing to n=%d... may take a while\n" n ;
+  Printf.printf "\tops\texprs\n" ;
   flush stdout;
   test_to 15
