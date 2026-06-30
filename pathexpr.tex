@@ -52,11 +52,21 @@
   for all $R, R_1, R_2 \in RegExp(\Sigma)$.
 \end{definition}
 
+\begin{definition}
+  For any function $wt: \Sigma \to \mathbb{Z}$, the \emph{length}
+  of a regular expression is given by
+  $L: RegExp(\Sigma) \to \mathbb{Z} \cup \{-\infty\}$ where
+  $L(0) = -\infty$, $L(1) = L(R^*) = 1$, $L(a) = wt(a)$ for all
+  $a \in \Sigma$, $L(R_1 + R_2) = \max\{L(R_1), L(R_2)\}$, and
+  $L(R_1 \cdot R_2) = L(R_1) + L(R_2)$. 
+\end{definition}
+
 Let $X$ and $X'$ be sets of variables such that for each
 $x\in X$, there is a corresponding $x' \in X'$. As an abuse of
 notation, we use $X = X' \equiv \bigwedge_{x \in X} x =
-x'$. $Formula(X, X')$ denotes the set of formulas with all free
-variables in either $X$ or $X'$. 
+x'$. $Vars(F)$ for a formula $F$ is the set of free variables in
+$F$. $Formula(X, X')$ denotes the set of formulas such that
+$Vars(F) \subseteq X \cup X'$. 
 
 \begin{definition}
   A \emph{control flow graph} $G = \tuple{V, E, r, F}$ is a graph
@@ -67,7 +77,6 @@ variables in either $X$ or $X'$.
   $F(\tuple{u,v})[X \mapsto Y, X' \mapsto Y']$. We let
   $Paths_G(u,v)$ be the set of all (possibly non-simple) paths
   from $u$ to $v$ in $G$.
-
 \end{definition}
 
 \begin{definition}
@@ -76,13 +85,12 @@ variables in either $X$ or $X'$.
   $E$ such that $\si{P} \subseteq Paths_G(u,v)$ for some
   $u,v \in V$. We denote the set of path expressions on $G$ by
   $PathExp(G)$.
-
 \end{definition}
 
-Suppose $star$ is a function that takes a formula and the pair of
-variable vocabulairies that it relates and returns some
-overapproximation of the reflexive transitive closure of the
-formula over those vocabularies, containing no other free
+Suppose $star$ is a function that takes a formula $F$ and the
+pair of variable vocabulairies $X$ and $X'$ that $F$ relates and
+returns some overapproximation of the reflexive transitive
+closure of $F$ over $X$ and $X'$ containing no other free
 variables.
 
 \begin{definition}
@@ -103,187 +111,293 @@ variables.
 \end{definition}
 
 \begin{definition}
-  % todo: better name
-  The \emph{loop-free subexpressions} of $P$ are given by $LF(P)$
-  where
+  Suppose there are an infinite set of variable vocabularies
+  $\{X_0, X_1, \dots\}$, and suppose that $L$ is taken with
+  respect to the function $wt: E \to \mathbb{Z}$ that maps every
+  edge to 1. Then, define $I$ mapping path expressions and
+  integer lower and upper bounds to formulas where
+  $I(0, l, u) \equiv false$, $I(1, l, u) \equiv X_l = X_u$,
+  $I(e, l, u) \equiv F_e(X_l, X_u)$ for all $e \in E$, and
   \begin{align*}
-    LF(1) &= \{1\} \\
-    LF(\tuple{u,v}) &= \{\tuple{u,v}\} \\
-    LF(P_a + P_b) &= LF(P_a) \cup LF(P_b) \cup \{P_a + P_b\} \\
-    LF(P_a \cdot P_b) &= LF(P_a) \cup LF(P_b) \cup \{P_a \cdot
-                        P_b\} \\
-    LF(P^*) &= \{P^*\} 
+    I(P_a + P_b, l, u)
+    &\equiv I(P_a, l, u) \lor I(P_b, l, u) \\
+    I(P_a \cdot P_b, l, u)
+    &\equiv I(P_a, l, l + L(P_a)) \land I(P_b, l + L(P_a), u) \\
+    I(P^*, l, u)
+    &\equiv star(I(P, l+1, l+1+L(P)), \tuple{X_{l+1},
+      X_{u+1}})[X_{l+1} \mapsto X_l, X_{l+1+L(P)} \mapsto X_r]
   \end{align*}
-
-  Note that $P \in LF(P)$ for all $P$.
+  for all $P, P_a, P_b \in PathExp(G)$. 
 \end{definition}
-
-\begin{definition}
-  Suppose every vertex $v \in V$ is associated with variable
-  vocabularies $X_v$ and $X'_v$. Then, a path expression $P$ is
-  \emph{well-formed} if $0, 1 \not \in SubExp(P)$ and there exist
-  functions $L$ and $R$ mapping $SubExp(P)$ to variable
-  vocabularies such that the following hold:
-  \begin{itemize}
-  \item $L(P_a + P_b) = L(P_a) = L(P_b)$ and
-    $R(P_a + P_b) = R(P_a) = R(P_b)$
-  \item $L(P_a \cdot P_b) = L(P_a)$, $R(P_a \cdot P_b) = R(P_b)$,
-    and
-    $(\bigcup_{P_c \in LF(P_a)} (L(P_c) \cup R(P_c))) \cap
-    (\bigcup_{P_c \in LF(P_b)} (L(P_c) \cup R(P_c))) = R(P_a) =
-    L(P_b)$ for all $P_a \cdot P_b \in SubExp(P)$
-  \end{itemize}
-\end{definition}
-
-\begin{algorithm}[H]
-  \caption{Path Expression DAG to Transition Formula}
-  \label{alg:path-exp-to-tf}
-
-  \SetAlgoLined
-  % \SetAlgoNoEnd
-  
-  \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ and a
-    well-formed path expression $P$ whose distinct subexpressions
-    $\{P_1,\dots,P_n\}$ are labeled so that
-    $P_i \in SubExp(P_j) \implies i < j$.}
-  
-  \KwOut{A formula $F$ such that
-    $Sat(\tf{P}) \iff Sat(F)$}
-
-  \ForEach{$i = 1$ \KwTo $n$}{
-    \Switch{$P_i$}{
-      \lCase{$\tuple{u, v} \in E$}{
-        $F_i \gets F_e(L(P_i), R(P_i))$
-      }
-
-      \lCase{$P_j + P_k$}{
-        $F_i \gets F_j \lor F_k$
-      }
-
-      \lCase{$P_j \cdot P_k$}{
-        $F_i \gets F_j \land F_k$
-      }
-
-      \Case{${P_j}^*$}{
-
-        $F^* \gets star(F_j, \tuple{L(P_j), R(P_j)})$ \;
-
-        $F_i \gets F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto
-        R(P_i)]$ \;
-        
-      }
-    }
-  }
-
-  $F \gets F_n$ \;
-
-  \Return $F$ \;
-
-\end{algorithm}
 
 \begin{lemma}
   \label{pe:freevars}
-  For all $1 \le i \le n$, all free variables in $F_i$ are
-  members of $\bigcup_{P_a \in LF(P_i)} (L(P_a) \cup R(P_a))$.
+  For all $P \in PathExp(G)$, for all $0 \le l < l + L(P) \le u$,
+  $Vars(I(P, l, u)) \subseteq \bigcup_{i = l}^u X_i$.
 \end{lemma}
 
 \begin{proof}
-  We proceed by induction on $i$ and assume the claim holds for
-  each $l < i$. This is trivially the case for $i = 1$. For
-  $l = i$, if $P_i = e \in E$, or $P_i = {P_k}^*$ for some $k$,
-  then the only free variables in $F_i$ are in $L(P_i)$ and
-  $R(P_i)$, so we are done. Otherwise, $P_i = P_j + P_k$ or
-  $P_i = P_j \cdot P_k$ for some $j$ and $k$, and the free
-  variables in $F_i$ are exactly those in $F_j$ or $F_k$. By the
-  induction hypothesis and the definition of $LF$, the claim
-  holds for $i$.
+  The claim holds trivially for $P = 0$, $P = 1$, $P = P'^*$, or
+  $P = \tuple{v, w}$. Suppose the claim holds for $P_a$ and
+  $P_b$. Clearly, for all $0 \le l < l + L(P_a + P_b) \le u$,
+  $Vars(I(P_a + P_b, l, u)) \subseteq Vars(I(P_a, l, u)) \cup
+  Vars(I(P_b, l, u)) = \bigcup_{i = l}^u X_i$. And, since
+  $L(P_a \cdot P_b) = L(P_a) + L(P_b)$, for all
+  $0 \le l < l + L(P_a \cdot P_b) \le u$
+  $Vars(I(P_a \cdot P_b, l, u)) \subseteq Vars(I(P_a, l, u +
+  L(P_a))) \cup Vars(I(P_b, l + L(P_a), u)) = (\bigcup_{i = l}^{l
+    + L(P_a)} X_i) \cup (\bigcup_{i = l + L(P_a)}^u X_i) =
+  \bigcup_{i = l}^u X_i$. By induction, the claim must hold for
+  all $P$.
 \end{proof}
 
-Let $V_j = \bigcup_{P_a \in LF(P_j)} (L(P_a) \cup R(P_a))$. By
-definition, if $P_j \in LF(P_i)$, then $V_j \subseteq V_i$. As an
-abuse of notation, we write $\exists V_j$ to denote
-$\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
-
 \begin{theorem}
-  $Sat(\tf{P}) \iff Sat(F)$
+  For all $P \in PathExp(G)$ with $P \ne 0$,
+  $Sat(\tf{P}) \iff Sat(I(P, 0, L(P)))$.
 \end{theorem}
 
 \begin{proof}
-  We proceed by induction on the iteration $i$ of the for loop,
-  with the hypothesis that before the $i$th iteration, for all
-  $j < i$,
-  $\tf{P_j} \equiv \exists V_j. F_j \land X = L(P_j) \land X' =
-  R(P_j)$. Since $F \equiv F_n$, and since $X$ and $X'$ appear
-  nowhere else in $F$ by Lemma \ref{pe:freevars}, this is
-  sufficient to prove the theorem.
+  As an abuse of notation, let $\exists S$ for a set
+  $S = \{x_1, \dots, x_m\}$ denote $\exists x_1, \dots,
+  x_m$. Then, we proceed by structural induction on $P$ with the
+  hypothesis that for all $0 \le l < l + L(P) \le u$,
+  $\tf{P} \equiv \exists Vars(I(P, l, u)). I(P, l, u) \land X =
+  X_l \land X' = X_r$ (note that this is sufficient since
+  $L(P) > 0$ and thus $0 \le 0 < 0 + L(P) \le L(P)$). If $P = 0$,
+  $P = 1$, or $P = \tuple{v, w}$, then the claim holds trivially.
 
-  Certainly this is true before the first iteration. Suppose this
-  is true before the $i$th iteration of the loop. Clearly, the
-  claim still holds for $j < i$ after this iteration since $F_j$
-  is not modified. For $j = i$, let us consider each possible
-  form of $P_i$:
+  Suppose the claim holds for $P_a$ and $P_b$ and take arbitrary
+  $0 \le l < l + L(P_a + P_b) \le u$. Let
+  $V_a = Vars(I(P_a, l, u))$, $V_b = Vars(I(P_b, l, u))$, and
+  $V = Vars(I(P_a + P_b, l, u))$. We know by Lemma
+  \ref{pe:freevars} that $ V_a \cup V_b \subseteq V$. Then,
+  \begin{align*}
+    \tf{P_a + P_b}
+    &\equiv \tf{P_a} \lor \tf{P_b} \\
+    &\equiv
+      (\exists V_a. I(P_a, l, u) \land X = X_l \land X' = X_r)
+      \lor (\exists V_b. I(P_b, l, u) \land X = X_l \land X' =
+      X_r) \\
+    &\equiv
+      \exists V. I(P_a + P_b, l, u) \land X = X_l \land X' = X_r
+  \end{align*}
 
-  \begin{itemize}
-  \item $P_i = \tuple{u, v}$: We have that
-    $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$ and
-    $F_i \equiv F_{\tuple{u, v}}(L(P_i), R(P_i))$.  So,
-    $\exists V_i. F_i \land X = L(P_i) \land X' = R(P_i) \equiv
-    F_{\tuple{u, v}}(X, X') \equiv \tf{P_i}$.
-    
-  \item $P_i = P_j + P_k$:
-    $\tf{P_j+P_k} \equiv \tf{P_j} \lor \tf{P_k}$. By the
-    induction hypothesis,
-    $\tf{P_i} \equiv (\exists V_j. F_j \land X = L(P_j) \land X'
-    = R(P_j)) \lor (\exists V_k. F_k \land X = L(P_k) \land X' =
-    R(P_k))$.
+  Now, take arbitrary take arbitrary
+  $0 \le l < l + L(P_a \cdot P_b) \le u$. let
+  $W_a = Vars(I(P_a, l, l + L(P_a)))$,
+  $W_b = Vars(I(P_b, l + L(P_a), u))$, and
+  $W = Vars(I(P_a \cdot P_b, l, u))$. By Lemma \ref{pe:freevars},
+  we know that $W_a \cup W_b \subseteq V$, but also that
+  $W_a \cap W_b = X_{l + L(P_a)}$. So,
+  \begin{align*}
+    \tf{P_a \cdot P_b}
+    &\equiv \exists X''.
+      \tf{P_a}(X, X'') \land \tf{P_b}(X'', X') \\
+    &\equiv \exists X''.
+      (\exists W_a. I(P_a, l, l + L(P_a)) \land
+      X = l \land X'' = X_{l + L(P_a)}) \\
+    & \qquad \land (\exists W_b. I(P_a, l + L(P_a), u) \land
+      X'' = X_{l + L(P_a)} \land X' = u) \\
+    &\equiv \exists X''.
+      \exists W.
+      I(P_a, l, l + L(P_a)) \land I(P_a, l + L(P_a), u) \land
+      X = l \land X'' = X_{l + L(P_a)} \land X' = u \\
+    &\equiv \exists W.
+      I((P_a \cdot P_b, l, u)) \land X = l \land X' = u
+  \end{align*}
 
-    Since $V_i = V_j \cup V_k$ by definition, and since
-    $L(P_i) = L(P_j) = L(P_k)$ and $R(P_i) = R(P_j) = R(P_k)$ we
-    have that
-    $\tf{P_i} \equiv \exists V_i. (F_j \lor F_k) \land X = L(P_i)
-    \land X' = R(P_i)$, as desired.
-    
-  \item $P_i = P_j \cdot P_k$:
-    $\tf{P_j \cdot P_k} \equiv \exists X''_1, X''_2. \tf{P_j}(X,
-    X''_1) \land \tf{P_k}(X''_2, X') \land X''_1 = X''_2$. So, by
-    the induction hypothesis,
-    $\tf{P_i} \equiv \exists X''_1, X''_2. (\exists V_j. F_j
-    \land X = L(P_j) \land X''_1 = R(P_j)) \land (\exists
-    V_k. F_k \land X''_2 = L(P_k) \land X' = R(P_k)) \land X''_1
-    = X''_2$.
-
-    By well-formedness, $V_j \cap V_k = R(P_j) = L(P_k)$. But,
-    note that by the condition $X''_1 = X''_2$, $R(P_j)$ and
-    $L(P_k)$ must take on the same values. So, by Lemma
-    \ref{pe:freevars}, there are no free variables present in
-    both $F_j$ and $F_k$ that may take on different
-    values. Therefore, since $L(P_i) = L(P_j)$ and
-    $R(P_j) = L(P_k)$,
-    \begin{align*}
-      \tf{P_i}
-      &\equiv \exists X''_1, X''_2. \exists V_i. F_j \land
-        X = L(P_j) \land X''_1 = R(P_j) \land F_k \land
-        X''_2 = L(P_k) \land X' = R(P_k) \land X''_1 = X''_2 \\
-      &\equiv \exists V_i. F_j \land X = L(P_j) \land
-        R(P_j) = L(P_k) \land F_k \land X' = R(P_k) \\
-      & \equiv \exists V_i. F_i \land X = L(P_i) \land X' = R(P_i)
-    \end{align*}
-
-  \item $P_i = {P_j}^*$: We know by the induction hypothesis that
-    $\tf{P_j} \equiv \exists V_j. F_j \land X = L(P_j) \land X' =
-    R(P_j)$. So,
-    $F^* = star(F_j, \tuple{L(P_j), R(P_j)}) \equiv
-    \tf{P_i}(L(P_j), R(P_j))$. Therefore,
-    $F_i = F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto R(P_i)]
-    \equiv \tf{P_i}(L(P_i), R(P_i))$. Since
-    $V_i = L(P_i) \cup R(P_i)$,
-    $\exists V_i. F_i \land X = L(P_i) \land X' = R(P_i) \equiv
-    \tf{P_i}$.
-  \end{itemize}
+  Finally, suppose the claim holds for $P$ and take arbitrary
+  $0 \le l < l + 1 \le u$. Obviously,
+  $0 \le l + 1 < l + 1 + L(P)$, so by the induction hypothesis,
+  $\tf{P} \equiv \exists Vars(I(P, l+1, l+1+L(P))). I(P, l+1,
+  l+1+L(P)) \land X = X_{l+1} \land X' = X_{l+1+L(P)}$. So,
+  $\tf{P}(X_{l+1}, X_{l+1+L(P)}) \equiv star(I(P, l+1, l+1+L(P)),
+  \tuple{X_{l+1}, X_{l+1+L(P)}})$. Therefore,
+  $\tf{P^*}(X_l, X_u) \equiv I(P^*, l, u)$, and the claim holds.
+  
 \end{proof}
 
+% \begin{definition}
+%   % todo: better name
+%   The \emph{loop-free subexpressions} of $P$ are given by $LF(P)$
+%   where
+%   \begin{align*}
+%     LF(1) &= \{1\} \\
+%     LF(\tuple{u,v}) &= \{\tuple{u,v}\} \\
+%     LF(P_a + P_b) &= LF(P_a) \cup LF(P_b) \cup \{P_a + P_b\} \\
+%     LF(P_a \cdot P_b) &= LF(P_a) \cup LF(P_b) \cup \{P_a \cdot
+%                         P_b\} \\
+%     LF(P^*) &= \{P^*\} 
+%   \end{align*}
+
+%   Note that $P \in LF(P)$ for all $P$.
+% \end{definition}
+
+% \begin{definition}
+%   A path expression $P$ is \emph{well-formed} if
+%   $0, 1 \not \in SubExp(P)$ and there exist functions $L$ and $R$
+%   mapping $SubExp(P)$ to variable vocabularies such that the
+%   following hold:
+%   \begin{itemize}
+%   \item $L(P_a + P_b) = L(P_a) = L(P_b)$ and
+%     $R(P_a + P_b) = R(P_a) = R(P_b)$
+%   \item $L(P_a \cdot P_b) = L(P_a)$, $R(P_a \cdot P_b) = R(P_b)$,
+%     and
+%     $(\bigcup_{P_c \in LF(P_a)} (L(P_c) \cup R(P_c))) \cap
+%     (\bigcup_{P_c \in LF(P_b)} (L(P_c) \cup R(P_c))) = R(P_a) =
+%     L(P_b)$ for all $P_a \cdot P_b \in SubExp(P)$
+%   \end{itemize}
+% \end{definition}
+
+% \begin{algorithm}[H]
+%   \caption{Path Expression DAG to Transition Formula}
+%   \label{alg:path-exp-to-tf}
+
+%   \SetAlgoLined
+%   % \SetAlgoNoEnd
+  
+%   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ and a
+%     well-formed path expression $P$ whose distinct subexpressions
+%     $\{P_1,\dots,P_n\}$ are labeled so that
+%     $P_i \in SubExp(P_j) \implies i < j$.}
+  
+%   \KwOut{A formula $F$ such that
+%     $Sat(\tf{P}) \iff Sat(F)$}
+
+%   \ForEach{$i = 1$ \KwTo $n$}{
+%     \Switch{$P_i$}{
+%       \lCase{$\tuple{u, v} \in E$}{
+%         $F_i \gets F_e(L(P_i), R(P_i))$
+%       }
+
+%       \lCase{$P_j + P_k$}{
+%         $F_i \gets F_j \lor F_k$
+%       }
+
+%       \lCase{$P_j \cdot P_k$}{
+%         $F_i \gets F_j \land F_k$
+%       }
+
+%       \Case{${P_j}^*$}{
+
+%         $F^* \gets star(F_j, \tuple{L(P_j), R(P_j)})$ \;
+
+%         $F_i \gets F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto
+%         R(P_i)]$ \;
+        
+%       }
+%     }
+%   }
+
+%   $F \gets F_n$ \;
+
+%   \Return $F$ \;
+
+% \end{algorithm}
+
+% \begin{lemma}
+%   \label{pe:freevars}
+%   For all $1 \le i \le n$, all free variables in $F_i$ are
+%   members of $\bigcup_{P_a \in LF(P_i)} (L(P_a) \cup R(P_a))$.
+% \end{lemma}
+
+% \begin{proof}
+%   We proceed by induction on $i$ and assume the claim holds for
+%   each $l < i$. This is trivially the case for $i = 1$. For
+%   $l = i$, if $P_i = e \in E$, or $P_i = {P_k}^*$ for some $k$,
+%   then the only free variables in $F_i$ are in $L(P_i)$ and
+%   $R(P_i)$, so we are done. Otherwise, $P_i = P_j + P_k$ or
+%   $P_i = P_j \cdot P_k$ for some $j$ and $k$, and the free
+%   variables in $F_i$ are exactly those in $F_j$ or $F_k$. By the
+%   induction hypothesis and the definition of $LF$, the claim
+%   holds for $i$.
+% \end{proof}
+
+% Let $V_j = \bigcup_{P_a \in LF(P_j)} (L(P_a) \cup R(P_a))$. By
+% definition, if $P_j \in LF(P_i)$, then $V_j \subseteq V_i$. As an
+% abuse of notation, we write $\exists V_j$ to denote
+% $\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
+
+% \begin{theorem}
+%   $Sat(\tf{P}) \iff Sat(F)$
+% \end{theorem}
+
+% \begin{proof}
+%   We proceed by induction on the iteration $i$ of the for loop,
+%   with the hypothesis that before the $i$th iteration, for all
+%   $j < i$,
+%   $\tf{P_j} \equiv \exists V_j. F_j \land X = L(P_j) \land X' =
+%   R(P_j)$. Since $F \equiv F_n$, and since $X$ and $X'$ appear
+%   nowhere else in $F$ by Lemma \ref{pe:freevars}, this is
+%   sufficient to prove the theorem.
+
+%   Certainly this is true before the first iteration. Suppose this
+%   is true before the $i$th iteration of the loop. Clearly, the
+%   claim still holds for $j < i$ after this iteration since $F_j$
+%   is not modified. For $j = i$, let us consider each possible
+%   form of $P_i$:
+
+%   \begin{itemize}
+%   \item $P_i = \tuple{u, v}$: We have that
+%     $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$ and
+%     $F_i \equiv F_{\tuple{u, v}}(L(P_i), R(P_i))$.  So,
+%     $\exists V_i. F_i \land X = L(P_i) \land X' = R(P_i) \equiv
+%     F_{\tuple{u, v}}(X, X') \equiv \tf{P_i}$.
+    
+%   \item $P_i = P_j + P_k$:
+%     $\tf{P_j+P_k} \equiv \tf{P_j} \lor \tf{P_k}$. By the
+%     induction hypothesis,
+%     $\tf{P_i} \equiv (\exists V_j. F_j \land X = L(P_j) \land X'
+%     = R(P_j)) \lor (\exists V_k. F_k \land X = L(P_k) \land X' =
+%     R(P_k))$.
+
+%     Since $V_i = V_j \cup V_k$ by definition, and since
+%     $L(P_i) = L(P_j) = L(P_k)$ and $R(P_i) = R(P_j) = R(P_k)$ we
+%     have that
+%     $\tf{P_i} \equiv \exists V_i. (F_j \lor F_k) \land X = L(P_i)
+%     \land X' = R(P_i)$, as desired.
+    
+%   \item $P_i = P_j \cdot P_k$:
+%     $\tf{P_j \cdot P_k} \equiv \exists X''_1, X''_2. \tf{P_j}(X,
+%     X''_1) \land \tf{P_k}(X''_2, X') \land X''_1 = X''_2$. So, by
+%     the induction hypothesis,
+%     $\tf{P_i} \equiv \exists X''_1, X''_2. (\exists V_j. F_j
+%     \land X = L(P_j) \land X''_1 = R(P_j)) \land (\exists
+%     V_k. F_k \land X''_2 = L(P_k) \land X' = R(P_k)) \land X''_1
+%     = X''_2$.
+
+%     By well-formedness, $V_j \cap V_k = R(P_j) = L(P_k)$. But,
+%     note that by the condition $X''_1 = X''_2$, $R(P_j)$ and
+%     $L(P_k)$ must take on the same values. So, by Lemma
+%     \ref{pe:freevars}, there are no free variables present in
+%     both $F_j$ and $F_k$ that may take on different
+%     values. Therefore, since $L(P_i) = L(P_j)$ and
+%     $R(P_j) = L(P_k)$,
+%     \begin{align*}
+%       \tf{P_i}
+%       &\equiv \exists X''_1, X''_2. \exists V_i. F_j \land
+%         X = L(P_j) \land X''_1 = R(P_j) \land F_k \land
+%         X''_2 = L(P_k) \land X' = R(P_k) \land X''_1 = X''_2 \\
+%       &\equiv \exists V_i. F_j \land X = L(P_j) \land
+%         R(P_j) = L(P_k) \land F_k \land X' = R(P_k) \\
+%       & \equiv \exists V_i. F_i \land X = L(P_i) \land X' = R(P_i)
+%     \end{align*}
+
+%   \item $P_i = {P_j}^*$: We know by the induction hypothesis that
+%     $\tf{P_j} \equiv \exists V_j. F_j \land X = L(P_j) \land X' =
+%     R(P_j)$. So,
+%     $F^* = star(F_j, \tuple{L(P_j), R(P_j)}) \equiv
+%     \tf{P_i}(L(P_j), R(P_j))$. Therefore,
+%     $F_i = F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto R(P_i)]
+%     \equiv \tf{P_i}(L(P_i), R(P_i))$. Since
+%     $V_i = L(P_i) \cup R(P_i)$,
+%     $\exists V_i. F_i \land X = L(P_i) \land X' = R(P_i) \equiv
+%     \tf{P_i}$.
+%   \end{itemize}
+% \end{proof}
+
 % taken from Tarjan / Termination Analysis Without the Tears
-\begin{algorithm}
+\begin{algorithm}[H]
   \caption{Gaussian Elimination}
   \label{alg:gauss}
 
