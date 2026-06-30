@@ -1,15 +1,7 @@
-module VertexSide =
-  struct
-    type t = int * bool
-    let compare (x0, b0) (x1, b1) =
-      match Stdlib.compare x0 x1 with
-        0 -> Stdlib.compare b0 b1
-      | c -> c
-  end
-module VertexSet = Set.Make(VertexSide)
+open BatBitSet
 
 type pathexp =
-  VertexSet.t * regex
+  BatBitSet.t * regex
 and regex = 
   | Zero
   | One
@@ -48,23 +40,27 @@ let to_string r =
 
 (* if they collide, one such vertex, otherwise none *)
 let collides (v1, _) (v2, _) =
-  let inter = VertexSet.inter v1 v2 in
-  if VertexSet.cardinal inter > 1 then
-    Some (VertexSet.choose inter)
-  else None
+  let inter = BatBitSet.inter v1 v2 in
+  BatBitSet.next_set_bit inter 0
 
 (* simplification procedures *)
-let zero = (VertexSet.empty, Zero)
-let one = (VertexSet.empty, One)
+let empty_bitset = BatBitSet.create 50
+
+let zero = (empty_bitset, Zero)
+let one = (empty_bitset, One)
 let letter (u, v) =
-  (VertexSet.of_list [(u, true) ; (v, false) ], Letter (u, v))
+  let set =
+    empty_bitset
+    |> BatBitSet.add (2 * u + 1) |> BatBitSet.add (2 * v)
+  in
+  (set, Letter (u, v))
 
 let plus p1 p2 =
   let (v1, e1) = p1 and (v2, e2) = p2 in
   match (e1, e2) with
   | (Zero, e2) -> (v2, e2)
   | (e1, Zero) -> (v1, e1)
-  | _ -> (VertexSet.union v1 v2, Plus (p1, p2))
+  | _ -> (BatBitSet.union v1 v2, Plus (p1, p2))
 
 let times p1 p2 =
   let (v1, e1) = p1 and (v2, e2) = p2 in
@@ -76,21 +72,21 @@ let times p1 p2 =
   | _ ->
      if collides p1 p2 <> None then
        failwith ("Bad concat: " ^ (to_string p1) ^ " AND " ^ (to_string p2)) ;
-     (VertexSet.union v1 v2, Times (p1, p2))
+     (BatBitSet.union v1 v2, Times (p1, p2))
 
 let star p =
   match p with 
   | (_, Zero) -> one
   | (_, One) -> one
-  | _ -> (VertexSet.empty, Star p) (* todo: ban repeats *)
+  | _ -> (empty_bitset, Star p) (* todo: ban repeats *)
 
 (* Suppose p has type <v, w>. Then, split u p returns (l, r, b)
    where l has type <v, u>, r has type <u, w>, no path recognized
    by b passes through u (unless it passes through a star), and p
    is equivalent to lr + b. We assume that p is well-formed. *)
 let rec split u p =
-  let (vs, e) = p and (u_vert, _) = u in
-  match ((VertexSet.mem u vs), e) with 
+  let (vs, e) = p and u_vert = u / 2 in
+  match ((BatBitSet.mem vs u), e) with 
   | true, Letter (v, w) ->
      if v = u_vert then (one, p, zero)
      else if w = u_vert then (p, one, zero)
@@ -181,5 +177,12 @@ let test_to n =
   for i = 2 to n do
     complete i |> gauss i |> Array.map count
     |> Array.fold_left Int.max 0 (* find max *)
-    |> Printf.printf "n=%d: %d\n" i
+    |> Printf.printf "n=%d: %d\n" i ;
+    flush stdout
   done
+
+let () =
+  let n = 15 in
+  Printf.printf "Processing to n=%d... may take a while\n" n ;
+  flush stdout;
+  test_to 15

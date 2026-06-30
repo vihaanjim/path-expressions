@@ -1,0 +1,4 @@
+(executable
+ (public_name modified-gauss)
+ (name main)
+ (libraries modified_gauss batteries))
