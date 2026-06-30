@@ -89,19 +89,17 @@ let star p =
    by b passes through u (unless it passes through a star), and p
    is equivalent to lr + b. We assume that p is well-formed. *)
 let rec split u p =
-  let (_, e) = p in
-  match e with 
-  | Zero -> (zero, zero, zero)
-  | One -> (zero, zero, one)
-  | Letter (v, w) ->
-     if v = u then (one, p, zero)
-     else if w = u then (p, one, zero)
+  let (vs, e) = p and (u_vert, _) = u in
+  match ((VertexSet.mem u vs), e) with 
+  | true, Letter (v, w) ->
+     if v = u_vert then (one, p, zero)
+     else if w = u_vert then (p, one, zero)
      else (zero, zero, p)
-  | Plus (p1, p2) ->
+  | true, Plus (p1, p2) ->
      let (l1, r1, b1) = split u p1 in
      let (l2, r2, b2) = split u p2 in
      (plus l1 l2, plus r1 r2, plus b1 b2)
-  | Times (p1, p2) ->
+  | true, Times (p1, p2) ->
      let (l1, r1, b1) = split u p1 in
      (* if l1 is non empty, then it was split. by well-formedness,
         p2 does not contain u (except possibly inside stars). *)
@@ -109,7 +107,17 @@ let rec split u p =
      else
        let (l2, r2, b2) = split u p2 in
        (times p1 l2, r2, times p1 b2)
-  | Star _ -> (zero, zero, p)
+  | _ -> (zero, zero, p)
+
+let rec concat_well_formed p1 p2 =
+  match collides p1 p2 with
+  | Some x ->
+     let (l1, r1, b1) = split x p1 in
+     let (l2, r2, b2) = split x p2 in
+     plus
+       (times l1 (times (star (times r1 l2)) r2))
+       (concat_well_formed b1 b2)
+  | _ -> times p1 p2
 
 (* Gaussian elimination *)
 let gauss n graph =
@@ -130,23 +138,10 @@ let gauss n graph =
       paths.(u).(v) <- times paths.(u).(v) (star paths.(v).(v)) ;
       for w = 0 to n do
         if w <> v && nonzero paths.(u).(v) && nonzero paths.(v).(w) then
-          let x = collides paths.(u).(v) paths.(v).(w) in
-          let new_paths = 
-            match x with
-            | Some (x, _) ->
-               (* note that the intersection point is not included
-                  because we haven't added the cycle yet *)
-               let (l1, r1, b1) = split x paths.(u).(v) in
-               let (l2, r2, b2) = split x paths.(v).(w) in
-               plus
-                 (times l1 (times (star (times r1 l2)) r2))
-                 (times b1 b2)
-            | _ ->
-               times paths.(u).(v) paths.(v).(w)
-          in
-          paths.(u).(w) <- plus paths.(u).(w) new_paths ;
+          paths.(u).(w) <-
+            plus paths.(u).(w)
+              (concat_well_formed paths.(u).(v) paths.(v).(w)) ;
       done ;
-      (* remember to add the connection! *)
     done
   done ;
   paths.(n)
@@ -162,7 +157,7 @@ let complete n =
   in
   adj_others @ [others]
 
-(* TESTING: count subexpressions and check well-formedness. *)
+(* TESTING: count subexpressions. *)
 let count p =
   let seen = Hashtbl.create 1024 in
   let rec count_ (_, e) =
@@ -184,7 +179,7 @@ let count p =
 
 let test_to n =
   for i = 2 to n do
-    complete n |> gauss n |> Array.map count
+    complete i |> gauss i |> Array.map count
     |> Array.fold_left Int.max 0 (* find max *)
     |> Printf.printf "n=%d: %d\n" i
   done
