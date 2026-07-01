@@ -11,7 +11,7 @@ let to_augmented_vertex x =
   else (x / 2, Exit)
 
 type pathexp =
-  (augmented_vertex * augmented_vertex) option * BatBitSet.t * regex
+  augmented_vertex * augmented_vertex * BatBitSet.t * regex
 and regex = 
   | Zero
   | One
@@ -21,18 +21,13 @@ and regex =
   | Star of pathexp
 
 let nonzero = function
-  | (_, _, Zero) -> false
+  | (_, _, _, Zero) -> false
   | _ -> true
-let trivial = function
-  | (_, _, Zero) -> true
-  | (_, _, One) -> true
-  | _ -> false
 
-let typ   (t, _, _) = t
-let init  (t, _, _) = let (i, _) = Option.get t in i
-let fin   (t, _, _) = let (_, f) = Option.get t in f
-let verts (_, v, _) = v
-let exp   (_, _, e) = e
+let init  (i, _, _, _) = i
+let fin   (_, f, _, _) = f
+let verts (_, _, v, _) = v
+let exp   (_, _, _, e) = e
 
 (* create nice string representation *)
 (* I made DeepSeek create this. I have modified slightly. *)
@@ -54,13 +49,10 @@ let to_string p =
     | (u, Entry) -> Printf.sprintf "%d⊥" u
     | (u, Exit)  -> Printf.sprintf "%d⊤" u
   in
-  match typ p with
-  | Some (i, f) ->
-     Printf.sprintf "%s#[%s-%s]"
-       (to_string_ p 0)
-       (aug_to_string i)
-       (aug_to_string f)
-  | None -> Printf.sprintf "%s" (to_string_ p 0)
+  Printf.sprintf "%s#[%s-%s]"
+    (to_string_ p 0)
+    (aug_to_string (init p))
+    (aug_to_string (fin p))
 
 (* if they collide, one such vertex, otherwise none *)
 let collides p1 p2 =
@@ -77,8 +69,8 @@ let covers p u = BatBitSet.mem (verts p) (to_int u)
 let empty_bitset = BatBitSet.create 50
 let ops = ref 0
 
-let zero = ops := !ops + 1 ; (None, empty_bitset, Zero)
-let one = ops := !ops + 1 ; (None, empty_bitset, One)
+let zero i f = ops := !ops + 1 ; (i, f, empty_bitset, Zero)
+let one i f = ops := !ops + 1 ; (i, f, empty_bitset, One)
 let letter u v =
   ops := !ops + 1 ;
   let i = (u, Exit) and f = (v, Entry) in
@@ -86,56 +78,56 @@ let letter u v =
     empty_bitset
     |> BatBitSet.add (to_int i) |> BatBitSet.add (to_int f)
   in
-  (Some (i, f), verts, Letter (u, v))
+  (i, f, verts, Letter (u, v))
 
 let plus_ops = ref 0
 let plus p1 p2 =
   ops := !ops + 1 ;
   plus_ops := !plus_ops + 1;
+  let i = init p1 and f = fin p1 in
+  if i <> init p2 || f <> fin p2 then
+    failwith (Printf.sprintf "Bad typing in union: %s and %s" (to_string p1) (to_string p2));
   match (exp p1, exp p2) with
   | (Zero, e2) -> p2
   | (e1, Zero) -> p1
   | _ ->
-     let i = init p1 and f = fin p1 in
-     if i <> init p2 || f <> fin p2 then
-       failwith (Printf.sprintf "Bad typing in union: %s and %s" (to_string p1) (to_string p2));
-     (typ p1, BatBitSet.union (verts p1) (verts p2), Plus (p1, p2))
+     (i, f, BatBitSet.union (verts p1) (verts p2), Plus (p1, p2))
 
 let times_ops = ref 0
 let times p1 p2 =
   ops := !ops + 1 ;
   times_ops := !times_ops + 1 ;
+  let i = init p1 and (u1, s1) = fin p1
+      and (u2, s2) = init p2 and f = fin p2
+  in
+  if u1 <> u2 || (s1 = Exit && s2 = Entry) then
+    failwith (Printf.sprintf "Bad typing in concatenation: %s and %s" (to_string p1) (to_string p2)) ;
   match (exp p1, exp p2) with
-  | (Zero, _) -> zero
-  | (_, Zero) -> zero
-  | (One, e2) -> p2
-  | (e1, One) -> p1
+  | (Zero, _) -> zero i f
+  | (_, Zero) -> zero i f
+  | (One, e2) -> (i, f, verts p2, exp p2)
+  | (e1, One) -> (i, f, verts p1, exp p1)
   | _ ->
-     let i = init p1 and (u1, s1) = fin p1
-         and (u2, s2) = init p2 and f = fin p2
-     in
-     if u1 <> u2 || (s1 = Exit && s2 = Entry) then
-       failwith (Printf.sprintf "Bad typing in concatenation: %s and %s" (to_string p1) (to_string p2)) ;
      if collides p1 p2 <> None then
        failwith (Printf.sprintf "Bad concat: %s and %s" (to_string p1) (to_string p2)) ;
-     (Some (i, f), BatBitSet.union (verts p1) (verts p2), Times (p1, p2))
+     (i, f, BatBitSet.union (verts p1) (verts p2), Times (p1, p2))
 
 let star p =
   ops := !ops + 1 ;
+  let (u1, s1) = init p and (u2, s2) = fin p in
+  if u1 <> u2 || s1 <> Exit || s2 <> Entry then
+    failwith (Printf.sprintf "Bad typing in star: %s" (to_string p)) ;
+  let i = (u1, Entry) and f = (u2, Exit) in
   match exp p with 
-  | Zero -> one
-  | One -> one
-  | _ ->
-     let (u1, s1) = init p and (u2, s2) = fin p in
-     if u1 <> u2 || s1 <> Exit || s2 <> Entry then
-       failwith (Printf.sprintf "Bad typing in star: %s" (to_string p)) ;
-     let i = (u1, Entry) and f = (u2, Exit) in
-     (Some (i, f), empty_bitset, Star p)
+  | Zero -> one i f
+  | One -> one i f
+  | _ -> (i, f, empty_bitset, Star p)
 
 (* Gaussian elimination *)
 let gauss n graph =
   let size = n + 1 in
-  let paths = Array.make_matrix size size zero in
+  let paths = Array.init_matrix size size
+                (fun u v -> zero (u, Exit) (v, Entry)) in
   (* Suppose p has type <v, w>. Then, split u p returns (l, r, b)
      where l has type <v, u>, r has type <u, w>, no path
      recognized by b passes through u (unless it passes through a
@@ -143,35 +135,33 @@ let gauss n graph =
      well-formed. *)
   let split_memo = Hashtbl.create (size * size) in
   let rec split u p =
-    if trivial p then (zero, p, zero)
-    else 
-      let i = init p and f = fin p in
-      if i = u then (one, p, zero)
-      else if f = u then (p, one, zero)
-      else if not (covers p u) then
-        (zero, zero, p)
-      else if Hashtbl.mem split_memo (u, p) then
-        Hashtbl.find split_memo (u, p)
-      else
-        let res = 
-          match exp p with 
-          | Plus (p1, p2) ->
+    let i = init p and f = fin p in
+    if i = u then (one i i, p, zero i f)
+    else if f = u then (p, one f f, zero i f)
+    else if not (covers p u) then
+      (zero i u, zero u f, p)
+    else if Hashtbl.mem split_memo (u, p) then
+      Hashtbl.find split_memo (u, p)
+    else
+      let res = 
+        match exp p with 
+        | Plus (p1, p2) ->
+           let (l1, r1, b1) = split u p1 in
+           let (l2, r2, b2) = split u p2 in
+           (plus l1 l2,
+            plus r1 r2,
+            plus b1 b2)
+        | Times (p1, p2) ->
+           if covers p1 u then 
              let (l1, r1, b1) = split u p1 in
+             (l1, times r1 p2, times b1 p2)
+           else
              let (l2, r2, b2) = split u p2 in
-             (plus l1 l2,
-              plus r1 r2,
-              plus b1 b2)
-          | Times (p1, p2) ->
-             if covers p1 u then 
-               let (l1, r1, b1) = split u p1 in
-               (l1, times r1 p2, times b1 p2)
-             else
-               let (l2, r2, b2) = split u p2 in
-               (times p1 l2, r2, times p1 b2)
-          | _ -> (zero, zero, p)
-        in
-        Hashtbl.add split_memo (u, p) res ;
-        res
+             (times p1 l2, r2, times p1 b2)
+        | _ -> (zero i u, zero u f, p)
+      in
+      Hashtbl.add split_memo (u, p) res ;
+      res
   in
   let rec concat_well_formed p1 p2 =
     match collides p1 p2 with
