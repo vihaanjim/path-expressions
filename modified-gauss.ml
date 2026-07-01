@@ -1,17 +1,8 @@
 open BatBitSet
 
-type side = Entry | Exit
-type augmented_vertex = int * side
-
-let to_int = function
-  | (u, Entry) -> 2 * u
-  | (u, Exit)  -> 2 * u + 1
-let to_augmented_vertex x =
-  if x mod 2 = 0 then (x / 2, Entry)
-  else (x / 2, Exit)
-
 type pathexp =
-  augmented_vertex * augmented_vertex * BatBitSet.t * regex
+  (* ID, init, fin, vertices, expression*)
+  int * int * int * BatBitSet.t * regex
 and regex = 
   | Zero
   | One
@@ -21,13 +12,18 @@ and regex =
   | Star of pathexp
 
 let nonzero = function
-  | (_, _, _, Zero) -> false
+  | (_, _, _, _, Zero) -> false
   | _ -> true
 
-let init  (i, _, _, _) = i
-let fin   (_, f, _, _) = f
-let verts (_, _, v, _) = v
-let exp   (_, _, _, e) = e
+let nonstar = function
+  | (_, _, _, _, Star _) -> false
+  | _ -> true
+
+let id    (i, _, _, _, _) = i
+let init  (_, i, _, _, _) = i
+let fin   (_, _, f, _, _) = f
+let verts (_, _, _, v, _) = v
+let exp   (_, _, _, _, e) = e
 
 (* create nice string representation *)
 (* I made DeepSeek create this. I have modified slightly. *)
@@ -45,89 +41,89 @@ let to_string p =
     in
     if prec < parent_prec then "(" ^ s ^ ")" else s
   in
-  let aug_to_string = function
-    | (u, Entry) -> Printf.sprintf "%d⊥" u
-    | (u, Exit)  -> Printf.sprintf "%d⊤" u
-  in
-  Printf.sprintf "%s#[%s-%s]"
-    (to_string_ p 0)
-    (aug_to_string (init p))
-    (aug_to_string (fin p))
+  Printf.sprintf "%s#[%d-%d]" (to_string_ p 0) (init p) (fin p)
 
 (* if they collide, one such vertex, otherwise none *)
-let collides p1 p2 =
+let collides ?(besides = None) p1 p2 =
   let inter =
     BatBitSet.inter (verts p1) (verts p2)
-    |> BatBitSet.remove (to_int (fin p1))
+    |> BatBitSet.remove (fin p1)
+  in
+  let inter = match besides with
+    | Some v -> BatBitSet.remove v inter
+    | None -> inter
   in
   BatBitSet.next_set_bit inter 0
-  |> Option.map to_augmented_vertex
 
-let covers p u = BatBitSet.mem (verts p) (to_int u)
+let covers p u = BatBitSet.mem (verts p) u
 
 (* simplification procedures *)
-let empty_bitset = BatBitSet.create 50
+let empty_bitset = BatBitSet.create 30
 let ops = ref 0
 
-let zero i f = ops := !ops + 1 ; (i, f, empty_bitset, Zero)
-let one i f = ops := !ops + 1 ; (i, f, empty_bitset, One)
+let zero i f = ops := !ops + 1 ; (!ops, i, f, empty_bitset, Zero)
+let one i f = ops := !ops + 1 ; (!ops, i, f, empty_bitset, One)
 let letter u v =
   ops := !ops + 1 ;
-  let i = (u, Exit) and f = (v, Entry) in
   let verts =
-    empty_bitset
-    |> BatBitSet.add (to_int i) |> BatBitSet.add (to_int f)
+    empty_bitset |> BatBitSet.add u |> BatBitSet.add v
   in
-  (i, f, verts, Letter (u, v))
+  (!ops, u, v, verts, Letter (u, v))
 
-let plus_ops = ref 0
 let plus p1 p2 =
   ops := !ops + 1 ;
-  plus_ops := !plus_ops + 1;
-  let i = init p1 and f = fin p1 in
-  if i <> init p2 || f <> fin p2 then
-    failwith (Printf.sprintf "Bad typing in union: %s and %s" (to_string p1) (to_string p2));
-  match (exp p1, exp p2) with
-  | (Zero, e2) -> p2
-  | (e1, Zero) -> p1
-  | _ ->
-     (i, f, BatBitSet.union (verts p1) (verts p2), Plus (p1, p2))
+  if id p1 = id p2 then p1
+  else 
+    let i = init p1 and f = fin p1 in
+    if i <> init p2 || f <> fin p2 then
+      failwith (Printf.sprintf "Bad typing in union: %s and %s" (to_string p1) (to_string p2));
+    match (exp p1, exp p2) with
+    | (Zero, e2) -> p2
+    | (e1, Zero) -> p1
+    | _ ->
+       (!ops, i, f, BatBitSet.union (verts p1) (verts p2), Plus (p1, p2))
 
-let times_ops = ref 0
-let times p1 p2 =
+let times ?(check = true) p1 p2 =
   ops := !ops + 1 ;
-  times_ops := !times_ops + 1 ;
-  let i = init p1 and (u1, s1) = fin p1
-      and (u2, s2) = init p2 and f = fin p2
+  let i = init p1 and m1 = fin p1
+      and m2 = init p2 and f = fin p2
   in
-  if u1 <> u2 || (s1 = Exit && s2 = Entry) then
+  if m1 <> m2 then
     failwith (Printf.sprintf "Bad typing in concatenation: %s and %s" (to_string p1) (to_string p2)) ;
   match (exp p1, exp p2) with
   | (Zero, _) -> zero i f
   | (_, Zero) -> zero i f
-  | (One, e2) -> (i, f, verts p2, exp p2)
-  | (e1, One) -> (i, f, verts p1, exp p1)
+  | (One, e2) -> p2
+  | (e1, One) -> p1
   | _ ->
-     if collides p1 p2 <> None then
+     if check && (
+       (* two stars! *)
+       (i = m1 && f = m2) 
+       (* should be starred *)
+       || (i = m1 && nonstar p1) 
+       || (f = m2 && nonstar p2)
+       (* collision *)
+       || (i <> m1 && f <> m2 && i <> f && collides p1 p2 <> None)
+       || (i = f && collides p1 p2 ~besides:(Some i) <> None)
+     )
+     then
        failwith (Printf.sprintf "Bad concat: %s and %s" (to_string p1) (to_string p2)) ;
-     (i, f, BatBitSet.union (verts p1) (verts p2), Times (p1, p2))
+     (!ops, i, f, BatBitSet.union (verts p1) (verts p2), Times (p1, p2))
 
 let star p =
   ops := !ops + 1 ;
-  let (u1, s1) = init p and (u2, s2) = fin p in
-  if u1 <> u2 || s1 <> Exit || s2 <> Entry then
+  let i = init p and f = fin p in
+  if i <> f then
     failwith (Printf.sprintf "Bad typing in star: %s" (to_string p)) ;
-  let i = (u1, Entry) and f = (u2, Exit) in
   match exp p with 
   | Zero -> one i f
   | One -> one i f
-  | _ -> (i, f, empty_bitset, Star p)
+  | _ -> (!ops, i, f, empty_bitset, Star p)
 
 (* Gaussian elimination *)
-let gauss n graph =
+let gauss ?(well_formed = true) n graph =
   let size = n + 1 in
-  let paths = Array.init_matrix size size
-                (fun u v -> zero (u, Exit) (v, Entry)) in
+  let paths = Array.init_matrix size size (fun u v -> zero u v) in
   (* Suppose p has type <v, w>. Then, split u p returns (l, r, b)
      where l has type <v, u>, r has type <u, w>, no path
      recognized by b passes through u (unless it passes through a
@@ -140,8 +136,8 @@ let gauss n graph =
     else if f = u then (p, one f f, zero i f)
     else if not (covers p u) then
       (zero i u, zero u f, p)
-    else if Hashtbl.mem split_memo (u, p) then
-      Hashtbl.find split_memo (u, p)
+    else if Hashtbl.mem split_memo (u, id p) then
+      Hashtbl.find split_memo (u, id p)
     else
       let res = 
         match exp p with 
@@ -152,26 +148,34 @@ let gauss n graph =
             plus r1 r2,
             plus b1 b2)
         | Times (p1, p2) ->
-           if covers p1 u then 
-             let (l1, r1, b1) = split u p1 in
-             (l1, times r1 p2, times b1 p2)
-           else
+           (* the order matters here if the point of
+              concatenation is u *)
+           if covers p2 u then
              let (l2, r2, b2) = split u p2 in
              (times p1 l2, r2, times p1 b2)
+           else
+             let (l1, r1, b1) = split u p1 in
+             (l1, times r1 p2, times b1 p2)
         | _ -> (zero i u, zero u f, p)
       in
-      Hashtbl.add split_memo (u, p) res ;
+      Hashtbl.add split_memo (u, id p) res ;
       res
   in
   let rec concat_well_formed p1 p2 =
-    match collides p1 p2 with
-    | Some x ->
-       let (l1, r1, b1) = split x p1 in
-       let (l2, r2, b2) = split x p2 in
-       plus
-         (times l1 (times (star (times r1 l2)) r2))
-         (concat_well_formed b1 b2)
-    | _ -> times p1 p2
+    if not well_formed then times ~check:false p1 p2
+    else 
+      let besides =
+        if init p1 = fin p2 then Some (init p1)
+        else None
+      in
+      match collides ~besides:besides p1 p2 with
+      | Some x ->
+         let (l1, r1, b1) = split x p1 in
+         let (l2, r2, b2) = split x p2 in
+         plus
+           (times l1 (times (star (times r1 l2)) r2))
+           (concat_well_formed b1 b2)
+      | _ -> times p1 p2
   in
   (* add edges *)
   List.iteri
@@ -207,7 +211,7 @@ let complete n =
   in
   adj_others @ [others]
 
-(* TESTING: count subexpressions. *)
+(* TESTING: count subexpressions. Very slow (exponential) *)
 let count p =
   let seen = Hashtbl.create 1024 in
   let rec count_ p =
@@ -229,12 +233,15 @@ let count p =
 
 let test_to n =
   Printf.printf "Processing to n=%d... may take a while\n" n ;
-  Printf.printf "\tops\t(+)\t(.)\texprs\n" ;
+  Printf.printf "n\tNormal\tModified\n" ;
   flush stdout;
   for i = 2 to n do
-    ops := 0 ; plus_ops := 0 ; times_ops := 0 ;
-    complete i |> gauss i |> Array.map count
-    |> Array.fold_left Int.max 0 (* find max *)
-    |> Printf.printf "n=%d:\t%d\t%d\t%d\t%d\n" i !ops !plus_ops !times_ops ;
+    ops := 0 ;
+    complete i |> gauss ~well_formed:false i ;
+    let normal = !ops in
+    ops := 0 ;
+    complete i |> gauss i ;
+    let modified = !ops in
+    Printf.printf "%d\t%d\t%d\n" i normal modified ;
     flush stdout ;
   done
