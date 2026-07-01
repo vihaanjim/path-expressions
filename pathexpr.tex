@@ -248,20 +248,64 @@ variables.
   \emph{strictly dominate} $u$. If $v$ strictly dominates $u$ and
   is dominated by every vertex that dominates $u$, then $v$ is
   the \emph{immediate dominator} of $u$, denoted $v =
-  idom(u)$. Note that there is a rooted tree whose vertices are
-  $V$, whose root is $r$, and whose edges $\tuple{v, u}$
-  correspond to $v = idom(u)$. We let $children(v)$ be the set of
-  children of $v$ in this tree, i.e. $\{u|v=idom(u)\}$. $E|_v$
-  denotes the set of edges $\tuple{w_1, w_2}$ where $w_2$ is
-  strictly dominated by $v$. 
+  idom(u)$. $E|_v$ denotes the set of edges $\tuple{w_1, w_2}$
+  where $w_2$ is strictly dominated by $v$.
+  % Note that there is a rooted tree whose vertices are
+  % $V$, whose root is $r$, and whose edges $\tuple{v, u}$
+  % correspond to $v = idom(u)$. We let $children(v)$ be the set of
+  % children of $v$ in this tree, i.e. $\{u|v=idom(u)\}$.
 \end{definition}
 
 \begin{definition}
-  A control flow graph $G = \tuple{V, E, r, F}$ is reducible if
-  every cycle in $G$ contains an edge $\tuple{u, v}$ where $v$
-  dominates $u$. Intuitively, every cycle has a natural
-  entrypoint. 
+  The \emph{derived graph} $\tilde{G} = \tuple{V, \tilde{E}, r}$
+  of a control flow graph $G = \tuple{V, E, r, F}$ is determined
+  by
+  $\tilde{E} = \{\tuple{u, v}|\tuple{w, v}\in E \textit{ where }
+  u \textit{ dominates } w\}$.
 \end{definition}
+
+\begin{definition}
+  A control flow graph $G = \tuple{V, E, r, F}$ is
+  \emph{reducible} if every cycle in $G$ contains an edge
+  $\tuple{u, v}$ where $v$ dominates $u$. (Intuitively, every
+  cycle has a natural entrypoint.)
+\end{definition}
+
+\begin{lemma}
+  $G$ is reducible if and only if the strong components of
+  $\tilde{G}$ are single vertices.
+\end{lemma}
+
+\begin{proof}
+  First, note that by definition, every edge
+  $\tuple{u, v} \in \tilde{E}$ corresponds to a path from $u$ to
+  $v$ in $G$ where every intermediate vertex is strictly
+  dominated its predecessor in the path. Now, let $G$ be
+  reducible and suppose for the sake of contradiction that there
+  is some simple cycle $v_1,\dots,v_n,v_{n+1}=v_1$ where $n > 1$
+  in $\tilde{G}$. Then, there must be a corresponding cycle
+  $v_1, u_1^1, \dots, u_1^{m_1}, v_2, u_2^1, \dots, u_2^{m_1},
+  \dots, v_n, u_n^1, \dots, u_n^{m_n}, v_{n+1}$ in $G$ where
+  $u_i^1$ is strictly dominated by $v_i$ and $u_i^j$ is strictly
+  dominated by $u_i^{j+1}$ for all $1\le i\le n$ $1\le j <
+  m_i$. Choose the shortest such cycle. Since $G$ is reducible,
+  there must be some edge $\tuple{w_1, w_2}$ in this cycle where
+  $w_2$ dominates $w_1$. Since a vertex cannot dominate a vertex
+  that strictly dominates it, this edge must be of the form
+  $\tuple{u_i^{m_i}, v_{i+1}}$ for some $1 \le i \le n$. So,
+  every path from $r$ to $u_i^{m_i}$ must pass through
+  $v_{i+1}$. But, we also know that every path from $r$ to
+  $u_i^{m_i}$ must pass through $v_i$ and that
+  $v_i \ne u_i^{m_i}$. So, either $v_{i+1} = u_i^{m_i}$,
+  contradicting our choice of the shortest cycle, or
+  $v_i = v_{i+1}$, contradicting the simplicity of the cycle
+  in $\tilde{G}$. % todo: correct
+
+  For the backwards direction, suppose the strong components of
+  $\tilde{G}$ are all single vertices. Then, consider any cycle
+  $v_1, \dots, v_n, v_{n+1} = v_1$ in $G$. 
+  
+\end{proof}
 
 \begin{algorithm}[H]
   \caption{Tarjan's Algorithm (on Reducible Flow Graphs)}
@@ -270,7 +314,9 @@ variables.
   \SetAlgoLined
   % \SetAlgoNoEnd
   
-  \KwIn{A reducible control flow graph $G=\tuple{V, E, r, F}$}
+  \KwIn{A reducible control flow graph $G=\tuple{V, E, r, F}$
+    with vertices labeled $1,\dots, n = r$ in reverse topological
+    order of $\tilde{G}$}
   
   \KwOut{A function $pe: V \to PathExp(G)$ such that for all
     $v \in V$, $pe(v)$ is a well-formed path expression
@@ -278,46 +324,58 @@ variables.
 
   Initialize compressed weighted forest on $V$ \;
 
-  $children \gets$ the dominator tree of $G$ \;
+  \For{$v = 1$ \KwTo $n-1$}{
+    $cycle, noncycle \gets 0$ \;
 
-  $SolveReducible(r)$ \;
+    \ForEach{$v' \in pred(v)$}{
+      \lIf{$v$ dominates $v'$}{
+        $cycle \gets cycle + eval(v') \cdot \tuple{v', v}$
+      }
+      \lElse{
+        $noncycle \gets noncycle + eval(v') \cdot \tuple{v', v}$
+      }
+    }
+
+    $link(v, noncycle \cdot cycle^*, idom(v))$ \;
+  }
 
   \Return $\lambda v. eval(v)$ \;
 
-  \BlankLine
-
-  \SetKwProg{Subroutine}{Subroutine}{ is}{end}
-
-  \Subroutine{SolveReducible(v)}{
-
-    \KwIn{A vertex $v$ such that $eval(v) = 1$}
-
-    \KwResult{For all $u$ dominated by $v$,
-      $\si{eval(u)} = Paths_G(r, u) \cap E|_v^*$}
-
-    \ForEach{$u \in children(v)$ in topological order of the
-      sibling graph}{
-      
-      $SolveReducible(u)$ \;
-
-      $cycle, noncycle \gets 0$ \;
-
-      \ForEach{$w \in pred(u)$}{
-        \lIf{$u$ dominates $w$}{
-          $cycle \gets cycle + eval(w) \cdot \tuple{w, u}$
-        }
-        \lElse{
-          $noncycle \gets noncycle + eval(w) \cdot \tuple{w, u}$
-        }
-      }
-
-      $link(u, noncycle \cdot cycle^*, v)$ \;
-      
-    }
-
-  }
-
 \end{algorithm}
+
+Note that constant time simplication procedures applied after
+each concatenation or union can easily remove all 0's and 1's
+from the path expressions --- we assume that this is the case for
+the rest of the analysis of Tarjan's algorithm.
+
+\begin{lemma}
+  Before the $v$th iteration, there exist
+  $l, u : S \to \mathbb{Z} \cup \{-\infty\}$ where
+  $S = \bigcup_{w = 1}^v SubExp(eval(w))$ such that the following
+  hold for all $w < v$:
+  \begin{enumerate}
+  \item For all $P_a + P_b \in SubExp(eval(w))$,
+    $l(P_a) = l(P_b) = l(P_a + P_b)$ and
+    $u(P_a) = u(P_b) = u(P_a + P_b)$.
+  \item For all $P_a \cdot P_b \in SubExp(eval(w))$,
+    $l(P_a) = l(P_a \cdot P_b)$, $u(P_a) = l(P_b) = l(P_a \cdot
+    P_b) + L(P_a)$, and $u(P_a) = u(P_a \cdot P_b)$.
+  \item For all $P^* \in SubExp(eval(w))$,
+    $l(P) = l(P^*) + 1$ and $u(P) = u(P^*) + 1 + L(P)$.
+  \end{enumerate}
+\end{lemma}
+
+\begin{proof}
+  We proceed by induction on $v$. The claim obviously holds prior
+  to the first iteration. Suppose it holds before the $v$th
+  iteration for some particular $l$ and $u$. The new
+  subexpressions created during this iteration are exactly
+  $\{\tuple{v', v}, eval(v') \cdot \tuple{v', v}|v' \in
+  pred(v)\}$, the subexpressions made by successive unions to
+  $cycle$ and $noncycle$, $cycle^*$, $noncycle \cdot cycle^*$,
+  and its concatenations with $eval(w')$ where $w'$ is dominated
+  by $v$. 
+\end{proof}
 
 % \begin{definition}
 %   % todo: better name
