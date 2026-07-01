@@ -112,11 +112,11 @@ variables.
 
 \begin{definition}
   Suppose there are an infinite set of variable vocabularies
-  $\{X_0, X_1, \dots\}$, and suppose that $L$ is taken with
-  respect to the function $wt: E \to \mathbb{Z}$ that maps every
-  edge to 1. Then, define $I$ mapping path expressions and
-  integer lower and upper bounds to formulas where
-  $I(0, l, u) \equiv false$, $I(1, l, u) \equiv X_l = X_u$,
+  $\{X_{-\infty}, X_0, X_1, X_2, \dots\}$, and suppose that $L$
+  is taken with respect to the function $wt: E \to \mathbb{Z}$
+  that maps every edge to 1. Then, define $I$ mapping path
+  expressions and integer lower and upper bounds to formulas
+  where $I(0, l, u) \equiv false$, $I(1, l, u) \equiv X_l = X_u$,
   $I(e, l, u) \equiv F_e(X_l, X_u)$ for all $e \in E$, and
   \begin{align*}
     I(P_a + P_b, l, u)
@@ -151,8 +151,29 @@ variables.
   all $P$.
 \end{proof}
 
+\begin{lemma}
+  \label{pe:zero}
+  If $L(P) = -\infty$, then for all $l, u$,
+  $\tf{P} \equiv I(P, l, u) \equiv false$.
+\end{lemma}
+
+\begin{proof}
+  We proceed by structural induction on $P$. If $P = 0$, then the
+  claim holds trivially, and if $P = 1$ or $P = P'^*$, then the
+  claim holds vacuously. Suppose the claim holds for $P_a$ and
+  $P_b$ and suppose that $L(P_a + P_b) = -\infty$. Then,
+  $L(P_a) = L(P_b) = -\infty$. So,
+  $\tf{P_a + P_b} \equiv \tf{P_a} \lor \tf{P_b} \equiv false
+  \equiv I(P_a, l, u) \lor I(P_b, l, u) \equiv I(P_a + P_b, l,
+  u)$. Similarly, suppose $L(P_a \cdot P_b) = -\infty$. Then,
+  either $L(P_a) = -\infty$ or $L(P_b) = -\infty$. Either way,
+  $\tf{P_a \cdot P_b} \equiv \exists X''. \tf{P_a}(X, X'') \land
+  \tf{P_b}(X'', X') \equiv false \equiv I(P_a, l, l + L(P_a))
+  \land I(P_b, l + L(P_a), u) \equiv I(P_a \cdot P_b, l, u)$. 
+\end{proof}
+
 \begin{theorem}
-  For all $P \in PathExp(G)$ with $P \ne 0$,
+  For all $P \in PathExp(G)$,
   $Sat(\tf{P}) \iff Sat(I(P, 0, L(P)))$.
 \end{theorem}
 
@@ -162,9 +183,9 @@ variables.
   x_m$. Then, we proceed by structural induction on $P$ with the
   hypothesis that for all $0 \le l < l + L(P) \le u$,
   $\tf{P} \equiv \exists Vars(I(P, l, u)). I(P, l, u) \land X =
-  X_l \land X' = X_r$ (note that this is sufficient since
-  $L(P) > 0$ and thus $0 \le 0 < 0 + L(P) \le L(P)$). If $P = 0$,
-  $P = 1$, or $P = \tuple{v, w}$, then the claim holds trivially.
+  X_l \land X' = X_r$. Note that this is sufficient by Lemma
+  \ref{pe:zero}. If $P = 0$, $P = 1$, or $P = \tuple{v, w}$, then
+  the claim holds trivially.
 
   Suppose the claim holds for $P_a$ and $P_b$ and take arbitrary
   $0 \le l < l + L(P_a + P_b) \le u$. Let
@@ -183,11 +204,11 @@ variables.
   \end{align*}
 
   Now, take arbitrary take arbitrary
-  $0 \le l < l + L(P_a \cdot P_b) \le u$. let
+  $0 \le l < l + L(P_a \cdot P_b) \le u$. Let
   $W_a = Vars(I(P_a, l, l + L(P_a)))$,
   $W_b = Vars(I(P_b, l + L(P_a), u))$, and
   $W = Vars(I(P_a \cdot P_b, l, u))$. By Lemma \ref{pe:freevars},
-  we know that $W_a \cup W_b \subseteq V$, but also that
+  we know that $W_a \cup W_b \subseteq W$, but also that
   $W_a \cap W_b = X_{l + L(P_a)}$. So,
   \begin{align*}
     \tf{P_a \cdot P_b}
