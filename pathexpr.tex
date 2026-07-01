@@ -202,6 +202,8 @@ variables.
     &\equiv
       \exists V. I(P_a + P_b, l, u) \land X = X_l \land X' = X_r
   \end{align*}
+  by the induction hypothesis and (if applicable) Lemma
+  \ref{pe:zero}. % todo: deal with 0 case more effectively
 
   Now, take arbitrary take arbitrary
   $0 \le l < l + L(P_a \cdot P_b) \le u$. Let
@@ -209,7 +211,8 @@ variables.
   $W_b = Vars(I(P_b, l + L(P_a), u))$, and
   $W = Vars(I(P_a \cdot P_b, l, u))$. By Lemma \ref{pe:freevars},
   we know that $W_a \cup W_b \subseteq W$, but also that
-  $W_a \cap W_b = X_{l + L(P_a)}$. So,
+  $W_a \cap W_b = X_{l + L(P_a)}$. Furthermore,
+  $L(P_a), L(P_b) \ge 0$. So,
   \begin{align*}
     \tf{P_a \cdot P_b}
     &\equiv \exists X''.
@@ -224,7 +227,7 @@ variables.
       I(P_a, l, l + L(P_a)) \land I(P_a, l + L(P_a), u) \land
       X = l \land X'' = X_{l + L(P_a)} \land X' = u \\
     &\equiv \exists W.
-      I((P_a \cdot P_b, l, u)) \land X = l \land X' = u
+      I(P_a \cdot P_b, l, u) \land X = l \land X' = u
   \end{align*}
 
   Finally, suppose the claim holds for $P$ and take arbitrary
@@ -237,6 +240,84 @@ variables.
   $\tf{P^*}(X_l, X_u) \equiv I(P^*, l, u)$, and the claim holds.
   
 \end{proof}
+
+\begin{definition}
+  In a control flow graph $G = \tuple{V, E, r, F}$, $v\in V$ is
+  said to \emph{dominate} $u \in V$ if every path from $r$ to $u$
+  in $G$ goes through $v$. If $u \ne v$, then $v$ is said to
+  \emph{strictly dominate} $u$. If $v$ strictly dominates $u$ and
+  is dominated by every vertex that dominates $u$, then $v$ is
+  the \emph{immediate dominator} of $u$, denoted $v =
+  idom(u)$. Note that there is a rooted tree whose vertices are
+  $V$, whose root is $r$, and whose edges $\tuple{v, u}$
+  correspond to $v = idom(u)$. We let $children(v)$ be the set of
+  children of $v$ in this tree, i.e. $\{u|v=idom(u)\}$. $E|_v$
+  denotes the set of edges $\tuple{w_1, w_2}$ where $w_2$ is
+  strictly dominated by $v$. 
+\end{definition}
+
+\begin{definition}
+  A control flow graph $G = \tuple{V, E, r, F}$ is reducible if
+  every cycle in $G$ contains an edge $\tuple{u, v}$ where $v$
+  dominates $u$. Intuitively, every cycle has a natural
+  entrypoint. 
+\end{definition}
+
+\begin{algorithm}[H]
+  \caption{Tarjan's Algorithm (on Reducible Flow Graphs)}
+  \label{alg:tarjan}
+
+  \SetAlgoLined
+  % \SetAlgoNoEnd
+  
+  \KwIn{A reducible control flow graph $G=\tuple{V, E, r, F}$}
+  
+  \KwOut{A function $pe: V \to PathExp(G)$ such that for all
+    $v \in V$, $pe(v)$ is a well-formed path expression
+    recognizing exactly $Paths_G(r, v)$}
+
+  Initialize compressed weighted forest on $V$ \;
+
+  $children \gets$ the dominator tree of $G$ \;
+
+  $SolveReducible(r)$ \;
+
+  \Return $\lambda v. eval(v)$ \;
+
+  \BlankLine
+
+  \SetKwProg{Subroutine}{Subroutine}{ is}{end}
+
+  \Subroutine{SolveReducible(v)}{
+
+    \KwIn{A vertex $v$ such that $eval(v) = 1$}
+
+    \KwResult{For all $u$ dominated by $v$,
+      $\si{eval(u)} = Paths_G(r, u) \cap E|_v^*$}
+
+    \ForEach{$u \in children(v)$ in topological order of the
+      sibling graph}{
+      
+      $SolveReducible(u)$ \;
+
+      $cycle, noncycle \gets 0$ \;
+
+      \ForEach{$w \in pred(u)$}{
+        \lIf{$u$ dominates $w$}{
+          $cycle \gets cycle + eval(w) \cdot \tuple{w, u}$
+        }
+        \lElse{
+          $noncycle \gets noncycle + eval(w) \cdot \tuple{w, u}$
+        }
+      }
+
+      $link(u, noncycle \cdot cycle^*, v)$ \;
+      
+    }
+
+  }
+
+\end{algorithm}
 
 % \begin{definition}
 %   % todo: better name
