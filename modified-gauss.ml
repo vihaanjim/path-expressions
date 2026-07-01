@@ -57,16 +57,20 @@ let letter (u, v) =
   in
   (set, Letter (u, v))
 
+let plus_ops = ref 0
 let plus p1 p2 =
   ops := !ops + 1 ;
+  plus_ops := !plus_ops + 1;
   let (v1, e1) = p1 and (v2, e2) = p2 in
   match (e1, e2) with
   | (Zero, e2) -> (v2, e2)
   | (e1, Zero) -> (v1, e1)
   | _ -> (BatBitSet.union v1 v2, Plus (p1, p2))
 
+let times_ops = ref 0
 let times p1 p2 =
   ops := !ops + 1 ;
+  times_ops := !times_ops + 1 ;
   let (v1, e1) = p1 and (v2, e2) = p2 in
   match (e1, e2) with
   | (Zero, _) -> zero
@@ -96,21 +100,23 @@ let gauss n graph =
      well-formed. *)
   let split_memo = Hashtbl.create (size * size) in
   let rec split u p =
-    if Hashtbl.mem split_memo (u, p) then
+    let (vs, e) = p in 
+    if not (BatBitSet.mem vs u) then (zero, zero, p)
+    else if Hashtbl.mem split_memo (u, p) then
       Hashtbl.find split_memo (u, p)
     else
       let res = 
-        let (vs, e) = p and u_vert = u / 2 in
-        match ((BatBitSet.mem vs u), e) with 
-        | true, Letter (v, w) ->
+        let u_vert = u / 2 in
+        match e with 
+        | Letter (v, w) ->
            if v = u_vert then (one, p, zero)
            else if w = u_vert then (p, one, zero)
            else (zero, zero, p)
-        | true, Plus (p1, p2) ->
+        | Plus (p1, p2) ->
            let (l1, r1, b1) = split u p1 in
            let (l2, r2, b2) = split u p2 in
            (plus l1 l2, plus r1 r2, plus b1 b2)
-        | true, Times (p1, p2) ->
+        | Times (p1, p2) ->
            let (l1, r1, b1) = split u p1 in
            (* if l1 is non empty, then it was split. by well-
               formedness, p2 does not contain u (except possibly
@@ -189,17 +195,13 @@ let count p =
   Hashtbl.length seen
 
 let test_to n =
+  Printf.printf "Processing to n=%d... may take a while\n" n ;
+  Printf.printf "\tops\t(+)\t(.)\texprs\n" ;
+  flush stdout;
   for i = 2 to n do
+    ops := 0 ; plus_ops := 0 ; times_ops := 0 ;
     complete i |> gauss i |> Array.map count
     |> Array.fold_left Int.max 0 (* find max *)
-    |> Printf.printf "n=%d:\t%d\t%d\n" i !ops ;
+    |> Printf.printf "n=%d:\t%d\t%d\t%d\t%d\n" i !ops !plus_ops !times_ops ;
     flush stdout ;
-    ops := 0
   done
-
-let () =
-  let n = 15 in
-  Printf.printf "Processing to n=%d... may take a while\n" n ;
-  Printf.printf "\tops\texprs\n" ;
-  flush stdout;
-  test_to 15
