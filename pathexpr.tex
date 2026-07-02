@@ -112,12 +112,12 @@ variables.
 
 \begin{definition}
   Suppose there is an infinite set of variable vocabularies
-  $\{X_{-\infty}, X_0, X_1, X_2, \dots\}$, and suppose that $L$
-  is taken with respect to the function $wt: E \to \mathbb{Z}$
-  that maps every edge to 1. Then, define $I$ mapping path
-  expressions and integer lower and upper bounds to formulas
-  where $I(P, l, u) \equiv false$ if $L(P) = -\infty$, and
-  otherwise, $I(1, l, u) \equiv X_l = X_u$,
+  $\{X_0, X_1, X_2, \dots\}$, and suppose that $L$ is taken with
+  respect to the function $wt: E \to \mathbb{Z}$ that maps every
+  edge to 1. Then, define $I$ mapping path expressions and
+  non-negative integer lower and upper bounds to formulas where
+  $I(P, l, u) \equiv false$ if $L(P) = -\infty$, and otherwise,
+  $I(1, l, u) \equiv X_l = X_u$,
   $I(e, l, u) \equiv F_e(X_l, X_u)$ for all $e \in E$, and
   \begin{align*}
     I(P_a + P_b, l, u)
@@ -143,7 +143,7 @@ variables.
   $P = P'^*$, or $P = \tuple{v, w}$. Suppose the claim holds for
   $P_a$ and $P_b$. Take any $l$ and $u$ such that $l \ge 0$ and
   $u \ge l + L(P_a + P_b)$. Since
-  $L(P_a + P_b) = \max{L(P_a), L(P_b)}$, clearly
+  $L(P_a + P_b) = \max\{L(P_a), L(P_b)\}$, clearly
   $u \ge l + L(P_a)$ and $u \ge l + L(P_b)$. Then,
   $Vars(I(P_a + P_b, l, u)) \subseteq Vars(I(P_a, l, u)) \cup
   Vars(I(P_b, l, u)) = \bigcup_{i = l}^u X_i$. Similarly, take
@@ -197,24 +197,25 @@ variables.
   $I(P_b, l + L(P_a), u) \subseteq V_{l + L(P_a), u}$.  By
   definition,
   $V_{l, u} = V_{l, l + L(P_a)} \cup V_{l + L(P_a), u}$ and
-  $V_{l, l + L(P_a)} \cap V_{l + L(P_a), u} = X_{l + L(P_a)}$.
-  $W_a \cap W_b = $. Furthermore, $L(P_a), L(P_b) \ge 0$ by
-  definition, meaning that $l + L(P_a) \ge 0$ and
+  $V_{l, l + L(P_a)} \cap V_{l + L(P_a), u} = X_{l +
+    L(P_a)}$. Furthermore, $L(P_a), L(P_b) \ge 0$ by definition,
+  meaning that $l + L(P_a) \ge 0$ and
   $u \ge (l + L(P_a)) + L(P_b)$. So,
   \begin{align*}
     \tf{P_a \cdot P_b}
     &\equiv \exists X''.
       \tf{P_a}(X, X'') \land \tf{P_b}(X'', X') \\
     &\equiv \exists X''.
-      (\exists W_a. I(P_a, l, l + L(P_a)) \land
+      (\exists V_{l, l + L(P_a)}. I(P_a, l, l + L(P_a)) \land
       X = l \land X'' = X_{l + L(P_a)}) \\
-    & \qquad \land (\exists W_b. I(P_b, l + L(P_a), u) \land
+    & \qquad \land (\exists V_{l + L(P_a), u}.
+      I(P_b, l + L(P_a), u) \land
       X'' = X_{l + L(P_a)} \land X' = u) \\
     &\equiv \exists X''.
-      \exists W.
+      \exists V_{l, u}.
       I(P_a, l, l + L(P_a)) \land I(P_b, l + L(P_a), u) \land
       X = l \land X'' = X_{l + L(P_a)} \land X' = u \\
-    &\equiv \exists W.
+    &\equiv \exists V_{l, u}.
       I(P_a \cdot P_b, l, u) \land X = l \land X' = u
   \end{align*}
 
