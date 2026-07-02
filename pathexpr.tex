@@ -111,12 +111,13 @@ variables.
 \end{definition}
 
 \begin{definition}
-  Suppose there are an infinite set of variable vocabularies
+  Suppose there is an infinite set of variable vocabularies
   $\{X_{-\infty}, X_0, X_1, X_2, \dots\}$, and suppose that $L$
   is taken with respect to the function $wt: E \to \mathbb{Z}$
   that maps every edge to 1. Then, define $I$ mapping path
   expressions and integer lower and upper bounds to formulas
-  where $I(0, l, u) \equiv false$, $I(1, l, u) \equiv X_l = X_u$,
+  where $I(P, l, u) \equiv false$ if $L(P) = -\infty$, and
+  otherwise, $I(1, l, u) \equiv X_l = X_u$,
   $I(e, l, u) \equiv F_e(X_l, X_u)$ for all $e \in E$, and
   \begin{align*}
     I(P_a + P_b, l, u)
@@ -132,44 +133,28 @@ variables.
 
 \begin{lemma}
   \label{pe:freevars}
-  For all $P \in PathExp(G)$, for all $0 \le l < l + L(P) \le u$,
+  For all $P \in PathExp(G)$, for all $l \ge 0$ and
+  $u \ge l + L(P)$,
   $Vars(I(P, l, u)) \subseteq \bigcup_{i = l}^u X_i$.
 \end{lemma}
 
 \begin{proof}
-  The claim holds trivially for $P = 0$, $P = 1$, $P = P'^*$, or
-  $P = \tuple{v, w}$. Suppose the claim holds for $P_a$ and
-  $P_b$. Clearly, for all $0 \le l < l + L(P_a + P_b) \le u$,
+  The claim holds trivially when $L(P) = -\infty$, $P = 1$,
+  $P = P'^*$, or $P = \tuple{v, w}$. Suppose the claim holds for
+  $P_a$ and $P_b$. Take any $l$ and $u$ such that $l \ge 0$ and
+  $u \ge l + L(P_a + P_b)$. Since
+  $L(P_a + P_b) = \max{L(P_a), L(P_b)}$, clearly
+  $u \ge l + L(P_a)$ and $u \ge l + L(P_b)$. Then,
   $Vars(I(P_a + P_b, l, u)) \subseteq Vars(I(P_a, l, u)) \cup
-  Vars(I(P_b, l, u)) = \bigcup_{i = l}^u X_i$. And, since
-  $L(P_a \cdot P_b) = L(P_a) + L(P_b)$, for all
-  $0 \le l < l + L(P_a \cdot P_b) \le u$
+  Vars(I(P_b, l, u)) = \bigcup_{i = l}^u X_i$. Similarly, take
+  any $l$ and $u$ such that $l \ge 0$ and
+  $u \ge l + L(P_a \cdot P_b) = l + L(P_a) + L(P_b)$. Clearly
+  $u \ge l + L(P_a)$ and $u \ge (l + L(P_a)) + P_b$. So,
   $Vars(I(P_a \cdot P_b, l, u)) \subseteq Vars(I(P_a, l, u +
   L(P_a))) \cup Vars(I(P_b, l + L(P_a), u)) = (\bigcup_{i = l}^{l
     + L(P_a)} X_i) \cup (\bigcup_{i = l + L(P_a)}^u X_i) =
   \bigcup_{i = l}^u X_i$. By induction, the claim must hold for
   all $P$.
-\end{proof}
-
-\begin{lemma}
-  \label{pe:zero}
-  If $L(P) = -\infty$, then for all $l, u$,
-  $\tf{P} \equiv I(P, l, u) \equiv false$.
-\end{lemma}
-
-\begin{proof}
-  We proceed by structural induction on $P$. If $P = 0$, then the
-  claim holds trivially, and if $P = 1$ or $P = P'^*$, then the
-  claim holds vacuously. Suppose the claim holds for $P_a$ and
-  $P_b$ and suppose that $L(P_a + P_b) = -\infty$. Then,
-  $L(P_a) = L(P_b) = -\infty$. So,
-  $\tf{P_a + P_b} \equiv \tf{P_a} \lor \tf{P_b} \equiv false
-  \equiv I(P_a, l, u) \lor I(P_b, l, u) \equiv I(P_a + P_b, l,
-  u)$. Similarly, suppose $L(P_a \cdot P_b) = -\infty$. Then,
-  either $L(P_a) = -\infty$ or $L(P_b) = -\infty$. Either way,
-  $\tf{P_a \cdot P_b} \equiv \exists X''. \tf{P_a}(X, X'') \land
-  \tf{P_b}(X'', X') \equiv false \equiv I(P_a, l, l + L(P_a))
-  \land I(P_b, l + L(P_a), u) \equiv I(P_a \cdot P_b, l, u)$. 
 \end{proof}
 
 \begin{theorem}
@@ -178,41 +163,44 @@ variables.
 \end{theorem}
 
 \begin{proof}
-  As an abuse of notation, let $\exists S$ for a set
-  $S = \{x_1, \dots, x_m\}$ denote $\exists x_1, \dots,
-  x_m$. Then, we proceed by structural induction on $P$ with the
-  hypothesis that for all $0 \le l < l + L(P) \le u$,
-  $\tf{P} \equiv \exists Vars(I(P, l, u)). I(P, l, u) \land X =
-  X_l \land X' = X_r$. Note that this is sufficient by Lemma
-  \ref{pe:zero}. If $P = 0$, $P = 1$, or $P = \tuple{v, w}$, then
-  the claim holds trivially.
+  Let $V_{i,j} = \bigcup_{k=i}^j X_k$. As an abuse of notation,
+  let $\exists S$ for a set $S = \{x_1, \dots, x_m\}$ denote
+  $\exists x_1, \dots, x_m$. Then, we proceed by structural
+  induction on $P$ with the hypothesis that for all $l \ge 0$ and
+  $u \ge l + L(P)$,
+  $\tf{P} \equiv \exists V_{l,u}. I(P, l, u) \land X = X_l \land
+  X' = X_r$. By Lemma \ref{pe:freevars}, $X$ and $X'$ are not
+  free in $I(P, l, u)$, so this is sufficient to prove the claim.
+  If $L(P) = -\infty$, $P = 1$, or $P = \tuple{v, w}$, then the
+  claim holds trivially.
 
-  Suppose the claim holds for $P_a$ and $P_b$ and take arbitrary
-  $0 \le l < l + L(P_a + P_b) \le u$. Let
-  $V_a = Vars(I(P_a, l, u))$, $V_b = Vars(I(P_b, l, u))$, and
-  $V = Vars(I(P_a + P_b, l, u))$. We know by Lemma
-  \ref{pe:freevars} that $ V_a \cup V_b \subseteq V$. Then,
+  Suppose the claim holds for $P_a$ and $P_b$ and suppose
+  $L(P_a + P_b) \ge 0$. Take arbitrary
+  $0 \le l < l + L(P_a + P_b) \le u$. We know by Lemma
+  \ref{pe:freevars} that all free variables in $I(P_a, l, u)$ and
+  $I(P_b, l, u)$ are in $V_{l, u}$. Then,
   \begin{align*}
     \tf{P_a + P_b}
     &\equiv \tf{P_a} \lor \tf{P_b} \\
     &\equiv
-      (\exists V_a. I(P_a, l, u) \land X = X_l \land X' = X_r)
-      \lor (\exists V_b. I(P_b, l, u) \land X = X_l \land X' =
+      (\exists V_{l,u}. I(P_a, l, u) \land X = X_l \land X' = X_r)
+      \lor (\exists V_{l,u}. I(P_b, l, u) \land X = X_l \land X' =
       X_r) \\
     &\equiv
-      \exists V. I(P_a + P_b, l, u) \land X = X_l \land X' = X_r
+      \exists V_{l,u}. I(P_a+P_b,l,u) \land X = X_l \land X' = X_r
   \end{align*}
-  by the induction hypothesis and (if applicable) Lemma
-  \ref{pe:zero}. % todo: deal with 0 case more effectively
 
-  Now, take arbitrary take arbitrary
-  $0 \le l < l + L(P_a \cdot P_b) \le u$. Let
-  $W_a = Vars(I(P_a, l, l + L(P_a)))$,
-  $W_b = Vars(I(P_b, l + L(P_a), u))$, and
-  $W = Vars(I(P_a \cdot P_b, l, u))$. By Lemma \ref{pe:freevars},
-  we know that $W_a \cup W_b \subseteq W$, but also that
-  $W_a \cap W_b = X_{l + L(P_a)}$. Furthermore,
-  $L(P_a), L(P_b) \ge 0$. So,
+  Similarly, suppose $L(P_a \cdot P_b) \ge 0$ and take arbitrary
+  $0 \le l < l + L(P_a \cdot P_b) \le u$. Let By Lemma
+  \ref{pe:freevars}, we know that
+  $I(P_a, l, l + L(P_a)) \subseteq V_{l, l + L(P_a)}$ and
+  $I(P_b, l + L(P_a), u) \subseteq V_{l + L(P_a), u}$.  By
+  definition,
+  $V_{l, u} = V_{l, l + L(P_a)} \cup V_{l + L(P_a), u}$ and
+  $V_{l, l + L(P_a)} \cap V_{l + L(P_a), u} = X_{l + L(P_a)}$.
+  $W_a \cap W_b = $. Furthermore, $L(P_a), L(P_b) \ge 0$ by
+  definition, meaning that $l + L(P_a) \ge 0$ and
+  $u \ge (l + L(P_a)) + L(P_b)$. So,
   \begin{align*}
     \tf{P_a \cdot P_b}
     &\equiv \exists X''.
@@ -220,21 +208,20 @@ variables.
     &\equiv \exists X''.
       (\exists W_a. I(P_a, l, l + L(P_a)) \land
       X = l \land X'' = X_{l + L(P_a)}) \\
-    & \qquad \land (\exists W_b. I(P_a, l + L(P_a), u) \land
+    & \qquad \land (\exists W_b. I(P_b, l + L(P_a), u) \land
       X'' = X_{l + L(P_a)} \land X' = u) \\
     &\equiv \exists X''.
       \exists W.
-      I(P_a, l, l + L(P_a)) \land I(P_a, l + L(P_a), u) \land
+      I(P_a, l, l + L(P_a)) \land I(P_b, l + L(P_a), u) \land
       X = l \land X'' = X_{l + L(P_a)} \land X' = u \\
     &\equiv \exists W.
       I(P_a \cdot P_b, l, u) \land X = l \land X' = u
   \end{align*}
 
   Finally, suppose the claim holds for $P$ and take arbitrary
-  $0 \le l < l + 1 \le u$. Obviously,
-  $0 \le l + 1 < l + 1 + L(P)$, so by the induction hypothesis,
-  $\tf{P} \equiv \exists Vars(I(P, l+1, l+1+L(P))). I(P, l+1,
-  l+1+L(P)) \land X = X_{l+1} \land X' = X_{l+1+L(P)}$. So,
+  $0 \le l < l + 1 \le u$. By the induction hypothesis,
+  $\tf{P} \equiv \exists V_{l+1, l+1+L(P)}. I(P, l+1, l+1+L(P))
+  \land X = X_{l+1} \land X' = X_{l+1+L(P)}$. So,
   $\tf{P}(X_{l+1}, X_{l+1+L(P)}) \equiv star(I(P, l+1, l+1+L(P)),
   \tuple{X_{l+1}, X_{l+1+L(P)}})$. Therefore,
   $\tf{P^*}(X_l, X_u) \equiv I(P^*, l, u)$, and the claim holds.
@@ -371,10 +358,10 @@ the rest of the analysis of Tarjan's algorithm.
   iteration for some particular $l$ and $u$. The new
   subexpressions created during this iteration are exactly
   $\{\tuple{v', v}, eval(v') \cdot \tuple{v', v}|v' \in
-  pred(v)\}$, the subexpressions made by successive unions to
-  $cycle$ and $noncycle$, $cycle^*$, $noncycle \cdot cycle^*$,
-  and its concatenations with $eval(w')$ where $w'$ is dominated
-  by $v$. 
+  pred(v)\}$; the subexpressions made by successive unions to
+  $cycle$ and $noncycle$; $cycle^*$; $noncycle \cdot cycle^*$;
+  and the concatenations $noncycle \cdot cycle^* \cdot eval(w')$
+  where $w'$ is dominated by $v$.
 \end{proof}
 
 % \begin{definition}
