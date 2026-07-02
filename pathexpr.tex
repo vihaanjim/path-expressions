@@ -53,12 +53,12 @@
 \end{definition}
 
 \begin{definition}
-  For any function $wt: \Sigma \to \mathbb{Z}$, the \emph{length}
+  Given a function $wt: \Sigma \to \mathbb{Z}$, the \emph{length}
   of a regular expression is given by
   $L: RegExp(\Sigma) \to \mathbb{Z} \cup \{-\infty\}$ where
   $L(0) = -\infty$, $L(1) = L(R^*) = 1$, $L(a) = wt(a)$ for all
   $a \in \Sigma$, $L(R_1 + R_2) = \max\{L(R_1), L(R_2)\}$, and
-  $L(R_1 \cdot R_2) = L(R_1) + L(R_2)$. 
+  $L(R_1 \cdot R_2) = L(R_1) + L(R_2)$.
 \end{definition}
 
 Let $X$ and $X'$ be sets of variables such that for each
@@ -191,7 +191,7 @@ variables.
   \end{align*}
 
   Similarly, suppose $L(P_a \cdot P_b) \ge 0$ and take arbitrary
-  $0 \le l < l + L(P_a \cdot P_b) \le u$. Let By Lemma
+  $0 \le l < l + L(P_a \cdot P_b) \le u$. By Lemma
   \ref{pe:freevars}, we know that
   $I(P_a, l, l + L(P_a)) \subseteq V_{l, l + L(P_a)}$ and
   $I(P_b, l + L(P_a), u) \subseteq V_{l + L(P_a), u}$.  By
@@ -245,11 +245,12 @@ variables.
 \end{definition}
 
 \begin{definition}
-  The \emph{derived graph} $\tilde{G} = \tuple{V, \tilde{E}, r}$
+  % todo: change from tilde (used for derived graph by Tarjan)
+  The \emph{sibling graph} $\tilde{G} = \tuple{V, \tilde{E}, r}$
   of a control flow graph $G = \tuple{V, E, r, F}$ is determined
   by
-  $\tilde{E} = \{\tuple{u, v}|\tuple{w, v}\in E \textit{ where }
-  u \textit{ dominates } w\}$.
+  $\tilde{E} = \{\tuple{u, v}|\tuple{w, v}\in E, u \textit{
+    dominates } w \textit{ but not } v\}$.
 \end{definition}
 
 \begin{definition}
@@ -268,30 +269,45 @@ variables.
   First, note that by definition, every edge
   $\tuple{u, v} \in \tilde{E}$ corresponds to a path from $u$ to
   $v$ in $G$ where every intermediate vertex is strictly
-  dominated its predecessor in the path. Now, let $G$ be
-  reducible and suppose for the sake of contradiction that there
-  is some simple cycle $v_1,\dots,v_n,v_{n+1}=v_1$ where $n > 1$
-  in $\tilde{G}$. Then, there must be a corresponding cycle
+  dominated by $u$. Now, let $G$ be reducible and suppose for the
+  sake of contradiction that there is some simple cycle
+  $v_1,\dots,v_n,v_{n+1}=v_1$ where $n > 1$ in $\tilde{G}$. Then,
+  there must be a corresponding cycle
   $v_1, u_1^1, \dots, u_1^{m_1}, v_2, u_2^1, \dots, u_2^{m_1},
   \dots, v_n, u_n^1, \dots, u_n^{m_n}, v_{n+1}$ in $G$ where
-  $u_i^1$ is strictly dominated by $v_i$ and $u_i^j$ is strictly
-  dominated by $u_i^{j+1}$ for all $1\le i\le n$ $1\le j <
-  m_i$. Choose the shortest such cycle. Since $G$ is reducible,
-  there must be some edge $\tuple{w_1, w_2}$ in this cycle where
-  $w_2$ dominates $w_1$. Since a vertex cannot dominate a vertex
-  that strictly dominates it, this edge must be of the form
-  $\tuple{u_i^{m_i}, v_{i+1}}$ for some $1 \le i \le n$. So,
-  every path from $r$ to $u_i^{m_i}$ must pass through
-  $v_{i+1}$. But, we also know that every path from $r$ to
-  $u_i^{m_i}$ must pass through $v_i$ and that
-  $v_i \ne u_i^{m_i}$. So, either $v_{i+1} = u_i^{m_i}$,
-  contradicting our choice of the shortest cycle, or
-  $v_i = v_{i+1}$, contradicting the simplicity of the cycle
-  in $\tilde{G}$. % todo: correct
+  $u_i^j$ is strictly dominated by $v_i$ for all $1\le i\le n$,
+  $1\le j < m_i$. Choose the shortest such cycle. Since $G$ is
+  reducible, there must be some edge $\tuple{w_1, w_2}$ in this
+  cycle where $w_2$ dominates $w_1$.
 
-  For the backwards direction, suppose the strong components of
+  Suppose this edge takes the form $\tuple{u_i^j, u_i^{j+1}}$ for
+  some $1\le i\le n$, $1\le j < m_i$. Then, let $p$ be a path
+  from $r$ to $v_i$ and consider the path created from the
+  concatenation of $p$ and $u_i^1,\dots,u_i^j,u_i^{j+1}$. Since
+  $v_i$ dominates $u_i^{j+1}$, it cannot appear in $p$. But,
+  $u_i^{j+1}$ dominates $u_i^j$; so, there is some $1\le j' \le
+  j$ such that $u_i^{j'} = u_i^{j+1}$. This contradicts our
+  choice of the shortest cycle. 
+
+  So, this edge must be of the form $\tuple{u_i^{m_i}, v_{i+1}}$
+  for some $1 \le i \le n$. So, every path from $r$ to
+  $u_i^{m_i}$ must pass through $v_{i+1}$. But, we also know that
+  every path from $r$ to $u_i^{m_i}$ must pass through $v_i$ and
+  that $v_i \ne u_i^{m_i}$. So, either $v_{i+1} = u_i^{m_i}$,
+  contradicting our choice of the shortest cycle, or
+  $v_i = v_{i+1}$, contradicting the simplicity of the cycle in
+  $\tilde{G}$. This complete the proof for the forward
+  direction.
+
+  For the backward direction, suppose the strong components of
   $\tilde{G}$ are all single vertices. Then, consider any cycle
-  $v_1, \dots, v_n, v_{n+1} = v_1$ in $G$. 
+  $v_1, \dots, v_n, v_{n+1} = v_1$ in $G$. Suppose for the sake
+  of contradiction that there is no $1 \le i\le n$ such that
+  $v_{i+1}$ dominates $v_i$. Clearly, $n > 1$. Furthermore, for
+  each $1 \le i\le n$, there must be an edge
+  $\tuple{v_{i+1},v_i} \in \tilde{E}$ because $v_{i+1}$ dominates
+  itself but not $v_i$. So, $v_1, \dots, v_n$ is a connected
+  component in $\tilde{G}$, which is a contradiction.
   
 \end{proof}
 
