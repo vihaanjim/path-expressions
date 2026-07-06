@@ -115,7 +115,7 @@ variables.
   $\{X_0, X_1, X_2, \dots\}$, and suppose that $L$ is taken with
   respect to the function $wt: E \to \mathbb{Z}$ that maps every
   edge to 1. Then, define $I$ mapping path expressions and
-  non-negative integer lower and upper bounds to formulas where
+  integer lower and upper bounds to formulas where
   $I(P, l, u) \equiv false$ if $L(P) = -\infty$, and otherwise,
   $I(1, l, u) \equiv X_l = X_u$,
   $I(e, l, u) \equiv F_e(X_l, X_u)$ for all $e \in E$, and
@@ -126,7 +126,7 @@ variables.
     &\equiv I(P_a, l, l + L(P_a)) \land I(P_b, l + L(P_a), u) \\
     I(P^*, l, u)
     &\equiv star(I(P, l+1, l+1+L(P)), \tuple{X_{l+1},
-      X_{u+1}})[X_{l+1} \mapsto X_l, X_{l+1+L(P)} \mapsto X_r]
+      X_{l+1+L(P)}})[X_{l+1} \mapsto X_l, X_{l+1+L(P)} \mapsto X_u]
   \end{align*}
   for all $P, P_a, P_b \in PathExp(G)$. 
 \end{definition}
@@ -141,16 +141,16 @@ variables.
 \begin{proof}
   The claim holds trivially when $L(P) = -\infty$, $P = 1$,
   $P = P'^*$, or $P = \tuple{v, w}$. Suppose the claim holds for
-  $P_a$ and $P_b$. Take any $l$ and $u$ such that $l \ge 0$ and
-  $u \ge l + L(P_a + P_b)$. Since
+  $P_a$ and $P_b$ and that $L(P_a + P_b) \ge 0$. Take any
+  $0 \le l \le l + L(P_a + P_b) \le u$. Since
   $L(P_a + P_b) = \max\{L(P_a), L(P_b)\}$, clearly
   $u \ge l + L(P_a)$ and $u \ge l + L(P_b)$. Then,
   $Vars(I(P_a + P_b, l, u)) \subseteq Vars(I(P_a, l, u)) \cup
-  Vars(I(P_b, l, u)) = \bigcup_{i = l}^u X_i$. Similarly, take
-  any $l$ and $u$ such that $l \ge 0$ and
-  $u \ge l + L(P_a \cdot P_b) = l + L(P_a) + L(P_b)$. Clearly
-  $u \ge l + L(P_a)$ and $u \ge (l + L(P_a)) + P_b$. So,
-  $Vars(I(P_a \cdot P_b, l, u)) \subseteq Vars(I(P_a, l, u +
+  Vars(I(P_b, l, u)) = \bigcup_{i = l}^u X_i$. Similarly, suppose
+  $L(P_a \cdot P_b) \ge 0$. Then, $L(P_a), L(P_b) \ge 0$. Take
+  $0 \le l \le l + L(P_a \cdot P_b) = 1 + L(P_a) + L(P_b) \le u$.
+  Clearly, $u \ge (l + L(P_a)) + P_b$. So,
+  $Vars(I(P_a \cdot P_b, l, u)) \subseteq Vars(I(P_a, l, l +
   L(P_a))) \cup Vars(I(P_b, l + L(P_a), u)) = (\bigcup_{i = l}^{l
     + L(P_a)} X_i) \cup (\bigcup_{i = l + L(P_a)}^u X_i) =
   \bigcup_{i = l}^u X_i$. By induction, the claim must hold for
@@ -176,9 +176,7 @@ variables.
 
   Suppose the claim holds for $P_a$ and $P_b$ and suppose
   $L(P_a + P_b) \ge 0$. Take arbitrary
-  $0 \le l < l + L(P_a + P_b) \le u$. We know by Lemma
-  \ref{pe:freevars} that all free variables in $I(P_a, l, u)$ and
-  $I(P_b, l, u)$ are in $V_{l, u}$. Then,
+  $0 \le l \le l + L(P_a + P_b) \le u$. Then,
   \begin{align*}
     \tf{P_a + P_b}
     &\equiv \tf{P_a} \lor \tf{P_b} \\
@@ -191,10 +189,10 @@ variables.
   \end{align*}
 
   Similarly, suppose $L(P_a \cdot P_b) \ge 0$ and take arbitrary
-  $0 \le l < l + L(P_a \cdot P_b) \le u$. By Lemma
+  $0 \le l \le l + L(P_a \cdot P_b) \le u$. By Lemma
   \ref{pe:freevars}, we know that
-  $I(P_a, l, l + L(P_a)) \subseteq V_{l, l + L(P_a)}$ and
-  $I(P_b, l + L(P_a), u) \subseteq V_{l + L(P_a), u}$.  By
+  $Vars(I(P_a, l, l + L(P_a))) \subseteq V_{l, l + L(P_a)}$ and
+  $Vars(I(P_b, l + L(P_a), u)) \subseteq V_{l + L(P_a), u}$.  By
   definition,
   $V_{l, u} = V_{l, l + L(P_a)} \cup V_{l + L(P_a), u}$ and
   $V_{l, l + L(P_a)} \cap V_{l + L(P_a), u} = X_{l +
@@ -220,10 +218,10 @@ variables.
   \end{align*}
 
   Finally, suppose the claim holds for $P$ and take arbitrary
-  $0 \le l < l + 1 \le u$. By the induction hypothesis,
+  $0 \le l \le l + 1 \le u$. By the induction hypothesis,
   $\tf{P} \equiv \exists V_{l+1, l+1+L(P)}. I(P, l+1, l+1+L(P))
   \land X = X_{l+1} \land X' = X_{l+1+L(P)}$. So,
-  $\tf{P}(X_{l+1}, X_{l+1+L(P)}) \equiv star(I(P, l+1, l+1+L(P)),
+  $\tf{P^*}(X_{l+1}, X_{l+1+L(P)}) \equiv star(I(P, l+1, l+1+L(P)),
   \tuple{X_{l+1}, X_{l+1+L(P)}})$. Therefore,
   $\tf{P^*}(X_l, X_u) \equiv I(P^*, l, u)$, and the claim holds.
   
@@ -234,24 +232,27 @@ variables.
   said to \emph{dominate} $u \in V$ if every path from $r$ to $u$
   in $G$ goes through $v$. If $u \ne v$, then $v$ is said to
   \emph{strictly dominate} $u$. If $v$ strictly dominates $u$ and
-  is dominated by every vertex that dominates $u$, then $v$ is
-  the \emph{immediate dominator} of $u$, denoted $v =
-  idom(u)$. $E|_v$ denotes the set of edges $\tuple{w_1, w_2}$
-  where $w_2$ is strictly dominated by $v$.
-  % Note that there is a rooted tree whose vertices are
-  % $V$, whose root is $r$, and whose edges $\tuple{v, u}$
-  % correspond to $v = idom(u)$. We let $children(v)$ be the set of
-  % children of $v$ in this tree, i.e. $\{u|v=idom(u)\}$.
+  is dominated by every vertex that strictly dominates $u$, then
+  $v$ is the \emph{immediate dominator} of $u$, denoted
+  $v = idom(u)$. 
 \end{definition}
 
-\begin{definition}
-  % todo: change from tilde (used for derived graph by Tarjan)
-  The \emph{sibling graph} $\tilde{G} = \tuple{V, \tilde{E}, r}$
-  of a control flow graph $G = \tuple{V, E, r, F}$ is determined
-  by
-  $\tilde{E} = \{\tuple{u, v}|\tuple{w, v}\in E, u \textit{
-    dominates } w \textit{ but not } v\}$.
-\end{definition}
+\begin{lemma}
+  \label{dominator:trans}
+  If $x$ dominates $y$ and $y$ dominates $z$, then every path
+  from $x$ to $z$ must go through $y$.
+\end{lemma}
+
+\begin{proof}
+  If $x = y$ or $y = z$, then the claim holds trivially.
+  Otherwise, let $p_1$ be a simple path from $r$ to $x$ and let
+  $p_2$ be an arbitrary path from $x$ to $z$. By definition, the
+  concatenation of $p_1$ and $p_2$ must go throught $y$. Suppose
+  $p_1$ goes through $y$. Then, there is some prefix $p_1'$ of
+  $p_1$ that is a path from $r$ to $y$. But, by definition,
+  $p_1'$ must go through $r$, which contradicts the simplicity of
+  $p_1$. Therefore, $p_2$ must go through $y$, as desired.
+\end{proof}
 
 \begin{definition}
   A control flow graph $G = \tuple{V, E, r, F}$ is
@@ -261,54 +262,41 @@ variables.
 \end{definition}
 
 \begin{lemma}
-  $G$ is reducible if and only if the strong components of
-  $\tilde{G}$ are single vertices.
+  \label{reducible:order}
+  If $G$ is reducible, then there is an ordering of the vertices
+  such that for all $u, v\in V$, if there is some $u'$ that
+  dominates $u$ but does not strictly dominate $v$ from which $v$
+  is reachable, then $u \le v$.
 \end{lemma}
 
 \begin{proof}
-  First, note that by definition, every edge
-  $\tuple{u, v} \in \tilde{E}$ corresponds to a path from $u$ to
-  $v$ in $G$ where every intermediate vertex is strictly
-  dominated by $u$. Now, let $G$ be reducible and suppose for the
-  sake of contradiction that there is some simple cycle
-  $v_1,\dots,v_n,v_{n+1}=v_1$ where $n > 1$ in $\tilde{G}$. Then,
-  there must be a corresponding cycle
-  $v_1, u_1^1, \dots, u_1^{m_1}, v_2, u_2^1, \dots, u_2^{m_1},
-  \dots, v_n, u_n^1, \dots, u_n^{m_n}, v_{n+1}$ in $G$ where
-  $u_i^j$ is strictly dominated by $v_i$ for all $1\le i\le n$,
-  $1\le j < m_i$. Choose the shortest such cycle. Since $G$ is
-  reducible, there must be some edge $\tuple{w_1, w_2}$ in this
-  cycle where $w_2$ dominates $w_1$.
+  (very rough draft, and perhaps unnecessary)
+  We prove the claim by showing that on reducible graphs, the
+  above relation is a partial order.
 
-  Suppose this edge takes the form $\tuple{u_i^j, u_i^{j+1}}$ for
-  some $1\le i\le n$, $1\le j < m_i$. Then, let $p$ be a path
-  from $r$ to $v_i$ and consider the path created from the
-  concatenation of $p$ and $u_i^1,\dots,u_i^j,u_i^{j+1}$. Since
-  $v_i$ dominates $u_i^{j+1}$, it cannot appear in $p$. But,
-  $u_i^{j+1}$ dominates $u_i^j$; so, there is some $1\le j' \le
-  j$ such that $u_i^{j'} = u_i^{j+1}$. This contradicts our
-  choice of the shortest cycle. 
-
-  So, this edge must be of the form $\tuple{u_i^{m_i}, v_{i+1}}$
-  for some $1 \le i \le n$. So, every path from $r$ to
-  $u_i^{m_i}$ must pass through $v_{i+1}$. But, we also know that
-  every path from $r$ to $u_i^{m_i}$ must pass through $v_i$ and
-  that $v_i \ne u_i^{m_i}$. So, either $v_{i+1} = u_i^{m_i}$,
-  contradicting our choice of the shortest cycle, or
-  $v_i = v_{i+1}$, contradicting the simplicity of the cycle in
-  $\tilde{G}$. This complete the proof for the forward
-  direction.
-
-  For the backward direction, suppose the strong components of
-  $\tilde{G}$ are all single vertices. Then, consider any cycle
-  $v_1, \dots, v_n, v_{n+1} = v_1$ in $G$. Suppose for the sake
-  of contradiction that there is no $1 \le i\le n$ such that
-  $v_{i+1}$ dominates $v_i$. Clearly, $n > 1$. Furthermore, for
-  each $1 \le i\le n$, there must be an edge
-  $\tuple{v_{i+1},v_i} \in \tilde{E}$ because $v_{i+1}$ dominates
-  itself but not $v_i$. So, $v_1, \dots, v_n$ is a connected
-  component in $\tilde{G}$, which is a contradiction.
-  
+  \begin{enumerate}
+  \item Reflexivity: for all $v \in V$, $v$ dominates itself but
+    does not strictly dominate itself and is trivially reachable
+    from itself, so $v \le v$
+  \item Antisymmetry: suppose $u \le v$ and $v \le u$ for some
+    $u, v \in V$. There is some $u'$ that dominates $u$ but does
+    not strictly dominate $v$ and some $v'$ that dominates $v$
+    but does not strictly dominate $u$ such that there are simple
+    paths $u',a_1,\dots,a_k,v$ and $v',b_1,\dots,b_m,u$. (TODO:
+    finish)
+  \item Transitivity: suppose $u \le v$ and $v \le w$ for some
+    $u, v, w \in V$. Then, there is some $u'$ that dominates $u$
+    but does not strictly dominate $v$ from which $v$ is
+    reachable and some $v'$ that dominates $v$ but does not
+    strictly dominate $w$ from which $w$ is reachable. If $v'$
+    dominates $u'$, then we are done. Otherwise, consider some
+    path $p_1$ from $r$ to $u'$ that does not go through $v'$ and
+    another path $p_2$ from $u'$ to $v$. Clearly, the
+    concatenation of $p_1$ and $p_2$ is a path from $r$ to
+    $v$. By definition, this means that $p_2$ contains
+    $v'$. Therefore, $w$ is reachable from $u'$. (TODO: prove $w$
+    is not strongly dominated by $u'$)
+  \end{enumerate}
 \end{proof}
 
 \begin{algorithm}[H]
@@ -319,8 +307,8 @@ variables.
   % \SetAlgoNoEnd
   
   \KwIn{A reducible control flow graph $G=\tuple{V, E, r, F}$
-    with vertices labeled $1,\dots, n = r$ in reverse topological
-    order of $\tilde{G}$}
+    with vertices labeled $1,\dots, n = r$ as detailed in Lemma
+    \ref{reducible:order}}
   
   \KwOut{A function $pe: V \to PathExp(G)$ such that for all
     $v \in V$, $pe(v)$ is a well-formed path expression
@@ -353,6 +341,58 @@ from the path expressions --- we assume that this is the case for
 the rest of the analysis of Tarjan's algorithm.
 
 \begin{lemma}
+  Before the $v$th iteration, for all $w < v$, $eval(w)$
+  represents exactly the paths to $w$ from the smallest
+  $w' \ge v$ that dominates $w$ which do not pass through $w'$ as
+  an intermediate vertex.
+\end{lemma}
+
+\begin{proof}
+  We proceed by induction on $v$. The claim holds vacuously
+  before the first iteration. Suppose it holds before the $v$th
+  iteration. $eval(w)$ is unchanged for all $w < v$ not dominated
+  by $v$, so the claim still holds for such $w$. Consider any $w$
+  dominated by $v$. By the ordering, $w \le v$, and the smallest
+  dominator of $w$ that is at least $v$ is clearly $v$. By the
+  induction hypothesis, before this iteration, $eval(w)$
+  represents exactly the paths from $v$ to $w$ that does not pass
+  through $v$ as an intermediate vertex. Furthermore, the
+  smallest dominator of $w$ strictly greater than $v$ is
+  $idom(v)$, and every path from $idom(v)$ to $w$ must pass
+  through $v$ by Lemma \ref{dominator:trans}. Thus, it is
+  sufficient to show that $noncycle$ and $cycle$ represent
+  exactly the paths from $idom(v)$ to $v$ and the the cycles
+  starting and ending at $v$, respectively, that do not pass
+  through $idom(v)$ or $v$ as intermediate vertices.
+
+  Consider any path from $idom(v)$ to $v$ that does not pass
+  through $idom(v)$ or $v$ as intermediate vertices. It must
+  consist of a path from $idom(v)$ to some vertex $v'\in pred(v)$
+  that does not pass through $idom(v)$ or $v$ as intermediate
+  vertices, followed by the edge $\tuple{v', v}$. By Lemma
+  \ref{dominator:trans}, $v'$ cannot be dominated by $v$. And,
+  $v'$ must be dominated by every vertex that strictly dominates
+  $v$ by definition. Therefore, either $v' < v$ or
+  $v' = idom(v)$. So, by the induction hypothesis, $noncycle$ has
+  the desired form.
+
+  Now, consider any cycle starting and ending at $v$ that does
+  not pass through $idom(v)$ or $v$ as intermediate vertices. It
+  must consist of a path from $v$ to some vertex $v'\in pred(v)$
+  that does not pass through $idom(v)$ or $v$ as intermediate
+  vertices, followed by the edge $\tuple{v', v}$. $v'$ must be
+  dominated by $idom(v)$, and furthermore $v'$ is not $idom(v)$,
+  meaning that $v'$ does not strictly dominate $v$. Since $v'$
+  dominates itself, $v' < v$. Suppose for the sake of
+  contradiction that $v$ does not dominate $v'$. Then, since $v'$
+  is reachable from $v'$ and since $v$ dominates itself, $v \le
+  v'$, which is a contradiction. Therefore, by the induction
+  hypothesis, before this iteration $eval(v')$ represents exactly
+  the paths from $v$ to $v'$ which do not pass through $v$ as an
+  intermediate vertex. Thus, $cycle$ has the desired form.
+\end{proof}
+
+\begin{lemma}
   Before the $v$th iteration, there exist
   $l, u : S \to \mathbb{Z} \cup \{-\infty\}$ where
   $S = \bigcup_{w = 1}^v SubExp(eval(w))$ such that the following
@@ -372,13 +412,11 @@ the rest of the analysis of Tarjan's algorithm.
 \begin{proof}
   We proceed by induction on $v$. The claim obviously holds prior
   to the first iteration. Suppose it holds before the $v$th
-  iteration for some particular $l$ and $u$. The new
-  subexpressions created during this iteration are exactly
-  $\{\tuple{v', v}, eval(v') \cdot \tuple{v', v}|v' \in
-  pred(v)\}$; the subexpressions made by successive unions to
-  $cycle$ and $noncycle$; $cycle^*$; $noncycle \cdot cycle^*$;
-  and the concatenations $noncycle \cdot cycle^* \cdot eval(w')$
-  where $w'$ is dominated by $v$.
+  iteration for some particular $l$ and $u$. Let $l'$ and $u'$ be
+  extensions of $l$ and $u$, respectively, so that
+  $l'(\tuple{v', v}) = u(eval(v'))$ and
+  $u'(\tuple{v', v}) = u(eval(v')) + L(\tuple{v', v})$ for all
+  $v' \in pred(v)$, $l'(cycle) = $
 \end{proof}
 
 % \begin{definition}
