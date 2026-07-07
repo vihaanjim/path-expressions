@@ -344,17 +344,18 @@ the rest of the analysis of Tarjan's algorithm.
   \label{tarjan:correct}
   Before the $v$th iteration, for all $w < v$,
   $\si{eval(w)} = Paths_G(w', w) \cap E|_{w'}^*$, where $w'$ is
-  the smallest vertex $w' \ge v$ that dominates $w$.
+  the smallest vertex at least $v$ that dominates $w$.
 \end{lemma}
 
 \begin{proof}
   We proceed by induction on $v$. The claim holds vacuously
   before the first iteration. Suppose it holds before the $v$th
   iteration. $eval(w)$ is unchanged for all $w < v$ not dominated
-  by $v$, so the claim still holds for such $w$. Consider any $w$
-  dominated by $v$. By the ordering, $w \le v$, and the smallest
-  dominator of $w$ that is at least $v$ is clearly $v$. By the
-  induction hypothesis, before this iteration,
+  by $v$, and the smallest dominator stays the same as well, so
+  the claim still holds for such $w$. Consider any $w$ dominated
+  by $v$. By the ordering, $w \le v$, and the smallest dominator
+  of $w$ that is at least $v$ is clearly $v$. By the induction
+  hypothesis, before this iteration,
   $\si{eval(w)} = Paths_G(v, w) \cap E|_v^*$. Furthermore, the
   smallest dominator of $w$ strictly greater than $v$ is
   $idom(v)$, and every path from $idom(v)$ to $w$ must pass
@@ -362,8 +363,8 @@ the rest of the analysis of Tarjan's algorithm.
   sufficient to show that
   $\si{noncycle \cdot cycle^*} = Paths_G(idom(v), v) \cap
   E|_{idom(v)}^*$. The fact that the left hand side is a subset
-  of the right hand side is trivial, so we focus on the other
-  direction. 
+  of the right hand side follows trivially from the induction
+  hypothesis, so we focus on the other direction.
 
   Consider any such path $p$. It can be chopped into paths
   $p_0, p_1,\dots,p_m$ where $p_0$ ends at $v$ and every $p_i$
@@ -371,22 +372,28 @@ the rest of the analysis of Tarjan's algorithm.
   $0 \le i \le m$ contains $v$ as an intermediate vertex. $p_0$
   can be further expressed as the concatenation of some path
   $p_0'$ and an edge $\tuple{v', v}$ for some $v'$ dominated by
-  $idom(v)$. By Lemma \ref{dominator:trans}, $v'$ cannot be
-  dominated by $v$. And, $v'$ must be dominated by every vertex
-  that strictly dominates $v$ by definition. Therefore, either
-  $v' < v$ or $v' = idom(v)$. Either way, $p_0'$ is recognized by
-  $eval(v')$ before this iteration by the induction
-  hypothesis. So, $noncycle$ recognizes $p_0$.
+  $idom(v)$. By Lemma \ref{dominator:trans}, $v$ does not
+  dominate by $v'$ since $v$ does not appear in $p_0$. And, $v'$
+  must be dominated by every vertex that strictly dominates $v$
+  by the definition of $idom$. So, either $v' = idom(v)$, or $v'$
+  is a vertex that does not dominate $v$ but from which $v$ is
+  reachable, i.e. $v' \le v$. And, suppose there is some $v''$
+  which dominates $v'$ but not $v$. Then, $v$ is reachable from
+  $v''$, so $v'' \le v$. Therefore, the smallest vertex at least
+  $v$ that dominates $v''$ is $idom(v)$. By the induction
+  hypothesis,
+  $\si{eval(v')} = Paths_G(idom(v), v') \cap E_{idom(v)}^*$. So,
+  $noncycle$ recognizes $p_0$.
 
   Now, take any of the $p_i$. It can be further expressed as the
   concatenation of some path $p_i'$ and an edge $\tuple{v', v}$,
   for some $v'$ strictly dominated by $idom(v)$. By the
   definition of $idom$, $v'$ does not strictly dominate $v$. So,
-  since $v'$ dominates itself, $v' < v$. So, $v$ dominates $v'$,
-  because otherwise we get that $v \le v'$ since $v'$ is
-  reachable from $v'$ and since $v$ dominates itself. Therefore,
-  by the induction hypothesis, $p_i'$ is recognized by $eval(v')$
-  before this iteration. So, $cycle$ recognizes $p_i$ for all
+  since $v'$ dominates itself, $v' < v$. But, $v'$ is reachable
+  from $v$, meaning that $v$ must strictly dominate $v'$ because
+  otherwise we get that $v \le v'$. Therefore, by the induction
+  hypothesis, $p_i'$ is recognized by $eval(v')$ before this
+  iteration. So, $cycle$ recognizes $p_i$ for all
   $1 \le i \le m$. Therefore, the claim holds after this
   iteration.
 \end{proof}
