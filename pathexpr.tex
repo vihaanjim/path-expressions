@@ -401,9 +401,10 @@ the rest of the analysis of Tarjan's algorithm.
 \begin{lemma}
   Before the $v$th iteration, there exist
   $l, u : S \to \mathbb{Z} \cup \{-\infty\}$ where
-  $S = \bigcup_{w = 1}^v SubExp(eval(w))$ such that the following
-  hold for all $w < v$:
+  $S = \bigcup_{w = 1}^{v-1} SubExp(eval(w))$ such that the
+  following hold for all $w < v$:
   \begin{enumerate}
+  \item $l(eval(w)) = 0$ and $u(eval(w)) = L(eval(w))$
   \item For all $P_a + P_b \in SubExp(eval(w))$,
     $l(P_a) = l(P_b) = l(P_a + P_b)$ and
     $u(P_a) = u(P_b) = u(P_a + P_b)$.
@@ -416,6 +417,7 @@ the rest of the analysis of Tarjan's algorithm.
 \end{lemma}
 
 \begin{proof}
+  (quick and dirty!)
   We proceed by induction on $v$. The claim obviously holds prior
   to the first iteration. Suppose it holds before the $v$th
   iteration for some particular $l$ and $u$.  Let
@@ -423,280 +425,38 @@ the rest of the analysis of Tarjan's algorithm.
   $W_2 = \{w<v|idom(v) \text{ doesn't dominate } w\}$. Then, let
   $S_1 = \bigcup_{W_1} SubExp(eval(w))$ and
   $S_2 = \bigcup_{W_2} SubExp(eval(w))$. Clearly,
-  $S = S_1 \cup S_2$.
+  $S = S_1 \cup S_2$. By the transitivity of the domination
+  relation and Lemma \ref{tarjan:correct}, the only edges in
+  $S_1$ are members of $E|_{idom(v)}$. Consider any $w \in W_2$
+  and let $w'$ be the smallest dominator of $w$ at least $v$. If
+  $w'$ does not dominate $idom(v)$, then
+  $E|_{idom(v)} \cap E_{w'} = \emptyset$, so
+  $S_1 \cap SubExp(eval(w)) = \emptyset$ by Lemma
+  \ref{tarjan:correct} since $0, 1 \not \in S$. Suppose that $w'$
+  does dominate $idom(v)$. By Lemma \ref{tarjan:correct},
+  $\si{eval(w)} = Paths_G(w', w) \cap E|_{w'}^*$. But, since
+  $idom(v)$ does not dominate $w$ and $idom(v) \ge v \ge w$,
+  $Paths_G(idom(v), w) \cap E|_{w'}^* = \emptyset$. Therefore,
+  $S_1 \cap SubExp(eval(w)) = \emptyset$. So,
+  $S_1 \cap S_2 = \emptyset$.
 
-
-  Let $l'$ and $u'$ be
-  extensions of $l$ and $u$, respectively, so that
-  $l'(\tuple{v', v}) = u(eval(v'))$ and
-  $u'(\tuple{v', v}) = u(eval(v')) + L(\tuple{v', v})$ for all
-  $v' \in pred(v)$, $l'(cycle) = $
+  Let $eval(\cdot)$ denote the state of the compressed weighted
+  forest before this iteration and $eval'(\cdot)$ denote its
+  state after. Then, note that the elements of
+  $(\bigcup_{w = 1}^v SubExp(eval'(w))) \setminus S$ are
+  $\tuple{v', v}$ and the concatenations
+  $eval(v') \cdot \tuple{v', v}$ for $v'\in pred(v)$, which are
+  all dominated by $idom(v)$, the successive unions to $cycle$
+  and $noncycle$, $cycle^*$, $noncycle \cdot cycle^*$, and the
+  new $eval'(w) = noncycle \cdot cycle^* \cdot eval(w)$ for all
+  $w$ dominated by $v$. Since the $\tuple{v', v}$ are new and
+  distinct, if we let $l(noncycle) = 0$ and
+  $u(noncycle) = L(noncycle)$, the claim holds if the values we
+  assign $eval(v')$ in $cycle$ align with the values we assign it
+  in $eval'(v')$ for all $v'$ dominated by $v$. But, this comes
+  directly from (4) since we know that
+  $L(noncycle \cdot cycle^*) = L(noncycle) + 1$. Therefore, the
+  claim holds after iteration $v$. 
 \end{proof}
-
-% \begin{definition}
-%   % todo: better name
-%   The \emph{loop-free subexpressions} of $P$ are given by $LF(P)$
-%   where
-%   \begin{align*}
-%     LF(1) &= \{1\} \\
-%     LF(\tuple{u,v}) &= \{\tuple{u,v}\} \\
-%     LF(P_a + P_b) &= LF(P_a) \cup LF(P_b) \cup \{P_a + P_b\} \\
-%     LF(P_a \cdot P_b) &= LF(P_a) \cup LF(P_b) \cup \{P_a \cdot
-%                         P_b\} \\
-%     LF(P^*) &= \{P^*\} 
-%   \end{align*}
-
-%   Note that $P \in LF(P)$ for all $P$.
-% \end{definition}
-
-% \begin{definition}
-%   A path expression $P$ is \emph{well-formed} if
-%   $0, 1 \not \in SubExp(P)$ and there exist functions $L$ and $R$
-%   mapping $SubExp(P)$ to variable vocabularies such that the
-%   following hold:
-%   \begin{itemize}
-%   \item $L(P_a + P_b) = L(P_a) = L(P_b)$ and
-%     $R(P_a + P_b) = R(P_a) = R(P_b)$
-%   \item $L(P_a \cdot P_b) = L(P_a)$, $R(P_a \cdot P_b) = R(P_b)$,
-%     and
-%     $(\bigcup_{P_c \in LF(P_a)} (L(P_c) \cup R(P_c))) \cap
-%     (\bigcup_{P_c \in LF(P_b)} (L(P_c) \cup R(P_c))) = R(P_a) =
-%     L(P_b)$ for all $P_a \cdot P_b \in SubExp(P)$
-%   \end{itemize}
-% \end{definition}
-
-% \begin{algorithm}[H]
-%   \caption{Path Expression DAG to Transition Formula}
-%   \label{alg:path-exp-to-tf}
-
-%   \SetAlgoLined
-%   % \SetAlgoNoEnd
-  
-%   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ and a
-%     well-formed path expression $P$ whose distinct subexpressions
-%     $\{P_1,\dots,P_n\}$ are labeled so that
-%     $P_i \in SubExp(P_j) \implies i < j$.}
-  
-%   \KwOut{A formula $F$ such that
-%     $Sat(\tf{P}) \iff Sat(F)$}
-
-%   \ForEach{$i = 1$ \KwTo $n$}{
-%     \Switch{$P_i$}{
-%       \lCase{$\tuple{u, v} \in E$}{
-%         $F_i \gets F_e(L(P_i), R(P_i))$
-%       }
-
-%       \lCase{$P_j + P_k$}{
-%         $F_i \gets F_j \lor F_k$
-%       }
-
-%       \lCase{$P_j \cdot P_k$}{
-%         $F_i \gets F_j \land F_k$
-%       }
-
-%       \Case{${P_j}^*$}{
-
-%         $F^* \gets star(F_j, \tuple{L(P_j), R(P_j)})$ \;
-
-%         $F_i \gets F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto
-%         R(P_i)]$ \;
-        
-%       }
-%     }
-%   }
-
-%   $F \gets F_n$ \;
-
-%   \Return $F$ \;
-
-% \end{algorithm}
-
-% \begin{lemma}
-%   \label{pe:freevars}
-%   For all $1 \le i \le n$, all free variables in $F_i$ are
-%   members of $\bigcup_{P_a \in LF(P_i)} (L(P_a) \cup R(P_a))$.
-% \end{lemma}
-
-% \begin{proof}
-%   We proceed by induction on $i$ and assume the claim holds for
-%   each $l < i$. This is trivially the case for $i = 1$. For
-%   $l = i$, if $P_i = e \in E$, or $P_i = {P_k}^*$ for some $k$,
-%   then the only free variables in $F_i$ are in $L(P_i)$ and
-%   $R(P_i)$, so we are done. Otherwise, $P_i = P_j + P_k$ or
-%   $P_i = P_j \cdot P_k$ for some $j$ and $k$, and the free
-%   variables in $F_i$ are exactly those in $F_j$ or $F_k$. By the
-%   induction hypothesis and the definition of $LF$, the claim
-%   holds for $i$.
-% \end{proof}
-
-% Let $V_j = \bigcup_{P_a \in LF(P_j)} (L(P_a) \cup R(P_a))$. By
-% definition, if $P_j \in LF(P_i)$, then $V_j \subseteq V_i$. As an
-% abuse of notation, we write $\exists V_j$ to denote
-% $\exists x_1, \dots, x_m$, where $V_j = \{x_1, \dots, x_m\}$.
-
-% \begin{theorem}
-%   $Sat(\tf{P}) \iff Sat(F)$
-% \end{theorem}
-
-% \begin{proof}
-%   We proceed by induction on the iteration $i$ of the for loop,
-%   with the hypothesis that before the $i$th iteration, for all
-%   $j < i$,
-%   $\tf{P_j} \equiv \exists V_j. F_j \land X = L(P_j) \land X' =
-%   R(P_j)$. Since $F \equiv F_n$, and since $X$ and $X'$ appear
-%   nowhere else in $F$ by Lemma \ref{pe:freevars}, this is
-%   sufficient to prove the theorem.
-
-%   Certainly this is true before the first iteration. Suppose this
-%   is true before the $i$th iteration of the loop. Clearly, the
-%   claim still holds for $j < i$ after this iteration since $F_j$
-%   is not modified. For $j = i$, let us consider each possible
-%   form of $P_i$:
-
-%   \begin{itemize}
-%   \item $P_i = \tuple{u, v}$: We have that
-%     $\tf{\tuple{u, v}} = F_{\tuple{u, v}}(X, X')$ and
-%     $F_i \equiv F_{\tuple{u, v}}(L(P_i), R(P_i))$.  So,
-%     $\exists V_i. F_i \land X = L(P_i) \land X' = R(P_i) \equiv
-%     F_{\tuple{u, v}}(X, X') \equiv \tf{P_i}$.
-    
-%   \item $P_i = P_j + P_k$:
-%     $\tf{P_j+P_k} \equiv \tf{P_j} \lor \tf{P_k}$. By the
-%     induction hypothesis,
-%     $\tf{P_i} \equiv (\exists V_j. F_j \land X = L(P_j) \land X'
-%     = R(P_j)) \lor (\exists V_k. F_k \land X = L(P_k) \land X' =
-%     R(P_k))$.
-
-%     Since $V_i = V_j \cup V_k$ by definition, and since
-%     $L(P_i) = L(P_j) = L(P_k)$ and $R(P_i) = R(P_j) = R(P_k)$ we
-%     have that
-%     $\tf{P_i} \equiv \exists V_i. (F_j \lor F_k) \land X = L(P_i)
-%     \land X' = R(P_i)$, as desired.
-    
-%   \item $P_i = P_j \cdot P_k$:
-%     $\tf{P_j \cdot P_k} \equiv \exists X''_1, X''_2. \tf{P_j}(X,
-%     X''_1) \land \tf{P_k}(X''_2, X') \land X''_1 = X''_2$. So, by
-%     the induction hypothesis,
-%     $\tf{P_i} \equiv \exists X''_1, X''_2. (\exists V_j. F_j
-%     \land X = L(P_j) \land X''_1 = R(P_j)) \land (\exists
-%     V_k. F_k \land X''_2 = L(P_k) \land X' = R(P_k)) \land X''_1
-%     = X''_2$.
-
-%     By well-formedness, $V_j \cap V_k = R(P_j) = L(P_k)$. But,
-%     note that by the condition $X''_1 = X''_2$, $R(P_j)$ and
-%     $L(P_k)$ must take on the same values. So, by Lemma
-%     \ref{pe:freevars}, there are no free variables present in
-%     both $F_j$ and $F_k$ that may take on different
-%     values. Therefore, since $L(P_i) = L(P_j)$ and
-%     $R(P_j) = L(P_k)$,
-%     \begin{align*}
-%       \tf{P_i}
-%       &\equiv \exists X''_1, X''_2. \exists V_i. F_j \land
-%         X = L(P_j) \land X''_1 = R(P_j) \land F_k \land
-%         X''_2 = L(P_k) \land X' = R(P_k) \land X''_1 = X''_2 \\
-%       &\equiv \exists V_i. F_j \land X = L(P_j) \land
-%         R(P_j) = L(P_k) \land F_k \land X' = R(P_k) \\
-%       & \equiv \exists V_i. F_i \land X = L(P_i) \land X' = R(P_i)
-%     \end{align*}
-
-%   \item $P_i = {P_j}^*$: We know by the induction hypothesis that
-%     $\tf{P_j} \equiv \exists V_j. F_j \land X = L(P_j) \land X' =
-%     R(P_j)$. So,
-%     $F^* = star(F_j, \tuple{L(P_j), R(P_j)}) \equiv
-%     \tf{P_i}(L(P_j), R(P_j))$. Therefore,
-%     $F_i = F^*[L(P_j) \mapsto L(P_i), R(P_j) \mapsto R(P_i)]
-%     \equiv \tf{P_i}(L(P_i), R(P_i))$. Since
-%     $V_i = L(P_i) \cup R(P_i)$,
-%     $\exists V_i. F_i \land X = L(P_i) \land X' = R(P_i) \equiv
-%     \tf{P_i}$.
-%   \end{itemize}
-% \end{proof}
-
-% taken from Tarjan / Termination Analysis Without the Tears
-% \begin{algorithm}[H]
-%   \caption{Gaussian Elimination}
-%   \label{alg:gauss}
-
-%   \SetAlgoLined
-%   % \SetAlgoNoEnd
-  
-%   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ with vertices
-%     labeled $1, \dots, n-1, n = r$}
-  
-%   \KwOut{A function $pe: V \to PathExp(G)$ such that for all
-%     $v \in V$, $pe(v)$ is a well-formed path expression
-%     recognizing exactly $Paths_G(r, v)$}
-
-%   \tcc{$\si{P(u, v)} \subseteq Paths_G(u, v)$ for all
-%     $u, v \in V$}
-
-%   $P \gets \lambda \tuple{u, v}. 0$ \;
-
-%   \lForEach{$\tuple{u, v} \in E$}{
-%     $P(u, v) \gets P(u, v) + \tuple{u, v}$
-%   }
-
-%   \For{$v = 1$ \KwTo $n-1$}{
-%     \For{$u = v + 1$ \KwTo $n$}{
-%       $P(u, v) \gets P(u, v) \cdot P(v, v)^*$ \;
-%       \For{$w = 1$ \KwTo $n$, $w \ne v$}{
-%         $P(u, w) \gets P(u, w) + P(u, v) \cdot P(v, w)$ \;
-%       }
-%     }
-%   }
-
-%   $pe \gets \lambda v. P(r, v)$ \;
-
-%   \Return $pe$ \;
-
-% \end{algorithm}
-
-% \begin{lemma}
-%   After the $v$th iteration of the outer loop, for all
-%   $u, w \in V$, $P(u, w)$ is a well-formed path expression
-%   recognizing exactly the paths from $u$ to $w$ in $G$ whose
-%   intermediate vertices are smaller than $\min\{u, v+1\}$. 
-
-% \end{lemma}
-
-% \begin{proof}
-%   TODO: Modify algorithm to create well-formed expressions
-%   through duplication. 
-%   We proceed by induction on $v$, and assume that the claim holds
-%   before the $v$th iteration. This is clearly true before the
-%   first iteration since all path expressions are either empty or
-%   edges. Consider any $u < v$; by the structure of the for loops,
-%   $P(u, w)$ for all $w$ is unchanged during this iteration, and
-%   $\min\{u, v+1\} = \min\{u, v\} = u$, so the claim holds at the
-%   end of this iteration. Similarly, for all $w$, $P(v, w)$ is
-%   left unchanged, and we know by the induction hypothesis the
-%   intermediate vertices in the paths it recognizes are smaller
-%   than $\min \{v, v\} = v$; ergo, the claim holds for such $w$ at
-%   the end of this iteration.
-
-%   Therefore, it only remains to prove the claim for any $u >
-%   v$. Note that $\min\{u, v\} = v$ and $\min\{u, v+1\} =
-%   v+1$. First, the only assignment to $P(u, v)$ this iteration is
-%   to concatenate $P(v, v)^*$ to it. Consider any path from $u$ to
-%   $v$ whose intermediate vertices are smaller than $v+1$. It must
-%   be the concatenation of a non-empty path $p_0$ from $u$ to $v$
-%   whose intermediate vertices are smaller than $v$ and $k$ paths
-%   $p_1, \dots, p_k$ from $v$ to $v$ whose intermediate vertices
-%   are smaller than $v$. By the induction hypothesis, $p_0$ is
-%   recognized by the previous $P(u, v)$, and each $p_i$ for
-%   $1 \le i \le k$ is recognized by $P(v, v)$. Thus, after this
-%   iteration $P(u, v)$ recognizes exactly the paths from $u$ to
-%   $v$ in $G$ whose intermediate vertices are smaller than $v+1$.
-
-%   Consider any $w \ne v$ and any path from $u$ to $w$ whose
-%   intermediate vertices are smaller than $v+1$. Either it is a
-%   path whose intermediate vertices are smaller than $v$, or it is
-%   the concatenation of a non-empty path $p_1$ from $u$ to $v$
-%   whose intermediate vertices are smaller than $v+1$ and a
-%   non-empty path $p_2$ from $v$ to $w$ whose intermediate
-%   vertices are smaller than $v$. Thus, $P(u, w) + P(u, v) \cdot
-%   P(v, w)$ recognizes exactly these paths by the induction
-%   hypothesis and our previous analysis of $P(u, v)$.
-% \end{proof}
 
 \end{document}
