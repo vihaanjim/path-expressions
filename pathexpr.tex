@@ -234,7 +234,8 @@ variables.
   \emph{strictly dominate} $u$. If $v$ strictly dominates $u$ and
   is dominated by every vertex that strictly dominates $u$, then
   $v$ is the \emph{immediate dominator} of $u$, denoted
-  $v = idom(u)$. 
+  $v = idom(u)$. $E|_v$ is the set of edges $\tuple{u,w}$ such
+  that $v$ strictly dominates $w$. 
 \end{definition}
 
 \begin{lemma}
@@ -278,12 +279,24 @@ variables.
   \item Reflexivity: for all $v \in V$, $v$ dominates itself but
     does not strictly dominate itself and is trivially reachable
     from itself, so $v \le v$
+    
   \item Antisymmetry: suppose $u \le v$ and $v \le u$ for some
     $u, v \in V$. There is some $u'$ that dominates $u$ but does
-    not strictly dominate $v$ and some $v'$ that dominates $v$
-    but does not strictly dominate $u$ such that there are simple
-    paths $u',a_1,\dots,a_k,v$ and $v',b_1,\dots,b_m,u$. (TODO:
-    finish)
+    not strictly dominate $v$ from which $v$ is reachable and
+    some $v'$ that dominates $v$ but does not strictly dominate
+    $u$ from which $u$ is reachable. Note that neither $u'$ nor
+    $v'$ strictly dominates the other. And, if $u' = v'$, then
+    $u = v$, and we are done. So suppose for the sake of
+    contradiction that neither $u'$ nor $v'$ dominates the
+    other. Then, there is some path $p_1$ from $r$ to $u'$ that
+    doesn't pass through $v'$ and some path $p_2$ from $r$ to
+    $v'$ that doesn't pass through $u'$. But, this means that
+    $v'$ is reachable from $u'$ and vice versa. Choose a minimal
+    (but possibly non-simple) cycle
+    $u',a_1,\dots,a_k,v'=a_{k+1},b_1,\dots,b_m,u'=b_{m+1}$.
+    Suppose there is some $1 \le i \le k$ such that $a_{i+1}$
+    dominates $a_i$. (TODO: finish)
+    
   \item Transitivity: suppose $u \le v$ and $v \le w$ for some
     $u, v, w \in V$. Then, there is some $u'$ that dominates $u$
     but does not strictly dominate $v$ from which $v$ is
@@ -294,8 +307,11 @@ variables.
     another path $p_2$ from $u'$ to $v$. Clearly, the
     concatenation of $p_1$ and $p_2$ is a path from $r$ to
     $v$. By definition, this means that $p_2$ contains
-    $v'$. Therefore, $w$ is reachable from $u'$. (TODO: prove $w$
-    is not strongly dominated by $u'$)
+    $v'$. Therefore, $w$ is reachable from $u'$. It remains to
+    show that $u'$ does not strongly dominate $w$. If $v' = v$,
+    this is cleary the case. Otherwise, $u'$ cannot dominate $v'$
+    because otherwise it would strictly dominate $v$. Thus, $u'$
+    does not dominate $w$. Therefore, $u \le w$.
   \end{enumerate}
 \end{proof}
 
