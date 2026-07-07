@@ -341,10 +341,10 @@ from the path expressions --- we assume that this is the case for
 the rest of the analysis of Tarjan's algorithm.
 
 \begin{lemma}
-  Before the $v$th iteration, for all $w < v$, $eval(w)$
-  represents exactly the paths to $w$ from the smallest
-  $w' \ge v$ that dominates $w$ which do not pass through $w'$ as
-  an intermediate vertex.
+  \label{tarjan:correct}
+  Before the $v$th iteration, for all $w < v$,
+  $\si{eval(w)} = Paths_G(w', w) \cap E|_{w'}^*$, where $w'$ is
+  the smallest vertex $w' \ge v$ that dominates $w$.
 \end{lemma}
 
 \begin{proof}
@@ -354,42 +354,41 @@ the rest of the analysis of Tarjan's algorithm.
   by $v$, so the claim still holds for such $w$. Consider any $w$
   dominated by $v$. By the ordering, $w \le v$, and the smallest
   dominator of $w$ that is at least $v$ is clearly $v$. By the
-  induction hypothesis, before this iteration, $eval(w)$
-  represents exactly the paths from $v$ to $w$ that does not pass
-  through $v$ as an intermediate vertex. Furthermore, the
+  induction hypothesis, before this iteration,
+  $\si{eval(w)} = Paths_G(v, w) \cap E|_v^*$. Furthermore, the
   smallest dominator of $w$ strictly greater than $v$ is
   $idom(v)$, and every path from $idom(v)$ to $w$ must pass
   through $v$ by Lemma \ref{dominator:trans}. Thus, it is
-  sufficient to show that $noncycle$ and $cycle$ represent
-  exactly the paths from $idom(v)$ to $v$ and the the cycles
-  starting and ending at $v$, respectively, that do not pass
-  through $idom(v)$ or $v$ as intermediate vertices.
+  sufficient to show that
+  $\si{noncycle \cdot cycle^*} = Paths_G(idom(v), v) \cap
+  E|_{idom(v)}^*$. The fact that the left hand side is a subset
+  of the right hand side is trivial, so we focus on the other
+  direction. 
 
-  Consider any path from $idom(v)$ to $v$ that does not pass
-  through $idom(v)$ or $v$ as intermediate vertices. It must
-  consist of a path from $idom(v)$ to some vertex $v'\in pred(v)$
-  that does not pass through $idom(v)$ or $v$ as intermediate
-  vertices, followed by the edge $\tuple{v', v}$. By Lemma
-  \ref{dominator:trans}, $v'$ cannot be dominated by $v$. And,
-  $v'$ must be dominated by every vertex that strictly dominates
-  $v$ by definition. Therefore, either $v' < v$ or
-  $v' = idom(v)$. So, by the induction hypothesis, $noncycle$ has
-  the desired form.
+  Consider any such path $p$. It can be chopped into paths
+  $p_0, p_1,\dots,p_m$ where $p_0$ ends at $v$ and every $p_i$
+  for $1 \le i \le m$ starts and ends at $v$, and no $p_i$ for
+  $0 \le i \le m$ contains $v$ as an intermediate vertex. $p_0$
+  can be further expressed as the concatenation of some path
+  $p_0'$ and an edge $\tuple{v', v}$ for some $v'$ dominated by
+  $idom(v)$. By Lemma \ref{dominator:trans}, $v'$ cannot be
+  dominated by $v$. And, $v'$ must be dominated by every vertex
+  that strictly dominates $v$ by definition. Therefore, either
+  $v' < v$ or $v' = idom(v)$. Either way, $p_0'$ is recognized by
+  $eval(v')$ before this iteration by the induction
+  hypothesis. So, $noncycle$ recognizes $p_0$.
 
-  Now, consider any cycle starting and ending at $v$ that does
-  not pass through $idom(v)$ or $v$ as intermediate vertices. It
-  must consist of a path from $v$ to some vertex $v'\in pred(v)$
-  that does not pass through $idom(v)$ or $v$ as intermediate
-  vertices, followed by the edge $\tuple{v', v}$. $v'$ must be
-  dominated by $idom(v)$, and furthermore $v'$ is not $idom(v)$,
-  meaning that $v'$ does not strictly dominate $v$. Since $v'$
-  dominates itself, $v' < v$. Suppose for the sake of
-  contradiction that $v$ does not dominate $v'$. Then, since $v'$
-  is reachable from $v'$ and since $v$ dominates itself, $v \le
-  v'$, which is a contradiction. Therefore, by the induction
-  hypothesis, before this iteration $eval(v')$ represents exactly
-  the paths from $v$ to $v'$ which do not pass through $v$ as an
-  intermediate vertex. Thus, $cycle$ has the desired form.
+  Now, take any of the $p_i$. It can be further expressed as the
+  concatenation of some path $p_i'$ and an edge $\tuple{v', v}$,
+  for some $v'$ strictly dominated by $idom(v)$. By the
+  definition of $idom$, $v'$ does not strictly dominate $v$. So,
+  since $v'$ dominates itself, $v' < v$. So, $v$ dominates $v'$,
+  because otherwise we get that $v \le v'$ since $v'$ is
+  reachable from $v'$ and since $v$ dominates itself. Therefore,
+  by the induction hypothesis, $p_i'$ is recognized by $eval(v')$
+  before this iteration. So, $cycle$ recognizes $p_i$ for all
+  $1 \le i \le m$. Therefore, the claim holds after this
+  iteration.
 \end{proof}
 
 \begin{lemma}
@@ -412,7 +411,15 @@ the rest of the analysis of Tarjan's algorithm.
 \begin{proof}
   We proceed by induction on $v$. The claim obviously holds prior
   to the first iteration. Suppose it holds before the $v$th
-  iteration for some particular $l$ and $u$. Let $l'$ and $u'$ be
+  iteration for some particular $l$ and $u$.  Let
+  $W_1 = \{w<v|idom(v) \text{ dominates } w\}$ and
+  $W_2 = \{w<v|idom(v) \text{ doesn't dominate } w\}$. Then, let
+  $S_1 = \bigcup_{W_1} SubExp(eval(w))$ and
+  $S_2 = \bigcup_{W_2} SubExp(eval(w))$. Clearly,
+  $S = S_1 \cup S_2$.
+
+
+  Let $l'$ and $u'$ be
   extensions of $l$ and $u$, respectively, so that
   $l'(\tuple{v', v}) = u(eval(v'))$ and
   $u'(\tuple{v', v}) = u(eval(v')) + L(\tuple{v', v})$ for all
@@ -599,90 +606,90 @@ the rest of the analysis of Tarjan's algorithm.
 % \end{proof}
 
 % taken from Tarjan / Termination Analysis Without the Tears
-\begin{algorithm}[H]
-  \caption{Gaussian Elimination}
-  \label{alg:gauss}
+% \begin{algorithm}[H]
+%   \caption{Gaussian Elimination}
+%   \label{alg:gauss}
 
-  \SetAlgoLined
-  % \SetAlgoNoEnd
+%   \SetAlgoLined
+%   % \SetAlgoNoEnd
   
-  \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ with vertices
-    labeled $1, \dots, n-1, n = r$}
+%   \KwIn{A control flow graph $G=\tuple{V, E, r, F}$ with vertices
+%     labeled $1, \dots, n-1, n = r$}
   
-  \KwOut{A function $pe: V \to PathExp(G)$ such that for all
-    $v \in V$, $pe(v)$ is a well-formed path expression
-    recognizing exactly $Paths_G(r, v)$}
+%   \KwOut{A function $pe: V \to PathExp(G)$ such that for all
+%     $v \in V$, $pe(v)$ is a well-formed path expression
+%     recognizing exactly $Paths_G(r, v)$}
 
-  \tcc{$\si{P(u, v)} \subseteq Paths_G(u, v)$ for all
-    $u, v \in V$}
+%   \tcc{$\si{P(u, v)} \subseteq Paths_G(u, v)$ for all
+%     $u, v \in V$}
 
-  $P \gets \lambda \tuple{u, v}. 0$ \;
+%   $P \gets \lambda \tuple{u, v}. 0$ \;
 
-  \lForEach{$\tuple{u, v} \in E$}{
-    $P(u, v) \gets P(u, v) + \tuple{u, v}$
-  }
+%   \lForEach{$\tuple{u, v} \in E$}{
+%     $P(u, v) \gets P(u, v) + \tuple{u, v}$
+%   }
 
-  \For{$v = 1$ \KwTo $n-1$}{
-    \For{$u = v + 1$ \KwTo $n$}{
-      $P(u, v) \gets P(u, v) \cdot P(v, v)^*$ \;
-      \For{$w = 1$ \KwTo $n$, $w \ne v$}{
-        $P(u, w) \gets P(u, w) + P(u, v) \cdot P(v, w)$ \;
-      }
-    }
-  }
+%   \For{$v = 1$ \KwTo $n-1$}{
+%     \For{$u = v + 1$ \KwTo $n$}{
+%       $P(u, v) \gets P(u, v) \cdot P(v, v)^*$ \;
+%       \For{$w = 1$ \KwTo $n$, $w \ne v$}{
+%         $P(u, w) \gets P(u, w) + P(u, v) \cdot P(v, w)$ \;
+%       }
+%     }
+%   }
 
-  $pe \gets \lambda v. P(r, v)$ \;
+%   $pe \gets \lambda v. P(r, v)$ \;
 
-  \Return $pe$ \;
+%   \Return $pe$ \;
 
-\end{algorithm}
+% \end{algorithm}
 
-\begin{lemma}
-  After the $v$th iteration of the outer loop, for all
-  $u, w \in V$, $P(u, w)$ is a well-formed path expression
-  recognizing exactly the paths from $u$ to $w$ in $G$ whose
-  intermediate vertices are smaller than $\min\{u, v+1\}$. 
+% \begin{lemma}
+%   After the $v$th iteration of the outer loop, for all
+%   $u, w \in V$, $P(u, w)$ is a well-formed path expression
+%   recognizing exactly the paths from $u$ to $w$ in $G$ whose
+%   intermediate vertices are smaller than $\min\{u, v+1\}$. 
 
-\end{lemma}
+% \end{lemma}
 
-\begin{proof}
-  TODO: Modify algorithm to create well-formed expressions
-  through duplication. 
-  We proceed by induction on $v$, and assume that the claim holds
-  before the $v$th iteration. This is clearly true before the
-  first iteration since all path expressions are either empty or
-  edges. Consider any $u < v$; by the structure of the for loops,
-  $P(u, w)$ for all $w$ is unchanged during this iteration, and
-  $\min\{u, v+1\} = \min\{u, v\} = u$, so the claim holds at the
-  end of this iteration. Similarly, for all $w$, $P(v, w)$ is
-  left unchanged, and we know by the induction hypothesis the
-  intermediate vertices in the paths it recognizes are smaller
-  than $\min \{v, v\} = v$; ergo, the claim holds for such $w$ at
-  the end of this iteration.
+% \begin{proof}
+%   TODO: Modify algorithm to create well-formed expressions
+%   through duplication. 
+%   We proceed by induction on $v$, and assume that the claim holds
+%   before the $v$th iteration. This is clearly true before the
+%   first iteration since all path expressions are either empty or
+%   edges. Consider any $u < v$; by the structure of the for loops,
+%   $P(u, w)$ for all $w$ is unchanged during this iteration, and
+%   $\min\{u, v+1\} = \min\{u, v\} = u$, so the claim holds at the
+%   end of this iteration. Similarly, for all $w$, $P(v, w)$ is
+%   left unchanged, and we know by the induction hypothesis the
+%   intermediate vertices in the paths it recognizes are smaller
+%   than $\min \{v, v\} = v$; ergo, the claim holds for such $w$ at
+%   the end of this iteration.
 
-  Therefore, it only remains to prove the claim for any $u >
-  v$. Note that $\min\{u, v\} = v$ and $\min\{u, v+1\} =
-  v+1$. First, the only assignment to $P(u, v)$ this iteration is
-  to concatenate $P(v, v)^*$ to it. Consider any path from $u$ to
-  $v$ whose intermediate vertices are smaller than $v+1$. It must
-  be the concatenation of a non-empty path $p_0$ from $u$ to $v$
-  whose intermediate vertices are smaller than $v$ and $k$ paths
-  $p_1, \dots, p_k$ from $v$ to $v$ whose intermediate vertices
-  are smaller than $v$. By the induction hypothesis, $p_0$ is
-  recognized by the previous $P(u, v)$, and each $p_i$ for
-  $1 \le i \le k$ is recognized by $P(v, v)$. Thus, after this
-  iteration $P(u, v)$ recognizes exactly the paths from $u$ to
-  $v$ in $G$ whose intermediate vertices are smaller than $v+1$.
+%   Therefore, it only remains to prove the claim for any $u >
+%   v$. Note that $\min\{u, v\} = v$ and $\min\{u, v+1\} =
+%   v+1$. First, the only assignment to $P(u, v)$ this iteration is
+%   to concatenate $P(v, v)^*$ to it. Consider any path from $u$ to
+%   $v$ whose intermediate vertices are smaller than $v+1$. It must
+%   be the concatenation of a non-empty path $p_0$ from $u$ to $v$
+%   whose intermediate vertices are smaller than $v$ and $k$ paths
+%   $p_1, \dots, p_k$ from $v$ to $v$ whose intermediate vertices
+%   are smaller than $v$. By the induction hypothesis, $p_0$ is
+%   recognized by the previous $P(u, v)$, and each $p_i$ for
+%   $1 \le i \le k$ is recognized by $P(v, v)$. Thus, after this
+%   iteration $P(u, v)$ recognizes exactly the paths from $u$ to
+%   $v$ in $G$ whose intermediate vertices are smaller than $v+1$.
 
-  Consider any $w \ne v$ and any path from $u$ to $w$ whose
-  intermediate vertices are smaller than $v+1$. Either it is a
-  path whose intermediate vertices are smaller than $v$, or it is
-  the concatenation of a non-empty path $p_1$ from $u$ to $v$
-  whose intermediate vertices are smaller than $v+1$ and a
-  non-empty path $p_2$ from $v$ to $w$ whose intermediate
-  vertices are smaller than $v$. Thus, $P(u, w) + P(u, v) \cdot
-  P(v, w)$ recognizes exactly these paths by the induction
-  hypothesis and our previous analysis of $P(u, v)$.
-\end{proof}
+%   Consider any $w \ne v$ and any path from $u$ to $w$ whose
+%   intermediate vertices are smaller than $v+1$. Either it is a
+%   path whose intermediate vertices are smaller than $v$, or it is
+%   the concatenation of a non-empty path $p_1$ from $u$ to $v$
+%   whose intermediate vertices are smaller than $v+1$ and a
+%   non-empty path $p_2$ from $v$ to $w$ whose intermediate
+%   vertices are smaller than $v$. Thus, $P(u, w) + P(u, v) \cdot
+%   P(v, w)$ recognizes exactly these paths by the induction
+%   hypothesis and our previous analysis of $P(u, v)$.
+% \end{proof}
 
 \end{document}
