@@ -5,6 +5,8 @@
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{stmaryrd} % for double brackets
 \usepackage{mathrsfs} % good script letters
+\usepackage{xcolor}
+\usepackage{hyperref}
 
 % wrap in angle brackets
 \newcommand{\tuple}[1]{\langle #1 \rangle}
@@ -19,6 +21,13 @@
 \newcommand{\strictlydominatedby}{\mathrel{\ll}}
 \newcommand{\dominatedby}{\mathrel{\underline{\strictlydominatedby}}}
 
+\newcommand{\RegExp}[1]{\mathit{RegExp}(#1)}
+\newcommand{\Paths}[3]{\mathit{Path}_{#1}(#2,#3)}
+\newcommand{\fv}[1]{\mathit{Vars}(#1)}
+\newcommand{\Formula}[1]{\mathit{Formula}(#1)}
+\newcommand{\defeq}{\triangleq}
+\newcommand{\defn}[1]{\textbf{#1}}
+\newcommand{\zak}[1]{{\color{blue}[Zak says: #1]}}
 
 % define theorems, lemmas, corollaries, and definitions
 \newtheorem{theorem}{Theorem}
@@ -30,93 +39,42 @@
 
 \begin{document}
 
-\begin{definition}
-  The set of \emph{regular expressions} over $\Sigma$, written
-  $RegExp(\Sigma)$, is the smallest set such that
-  $0, 1 \in RexExp(\Sigma)$, $\Sigma \subseteq RegExp(\Sigma)$,
-  and $(R_1 + R_2), (R_1 \cdot R_2), R^* \in RegExp(\Sigma)$ for
-  all $R, R_1, R_2 \in RegExp(\Sigma)$.
+A few minor style notes:
+\begin{itemize}
+\item Avoid multi-character strings in math mode -- escape with mathit
+  (certain combinations of characters look strange).  (Compare
+  $Math\ Mode$ vs $\mathit{Math\ Mode}$)
+\item I ususally don't use definition blocks unless it's a definition
+  that I'm introducing in the paper.  The background section of paper
+  often contains dozens of defintions so it can look cluttered.  My
+  personal style is to use \textbf{boldface} for inline definitions so
+  that readers can find them more easily, and to use \emph{italics}
+  for forward-reference to terms that remain to be defined (signals to
+  the reader: ``you're not exected to know what this is yet'').  I
+  also like to use $\defeq$ to distinguish definitional equality (x
+  $\defeq$ y means that x is defined to be y) vs judgement of equality
+  (5 = 2+3 by computation, not definition)
+\item Prefer $\ell$ to $l$
+\item Good practice to use macros whenever you introduce notation.  I
+  added some examples above.  Sometimes we want to switch notation,
+  and easier if it's a macro.
+\item Prefer $=$ to $\equiv$ when formulas are syntactically equal --
+  reduces the burden on the reader because it signals a trivial step.
+\end{itemize}
 
-  $SubExp(R)$ for $R \in RegExp(\Sigma)$ is the set of
-  subexpressions of $R$, including $R$ itself.
-\end{definition}
+\input{background}
 
+\section{Skolemized formula interpretations of path expressions}
+\zak{Does length need to be parameterized by a weight function?}
 \begin{definition}
-  % taken more or less verbatim from Algebraic Program Analysis +
-  % Fast Algorithms for Solving Path Problems
-  The \emph{standard interpretation} is the function
-  $\si{\cdot}: RegExp(\Sigma) \to \textbf{L}$, where $\textbf{L}$
-  is the set of regular languages, such that
-  $\si{0} = \emptyset$, $\si{1} = \{\epsilon\}$ where $\epsilon$
-  is the empty string, $\si{a} = \{a\}$ for all $a \in \Sigma$,
-  and
-  \begin{align*}
-  \si{R_1 + R_2} &= \si{R_1} \cup \si{R_2} \\
-  \si{R_1 \cdot R_2} &= \{x_1x_2| x_1 \in \si{R_1}, x_2 \in
-                       \si{R_2}\} \\
-  \si{R^*} &= \{x_1x_2\dots x_n| x_1,x_2,\dots,x_n \in \si{R}\}
-  \end{align*}
-  for all $R, R_1, R_2 \in RegExp(\Sigma)$.
-\end{definition}
-
-\begin{definition}
-  Given a function $wt: \Sigma \to \mathbb{Z}$, the \emph{length}
+  Given a function $wt: \Sigma \to \mathbb{Z}$, the \defn{length}
   of a regular expression is given by
-  $L: RegExp(\Sigma) \to \mathbb{Z} \cup \{-\infty\}$ where
+  $L: \RegExp{\Sigma} \to \mathbb{Z} \cup \{-\infty\}$ where
   $L(0) = -\infty$, $L(1) = L(R^*) = 1$, $L(a) = wt(a)$ for all
   $a \in \Sigma$, $L(R_1 + R_2) = \max\{L(R_1), L(R_2)\}$, and
   $L(R_1 \cdot R_2) = L(R_1) + L(R_2)$.
 \end{definition}
 
-Let $X$ and $X'$ be sets of variables such that for each
-$x\in X$, there is a corresponding $x' \in X'$. As an abuse of
-notation, we use $X = X' \equiv \bigwedge_{x \in X} x =
-x'$. $Vars(F)$ for a formula $F$ is the set of free variables in
-$F$. $Formula(X, X')$ denotes the set of formulas such that
-$Vars(F) \subseteq X \cup X'$. 
-
-\begin{definition}
-  A \emph{control flow graph} $G = \tuple{V, E, r, \mathscr{F}}$
-  is a graph with vertices $V$, edges $E$, a root vertex $r$ of
-  indegree 0 from which every vertex $v \in V$ is reachable, and
-  a function $\mathscr{F}: E \to Formula(X, X')$ for some
-  $X, X'$. We use $\mathscr{F}_{\tuple{u,v}}(Y, Y')$ to denote
-  $\mathscr{F}(\tuple{u,v})[X \mapsto Y, X' \mapsto Y']$. We let
-  $Paths_G(u,v)$ be the set of all (possibly non-simple) paths
-  from $u$ to $v$ in $G$.
-\end{definition}
-
-\begin{definition}
-  A \emph{path expression} $P$ of type $\tuple{u, v}$ on
-  $G = \tuple{V, E, r, F}$ is a regular expression over
-  $E$ such that $\si{P} \subseteq Paths_G(u,v)$ for some
-  $u,v \in V$. We denote the set of path expressions on $G$ by
-  $PathExp(G)$.
-\end{definition}
-
-Suppose $star$ is a function that takes a formula $F$ and the
-pair of variable vocabulairies $X$ and $X'$ that $F$ relates and
-returns some overapproximation of the reflexive transitive
-closure of $F$ over $X$ and $X'$ containing no other free
-variables.
-
-\begin{definition}
-  The \emph{transition formula interpretation} is the function
-  $\tf{\cdot}: PathExp(G) \to Formula(X, X')$ where
-  $\tf{0} \equiv false$, $\tf{1} \equiv X = X'$,
-  $\tf{\tuple{u, v}} \equiv \mathscr{F}_{\tuple{u, v}}(X, X')$,
-  and
-  \begin{align*}
-    \tf{P_a + P_b} &\equiv \tf{P_a} \lor \tf{P_b} \\
-    \tf{P_a \cdot P_b} &\equiv \exists X''. \tf{P_a}(X, X'')
-                         \land \tf{P_b}(X'', X') \\
-    \tf{P^*} &\equiv star(\tf{P}, \tuple{X, X'}) 
-  \end{align*}
-  for all $P, P_a, P_b \in PathExp(G)$. 
-
-  We use $\tf{P}(Y, Y')$ to denote
-  $\tf{P}[X \mapsto Y, X' \mapsto Y']$.
-\end{definition}
 
 \begin{definition}
   Suppose there is an infinite set of variable vocabularies
@@ -124,48 +82,51 @@ variables.
   respect to the function $wt: E \to \mathbb{Z}$ that maps every
   edge to 1. Then, define $I$ mapping path expressions and
   integer lower and upper bounds to formulas where
-  $F(P, l, u) \equiv false$ if $L(P) = -\infty$, and otherwise,
-  $F(1, l, u) \equiv X_l = X_u$,
-  $F({\tuple{u, v}}, l, u) \equiv \mathscr{F}_{\tuple{u, v}}(X_l,
-  X_u)$, and
+  $F(P, \ell, u) \equiv false$ if $L(P) = -\infty$, and otherwise,
   \begin{align*}
-    F(P_a + P_b, l, u)
-    &\equiv F(P_a, l, u) \lor F(P_b, l, u) \\
-    F(P_a \cdot P_b, l, u)
-    &\equiv F(P_a, l, l + L(P_a)) \land F(P_b, l + L(P_a), u) \\
-    F(P^*, l, u)
-    &\equiv star(F(P, l+1, l+1+L(P)), \tuple{X_{l+1},
-      X_{l+1+L(P)}})[X_{l+1} \mapsto X_l, X_{l+1+L(P)} \mapsto X_u]
+    F(1, \ell, u) &\defeq X_\ell = X_u \\
+    F({\tuple{u, v}}, \ell, u) &\defeq \mathscr{F}_{\tuple{u, v}}(X_\ell,
+  X_u)\\
+    F(P_a + P_b, \ell, u)
+    &\defeq F(P_a, \ell, u) \lor F(P_b, \ell, u) \\
+    F(P_a \cdot P_b, \ell, u)
+    &\defeq F(P_a, \ell, \ell + L(P_a)) \land F(P_b, \ell + L(P_a), u) \\
+    F(P^*, \ell, u)
+    &\defeq star(F(P, \ell+1, \ell+1+L(P)), \tuple{X_{\ell+1},
+      X_{\ell+1+L(P)}})[X_{\ell+1} \mapsto X_\ell, X_{\ell+1+L(P)} \mapsto X_u]
   \end{align*}
   for all $P, P_a, P_b \in PathExp(G)$. 
 \end{definition}
 
 \begin{lemma}
   \label{pe:freevars}
-  For all $P \in PathExp(G)$, for all $l \ge 0$ and
-  $u \ge l + L(P)$,
-  $Vars(F(P, l, u)) \subseteq \bigcup_{i = l}^u X_i$.
+  For all $P \in PathExp(G)$, for all $\ell \ge 0$ and
+  $u \ge \ell + L(P)$,
+  $\fv{F(P, \ell, u)} \subseteq \bigcup_{i = \ell}^u X_i$.
 \end{lemma}
 
 \begin{proof}
   The claim holds trivially when $L(P) = -\infty$, $P = 1$,
   $P = P'^*$, or $P = \tuple{v, w}$. Suppose the claim holds for
   $P_a$ and $P_b$ and that $L(P_a + P_b) \ge 0$. Take any
-  $0 \le l \le l + L(P_a + P_b) \le u$. Since
+  $0 \le l \le \ell + L(P_a + P_b) \le u$. Since
   $L(P_a + P_b) = \max\{L(P_a), L(P_b)\}$, clearly
-  $u \ge l + L(P_a)$ and $u \ge l + L(P_b)$. Then,
-  $Vars(F(P_a + P_b, l, u)) \subseteq Vars(F(P_a, l, u)) \cup
-  Vars(F(P_b, l, u)) = \bigcup_{i = l}^u X_i$. Similarly, suppose
+  $u \ge \ell + L(P_a)$ and $u \ge \ell + L(P_b)$. Then,
+  $\fv{F(P_a + P_b, \ell, u)} \subseteq fv{F(P_a, \ell, u)} \cup
+  \fv{F(P_b, \ell, u)} = \bigcup_{i = \ell}^u X_i$. Similarly, suppose
   $L(P_a \cdot P_b) \ge 0$. Then, $L(P_a), L(P_b) \ge 0$. Take
-  $0 \le l \le l + L(P_a \cdot P_b) = 1 + L(P_a) + L(P_b) \le u$.
-  Clearly, $u \ge (l + L(P_a)) + P_b$. So,
-  $Vars(F(P_a \cdot P_b, l, u)) \subseteq Vars(F(P_a, l, l +
-  L(P_a))) \cup Vars(F(P_b, l + L(P_a), u)) = (\bigcup_{i = l}^{l
-    + L(P_a)} X_i) \cup (\bigcup_{i = l + L(P_a)}^u X_i) =
-  \bigcup_{i = l}^u X_i$. By induction, the claim must hold for
+  $0 \le l \le \ell + L(P_a \cdot P_b) = 1 + L(P_a) + L(P_b) \le u$.
+  Clearly, $u \ge (\ell + L(P_a)) + P_b$. So,
+  $\fv{F(P_a \cdot P_b, \ell, u)} \subseteq \fv{F(P_a, \ell, \ell +
+  L(P_a))} \cup \fv{F(P_b, \ell + L(P_a), u)} = (\bigcup_{i = \ell}^{l
+    + L(P_a)} X_i) \cup (\bigcup_{i = \ell + L(P_a)}^u X_i) =
+  \bigcup_{i = \ell}^u X_i$. By induction, the claim must hold for
   all $P$.
 \end{proof}
 
+\zak{I would state the induction hypothesis as the claim in the
+  theorem -- we really want to understand the sense in which these
+  formulas are equivalent (rather than just equisatisfiable).}
 \begin{theorem}
   For all $P \in PathExp(G)$,
   $Sat(\tf{P}) \iff Sat(F(P, 0, L(P)))$.
@@ -176,87 +137,81 @@ variables.
   let $\exists S$ for a set $S = \{x_1, \dots, x_m\}$ denote
   $\exists x_1, \dots, x_m$. Then, we proceed by structural
   induction on $P$ with the hypothesis that for all $l \ge 0$ and
-  $u \ge l + L(P)$,
-  $\tf{P} \equiv \exists V_{l,u}. F(P, l, u) \land X = X_l \land
+  $u \ge \ell + L(P)$,
+  $\tf{P} \equiv \exists V_{\ell,u}. F(P, \ell, u) \land X = X_\ell \land
   X' = X_r$. By Lemma \ref{pe:freevars}, $X$ and $X'$ are not
-  free in $F(P, l, u)$, so this is sufficient to prove the claim.
+  free in $F(P, \ell, u)$, so this is sufficient to prove the claim.
   If $L(P) = -\infty$, $P = 1$, or $P = \tuple{v, w}$, then the
   claim holds trivially.
 
   Suppose the claim holds for $P_a$ and $P_b$ and suppose
   $L(P_a + P_b) \ge 0$. Take arbitrary
-  $0 \le l \le l + L(P_a + P_b) \le u$. Then,
+  $0 \le \ell \le \ell + L(P_a + P_b) \le u$.
+  \zak{it makes the reader's life easier to make it clear what's arbitrary and to delete redundant constraints.  I'd write: Let $\ell,u$ be arbitrary satisfying $0 \leq \ell$ and $\ell + L(P_a + P_b) \leq u$. (A few places below also follow this pattern)}
+  Then,
   \begin{align*}
     \tf{P_a + P_b}
-    &\equiv \tf{P_a} \lor \tf{P_b} \\
+    &= \tf{P_a} \lor \tf{P_b} \\
     &\equiv
-      (\exists V_{l,u}. F(P_a, l, u) \land X = X_l \land X' = X_r)
-      \lor (\exists V_{l,u}. F(P_b, l, u) \land X = X_l \land X' =
-      X_r) \\
+      (\exists V_{\ell,u}. F(P_a, \ell, u) \land X = X_\ell \land X' = X_r)
+      \lor (\exists V_{\ell,u}. F(P_b, \ell, u) \land X = X_\ell \land X' =
+      X_u) \\
     &\equiv
-      \exists V_{l,u}. F(P_a+P_b,l,u) \land X = X_l \land X' = X_r
+      \exists V_{\ell,u}. F(P_a+P_b,\ell,u) \land X = X_\ell \land X' = X_u
   \end{align*}
 
   Similarly, suppose $L(P_a \cdot P_b) \ge 0$ and take arbitrary
-  $0 \le l \le l + L(P_a \cdot P_b) \le u$. By Lemma
+  $0 \le l \le \ell + L(P_a \cdot P_b) \le u$. By Lemma
   \ref{pe:freevars}, we know that
-  $Vars(F(P_a, l, l + L(P_a))) \subseteq V_{l, l + L(P_a)}$ and
-  $Vars(F(P_b, l + L(P_a), u)) \subseteq V_{l + L(P_a), u}$.  By
+  $\fv{F(P_a, \ell, \ell + L(P_a))) \subseteq V_{\ell, \ell + L(P_a)}}$ and
+  $\fv{F(P_b, \ell + L(P_a), u)} \subseteq V_{\ell + L(P_a), u}$.  By
   definition,
-  $V_{l, u} = V_{l, l + L(P_a)} \cup V_{l + L(P_a), u}$ and
-  $V_{l, l + L(P_a)} \cap V_{l + L(P_a), u} = X_{l +
-    L(P_a)}$. Furthermore, $L(P_a), L(P_b) \ge 0$ by definition,
-  meaning that $l + L(P_a) \ge 0$ and
-  $u \ge (l + L(P_a)) + L(P_b)$. So,
+  $V_{\ell, u} = V_{\ell, \ell + L(P_a)} \cup V_{\ell + L(P_a), u}$ and
+  $V_{\ell, \ell + L(P_a)} \cap V_{\ell + L(P_a), u} = X_{\ell +
+    L(P_a)}$. Furthermore, $L(P_a), L(P_b) \ge 0$ by definition \zak{not by definition since $-\infty$ is in the range of $L$, but does follow from $L(P_a \cdot P_b) \geq 0$},
+  meaning that $\ell + L(P_a) \ge 0$ and
+  $u \ge (\ell + L(P_a)) + L(P_b)$. So,
   \begin{align*}
     \tf{P_a \cdot P_b}
-    &\equiv \exists X''.
+    &= \exists X''.
       \tf{P_a}(X, X'') \land \tf{P_b}(X'', X') \\
     &\equiv \exists X''.
-      (\exists V_{l, l + L(P_a)}. F(P_a, l, l + L(P_a)) \land
-      X = l \land X'' = X_{l + L(P_a)}) \\
-    & \qquad \land (\exists V_{l + L(P_a), u}.
-      F(P_b, l + L(P_a), u) \land
-      X'' = X_{l + L(P_a)} \land X' = u) \\
+      (\exists V_{\ell, \ell + L(P_a)}. F(P_a, \ell, \ell + L(P_a)) \land
+      X = l \land X'' = X_{\ell + L(P_a)}) \\
+    & \qquad \land (\exists V_{\ell + L(P_a), u}.
+      F(P_b, \ell + L(P_a), u) \land
+      X'' = X_{\ell + L(P_a)} \land X' = u) \\
     &\equiv \exists X''.
-      \exists V_{l, u}.
-      F(P_a, l, l + L(P_a)) \land F(P_b, l + L(P_a), u) \land
+      \exists V_{\ell, u}.
+      F(P_a, \ell, \ell + L(P_a)) \land F(P_b, \ell + L(P_a), u) \land
       X = l \land X'' = X_{l + L(P_a)} \land X' = u \\
-    &\equiv \exists V_{l, u}.
-      F(P_a \cdot P_b, l, u) \land X = l \land X' = u
+    &\equiv \exists V_{\ell, u}.
+      F(P_a \cdot P_b, \ell, u) \land X = l \land X' = u
   \end{align*}
 
   Finally, suppose the claim holds for $P$ and take arbitrary
-  $0 \le l \le l + 1 \le u$. By the induction hypothesis,
-  $\tf{P} \equiv \exists V_{l+1, l+1+L(P)}. F(P, l+1, l+1+L(P))
-  \land X = X_{l+1} \land X' = X_{l+1+L(P)}$. So,
-  $\tf{P^*}(X_{l+1}, X_{l+1+L(P)}) \equiv star(F(P, l+1, l+1+L(P)),
-  \tuple{X_{l+1}, X_{l+1+L(P)}})$. Therefore,
-  $\tf{P^*}(X_l, X_u) \equiv F(P^*, l, u)$, and the claim holds.
-  
+  $0 \le l \le \ell + 1 \le u$. By the induction hypothesis,
+  $\tf{P} \equiv \exists V_{\ell+1, \ell+1+L(P)}. F(P, \ell+1, \ell+1+L(P))
+  \land X = X_{\ell+1} \land X' = X_{\ell+1+L(P)}$. So,
+  $\tf{P^*}(X_{\ell+1}, X_{\ell+1+L(P)}) \equiv star(F(P, \ell+1, \ell+1+L(P)),
+  \tuple{X_{\ell+1}, X_{\ell+1+L(P)}})$. Therefore,
+  $\tf{P^*}(X_\ell, X_u) \equiv F(P^*, \ell, u)$, and the claim holds.
+
+  \zak{The star case is non-trivial -- no reason that
+    $star(F(X_0,X_`),\tuple{X_0,X_1}}$ should neceesarily be
+  equivalent (mod renaming) to $star(F(X_1,X_2),\tuple{X_1,X_2}}$, for
+    instance.  In general, program analyses---especially those that
+    make use of widening---can be sensitive to variables names and the
+    particular way that we represent constraints.  The missing piece is that
+    many algebraic program analyses we've designed actually \textit{are} \href{https://www.cs.princeton.edu/~zkincaid/_static/pub/pldi26.pdf}{robust}}
 \end{proof}
 
-\begin{definition}
-  In a control flow graph $G = \tuple{V, E, r, \mathscr{F}}$,
-  $v\in V$ \emph{dominates} $u \in V$, written $v \dominates u$,
-  if every path from $r$ to $u$ in $G$ goes through $v$. If
-  $v \dominates u$ and $u \ne v$, then $v$ \emph{strictly
-    dominates} $u$, written $v \strictlydominates u$. If $v$
-  strictly dominates $u$ and is dominated by every vertex that
-  strictly dominates $u$, then $v$ is the \emph{immediate
-    dominator} of $u$. Note that every vertex besides $r$ has a
-  unique immediate dominator --- we denote this by
-  $idom(u)$. $E|_v$ is the set of edges $\tuple{u,w}$ such that
-  $v \strictlydominates w$. $\tuple{u, v} \in E$ is a \emph{back
-    edge} if $v \dominates u$.
-\end{definition}
-
+\section{Space-efficient encodings of reducible flow graphs}
 \begin{lemma}
   \label{dom:trans}
   If $u \dominates v \dominates w$, then every path
   from $u$ to $w$ must go through $v$.
 \end{lemma}
-
 \begin{proof}
   If $u = v$ or $v = w$, then the claim holds trivially.
   Otherwise, let $p_1$ be a simple path from $r$ to $u$ and let
@@ -285,13 +240,9 @@ variables.
   through $v$.
 \end{proof}
 
-\begin{definition}
-  A control flow graph $G = \tuple{V, E, r, \mathscr{F}}$ is
-  \emph{reducible} if for every cycle $v_0,v_1,\dots,v_n=v_0$ in
-  $G$, there is some $0 \le i \le n$ such that
-  $v_i \dominates v_j$ for all $0 \le j \le n$. (Intuitively,
-  every cycle has a natural entrypoint.)
-\end{definition}
+
+\zak{Nice characterization!  Could use some rephrasing.
+  (E.g., write $u \rightsquigarrow v$ if there is a back-edge from $u$ to $v$ that does not contain a backedge. Write $u \preceq v$ if there exists some $u'$ such that $u \dominatedby u' \not \strictlydominates v$ and $u' \rightsquigarrow v$.  Then the lemma is that if $G$ is reducible, then $\preceq$ is a partial order (then we let $\leq$ be an arbitrary linearization)).}
 
 \begin{lemma}
   \label{reducible:order}
@@ -383,6 +334,8 @@ Note that constant time simplication procedures applied after
 each concatenation or union can easily remove all 0's and 1's
 from the path expressions --- we assume that this is the case for
 the rest of the analysis of Tarjan's algorithm.
+\zak{TODO: Define these in the background + introduce a name for the
+  kind of path expressions Tarjan produces w/ these simplifications.}
 
 \begin{lemma}
   \label{tarjan:correct}
@@ -471,27 +424,27 @@ the rest of the analysis of Tarjan's algorithm.
   $S_v = \bigcup_{w < v} SubExp(eval_v(w))$,
   $K_v^t = \max\{L(P)|P \in S_v, type(P) = t\}$, and
   \begin{align*}
-    l_{v,k}(P)
+    \ell_{v,k}(P)
     &= \begin{cases}
       k+L(eval_v(src(P))) & \neg starred(P) \\
       k+L(eval_v(tgt(P))) - 1 & starred(P)
     \end{cases} \\
-    u_{v,k}(P) &= l_{v,k}(P) + K_v^{type(P)}
+    u_{v,k}(P) &= \ell_{v,k}(P) + K_v^{type(P)}
   \end{align*}
   for any $k \ge 0$. Then, for all $k \ge 0$, the following hold:
 
   \begin{enumerate}
   \item For all $P = P_1 + P_2 \in S_v$,
-    $F(P, l_{v,k}(P), u_{v,k}(P)) \equiv F(P_1, l_{v,k}(P_1),
-    u_{v,k}(P_1)) \lor F(P_2, l_{v,k}(P_2), u_{v,k}(P_2))$.
+    $F(P, \ell_{v,k}(P), u_{v,k}(P)) \equiv F(P_1, \ell_{v,k}(P_1),
+    u_{v,k}(P_1)) \lor F(P_2, \ell_{v,k}(P_2), u_{v,k}(P_2))$.
   \item For all $P = P_1 \cdot P_2 \in S_v$,
-    $F(P, l_{v,k}(P), u_{v,k}(P)) \equiv F(P_1, l_{v,k}(P_1),
-    u_{v,k}(P_1)) \land F(P_2, l_{v,k}(P_2), u_{v,k}(P_2))$
-  \item For all $P = {P_0}^* \in S_v$ with $l = l_{v,k}(P)$,
-    $u = u_{v,k}(P)$, $l_0 = l_{v,k}(P_0)$, and
+    $F(P, \ell_{v,k}(P), u_{v,k}(P)) \equiv F(P_1, \ell_{v,k}(P_1),
+    u_{v,k}(P_1)) \land F(P_2, \ell_{v,k}(P_2), u_{v,k}(P_2))$
+  \item For all $P = {P_0}^* \in S_v$ with $\ell = \el\ell_{v,k}(P)$,
+    $u = u_{v,k}(P)$, $\ell_0 = \el\ell_{v,k}(P_0)$, and
     $u_0 = u_{v,k}(P_0)$,
-    $F(P, l, u) \equiv star(F(P_0, l_0, u_0), \tuple{X_{l_0},
-      X_{u_0}})[X_{l_0} \mapsto X_l, X_{u_0} \mapsto X_u]$
+    $F(P, \ell, u) \equiv star(F(P_0, l_0, u_0), \tuple{X_{l_0},
+      X_{u_0}})[X_{l_0} \mapsto X_\ell, X_{u_0} \mapsto X_u]$
   \end{enumerate}
 \end{lemma}
 
@@ -513,7 +466,7 @@ the rest of the analysis of Tarjan's algorithm.
   SubExp(eval_v(w))$. By Lemma \ref{tarjan:correct},
   $w \dominates init(P_1), fin(P_1)$. Then,
   $v \not \dominates init(P_1), fin(P_1)$. So,
-  $l_{v+1,k}(P_1) = l_{v,k}(P_1)$ and
+  $l_{v+1,k}(P_1) = \ell_{v,k}(P_1)$ and
   $u_{v+1,k}(P_1) = u_{v,k}(P_1)$. Thus, the claim holds for $S_1$.
 
   Similarly, take any $P_2 \in S_2$. By Lemma
@@ -521,7 +474,7 @@ the rest of the analysis of Tarjan's algorithm.
   $L = L(noncycle \cdot cycle^*)$. Then,
   $L(eval_{v+1}(init(P_2))) = L + L(eval_v(init(P_2)))$ and
   $L(eval_{v+1}(fin(P_2))) = L + L(eval_v(fin(P_2)))$. So,
-  $l_{v+1,k}(P_2) = L + l_{v,k}(P_2) = l_{v,k+L}(P_2)$ and
+  $l_{v+1,k}(P_2) = L + \ell_{v,k}(P_2) = l_{v,k+L}(P_2)$ and
   $u_{v+1,k}(P_2) = L + u_{v,k}(P_2) =
   u_{v,k+L}(P_2)$. Therefore, the claim holds for $S_2$.
 
@@ -546,5 +499,8 @@ the rest of the analysis of Tarjan's algorithm.
   $K_v^{type(eval_v(v'))} = L(eval_v(v'))$. Therefore, (2) holds
   for $eval_v(v') \cdot \tuple{v', v}$, as desired.
 \end{proof}
+
+\zak{The components are here, but missing the high-level theorem
+  statement that the reader is after}
 
 \end{document}
