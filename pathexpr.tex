@@ -285,6 +285,20 @@ variables.
   through $v$.
 \end{proof}
 
+\begin{lemma}
+  \label{dom:backedge}
+  If $v \dominates u$, then there is a path from $v$ to $u$ that
+  doesn't traverse any back edges.
+\end{lemma}
+
+\begin{proof}
+  Take a minimal path $p$ from $r$ to $u$. Suppose $p$ traverses a
+  back edge $\tuple{w_1,w_2}$. Let $p'$ be a prefix of $p$
+  immediately before this edge. Then, $p'$ must go through $w_2$,
+  which contradicts the minimality of $p$. Since $p$ goes through
+  $v$ by definition, this completes the proof.
+\end{proof}
+
 \begin{definition}
   A control flow graph $G = \tuple{V, E, r, \mathscr{F}}$ is
   \emph{reducible} if for every cycle $v_0,v_1,\dots,v_n=v_0$ in
@@ -317,8 +331,8 @@ variables.
     $p_2$ don't traverse any back edges. Since
     $u' \not\strictlydominates v$ and
     $v' \not\strictlydominates u$, neither $u'$ nor $v'$ can
-    strictly dominate the other. So, by Lemma \ref{dom:nostrict},
-    $p_1$ must go through $v'$, and $p_2$ must go through
+    strictly dominate the other. By Lemma \ref{dom:nostrict},
+    $p_1$ goes through $v'$, and $p_2$ goes through
     $u'$. But, this means there is a cycle starting and ending at
     $u'$ that goes through $v'$ and doesn't traverse a back
     edge. If the cycle is non-empty, then no vertex dominates its
@@ -335,11 +349,11 @@ variables.
     $p_2$ don't traverse any back edges. Note that
     $u' \not \strictlydominates v'$. If $v' \dominates u'$, then
     we are done. Otherwise, $v' \not \strictlydominates u'$. By
-    Lemma \ref{dom:nostrict}, $p_1$ passes through $v'$. So,
-    there is a path from $u'$ to $w$ through $v'$ that doesn't
-    traverse any back edges. But, this also means that
-    $u' \not \strictlydominates w$, because otherwise
-    $u' \dominates v'$.
+    Lemma \ref{dom:nostrict}, $p_1$ passes through $v'$. But, we
+    also have that $u' \not \strictlydominates w$, because
+    otherwise $u' \dominates v'$. So, there is a path from
+    $u' \dominates u$ to $w \not\strictlydominatedby u'$ through
+    $v'$ that doesn't traverse any back edges.
   \end{enumerate}
 \end{proof}
 
@@ -399,9 +413,9 @@ the rest of the analysis of Tarjan's algorithm.
   $v \dominates w$. So, for all $w \not \dominatedby v$,
   $find(w)$ and $eval(w)$ are unchanged, and
   $D_{v+1}(w) = D_v(w)$. So, the claim still holds for such
-  $w$. Consider any $w \dominatedby v$. By the ordering,
-  $w \le v$, and $D_v(w) = v$. By the induction hypothesis,
-  before this iteration,
+  $w$. Consider any $w \dominatedby v$. By Lemma
+  \ref{dom:backedge}, $w \le v$. And, $D_v(w) = v$. By the
+  induction hypothesis, before this iteration,
   $\si{eval(w)} = Paths_G(v, w) \cap E|_v^*$. Furthermore,
   $D_{v+1}(w) = idom(v)$, and every path from $idom(v)$ to $w$
   must pass through $v$ by Lemma \ref{dom:trans}. Thus, it is
@@ -423,12 +437,12 @@ the rest of the analysis of Tarjan's algorithm.
   $v' \not \strictlydominates v$ and $\tuple{v', v}$ is a path
   from $v'$ to $v$ that doesn't traverse a back edge, i.e.
   $v' \le v$. Suppose there is some $v''$ such that
-  $v' \dominatedby v'' \not \dominates v$. There must be a path
-  from $v''$ to $v'$ that does not traverse a back edge. So,
-  $v'' < v$. Therefore, the smallest vertex at least $v$ that
-  dominates $v'$ is $idom(v)$. By the induction hypothesis,
-  $p_0'$ is recognized by $eval(v')$. So, $noncycle$ recognizes
-  $p_0$.
+  $v' \dominatedby v'' \not \dominates v$. By Lemma
+  \ref{dom:backedge}, there is a path from $v''$ to $v'$ that
+  does not traverse a back edge. So, $v'' < v$. Therefore, the
+  smallest vertex at least $v$ that dominates $v'$ is
+  $idom(v)$. By the induction hypothesis, $p_0'$ is recognized by
+  $eval(v')$. So, $noncycle$ recognizes $p_0$.
 
   Now, take any of the $p_i$. By reducibility, some vertex in
   $p_i$ must dominate all the others. In particular, it must
@@ -525,24 +539,23 @@ the rest of the analysis of Tarjan's algorithm.
   $u_{v+1,k}(P_2) = L + u_{v,k}(P_2) =
   u_{v,k+L}(P_2)$. Therefore, the claim holds for $S_2$.
 
-  It remains to show that the claim holds for all $P_3 \in
-  S_3$. For all $v' \in pred(v)$ where $v'\ne idom(v)$,
+  It remains to show that the claim holds for all $S_3$. For all
+  $v' \in pred(v)$ where $v'\ne idom(v)$,
   $sstar(eval(v')) = tstar(\tuple{v',v}) = false$. Furthermore,
   $eval(idom(v))\cdot \tuple{idom(v), v}$ gets simplified to
   $\tuple{idom(v), v}$, and
   $sstar(\tuple{idom(v), v}) = tstar(\tuple{idom(v), v}) =
   false$. Therefore, $K_v^{type(noncycle)} = L(noncycle)$ and
-  $K_v^{type(cycle)} = L(cycle)$. So, (1) holds for all $S_3$;
-  (2) holds for $noncycle \cdot cycle^*$ since
+  $K_v^{type(cycle)} = L(cycle)$. So, (1) holds for $S_3$; (2)
+  holds for $noncycle \cdot cycle^*$ since
   $L(eval_{v+1}(v)) = L(noncycle) + 1$ and $starred(cycle^*)$;
   and (3) holds for $cycle^*$ since $starred(cycle^*)$ but
   $\neg starred(cycle)$.
 
-  Thus, we only need to show that (2) holds for all
-  $eval_v(v') \cdot \tuple{v', v}$ where $v' \in pred(v)$. Let
-  $v'$ be arbitrary and take the smallest $w'$ at least $v$ that
+  Finally, consider any $eval_v(v') \cdot \tuple{v', v}$ where
+  $v' \in pred(v)$. Take the smallest $w'$ at least $v$ that
   dominates $v'$. Since $v' \ne v$, the only $P_3\in S_v$ with
-  $src(P_3) = w'$ and $tgt(P_3) = v'$ is $eval_v(v')$. So,
+  $type(P_3) = type(eval_v(v'))$ is $P_3 = eval_v(v')$. So,
   $K_v^{type(eval_v(v'))} = L(eval_v(v'))$. Therefore, (2) holds
   for $eval_v(v') \cdot \tuple{v', v}$, as desired.
 \end{proof}
