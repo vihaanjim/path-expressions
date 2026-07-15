@@ -467,6 +467,9 @@ the rest of the analysis of Tarjan's algorithm.
     $F(P, \ell, u) \equiv star(F(P_0, l_0, u_0), \tuple{X_{l_0},
       X_{u_0}})[X_{l_0} \mapsto X_\ell, X_{u_0} \mapsto X_u]$
   \end{enumerate}
+
+  \zak{I'm not clear on the role of $k$.  I might try to hide it in the proof.
+    }
 \end{lemma}
 
 \begin{proof}
@@ -475,24 +478,39 @@ the rest of the analysis of Tarjan's algorithm.
   arbitrary $k \ge 0$. By Lemma \ref{tarjan:correct},
   $eval_{v+1}(w) = eval_v(w)$ if $v \not \dominates w$, and
   $eval_{v+1}(w) = noncycle \cdot cycle^* \cdot eval_v(w)$
-  otherwise. Let
-  $S_1 = \bigcup_{w < v, w\not\dominatedby v} SubExp(eval_v(w))$,
-  $S_2 = \bigcup_{w < v, w\strictlydominatedby v}
-  SubExp(eval_v(w))$, and $S_3 = SubExp(noncycle \cdot
-  cycle^*)$. Then, $S_v = S_1 \cup S_2$ and
+  otherwise. Define
+  \begin{align*}
+    S_1 &\defeq \bigcup_{w < v, w\not\dominatedby v} SubExp(eval_v(w))\\
+    S_2 &\defeq \bigcup_{w < v, w\strictlydominatedby v} SubExp(eval_v(w))\\
+    S_3 &\defeq SubExp(noncycle \cdot cycle^*)
+  \end{align*}
+  \zak{TODO: Give $S_1/S_2/S_3$ more descriptive names.   Numerical subscripts also conflict with $S_v$, since $v$ ranges over the naturals.}
+  Observe that $S_v = S_1 \cup S_2$ and
   $S_{v+1} = S_v \cup S_3$.
+
+  \zak{I would not expect $S_{v+1} = S_v \cup S_3$ -- I don't know if
+    there's an easy way to express $S_{v+1}$ in terms of $S_v$.
+    Suppose that we have $u \xrightarrow{p} w \xrightarrow{q} v$ in
+    the compressed weighted forest at iteration $v$, so $eval_v(u)$
+    is $q \cdot p$.  If $u$ is a predecessor of $v$, then we evaluate
+    $\mathit{eval}_v(u)$ at iteration $v$, compress $u \xrightarrow{q \cdot p} v$, and
+    $\mathit{eval}_{v+1}(u) = (\mathit{noncycle} \cdot \mathtit{cycle}^*) \cdot (q \cdot p) = (\mathit{noncycle} \cdot \mathtit{cycle}^*) \cdot \mathit{eval}_v(u)$.  But if $u$ is not a predecessor of $v$, then we don't compress, and
+    $\mathit{eval}_{v+1}(u) = ((\mathit{noncycle} \cdot \mathtit{cycle}^*) \cdot q) \cdot p$.
+    Maybe you could instead define $\mathit{Links}_v = \bigcup_{u < v} (\mathit{noncycle}_u \cdot \mathtit{cycle}_u^*)$ and $\mathit{LinkSeq}_v$ to be the set of all path expressions that can be formed by concatenating path expressions from $\mathtit{Links}_v$ (finitely many, due to type constraints).  Then prove the result about sub-expreesions of path expressions from $\mathtit{LinkSeq}_v$.
+  }
 
   Take any $P_1 \in S_1$. There must be some
   $w \not \dominatedby v$ such that $P_1 \in
   SubExp(eval_v(w))$. By Lemma \ref{tarjan:correct},
   $w \dominates init(P_1), fin(P_1)$. Then,
-  $v \not \dominates init(P_1), fin(P_1)$. So,
+    $v \not \dominates init(P_1), fin(P_1)$. So,
   $l_{v+1,k}(P_1) = \ell_{v,k}(P_1)$ and
   $u_{v+1,k}(P_1) = u_{v,k}(P_1)$. Thus, the claim holds for $S_1$.
+\zak{init/fin should be src/tgt?  Commas are ambigious -- should $w \dominates init(P_1), fin(P_1)$ be interpreted as $w$ dominates both $\mathit{src}(P_1)$ and $\mathtit{tgt}(P_1$)?  (Expanding to English is easier on the reader than the compact mathematical notation)}
 
   Similarly, take any $P_2 \in S_2$. By Lemma
   \ref{tarjan:correct}, $v \dominates init(P_2), fin(P_2)$. Let
-  $L = L(noncycle \cdot cycle^*)$. Then,
+  $L = L(noncycle \cdot cycle^*)$ \zak{$L$ is already reserved for the length function -- pick a different symbol}. Then,
   $L(eval_{v+1}(init(P_2))) = L + L(eval_v(init(P_2)))$ and
   $L(eval_{v+1}(fin(P_2))) = L + L(eval_v(fin(P_2)))$. So,
   $l_{v+1,k}(P_2) = L + \ell_{v,k}(P_2) = l_{v,k+L}(P_2)$ and
