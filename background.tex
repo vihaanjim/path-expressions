@@ -1,105 +1,86 @@
 \section{Background} \label{sec:background}
 
-  The set of \defn{regular expressions} over $\Sigma$, written
-  $\RegExp{\Sigma}$, is the smallest set such that
-  $0, 1 \in \RegExp{\Sigma}$, $\Sigma \subseteq \RegExp{\Sigma}$,
-  and $(R_1 + R_2), (R_1 \cdot R_2), R^* \in \RegExp{\Sigma}$ for
-  all $R, R_1, R_2 \in \RegExp{\Sigma}$.
-  $SubExp(R)$ for $R \in \RegExp{\Sigma}$ is the set of
-  subexpressions of $R$, including $R$ itself.
-
-\begin{definition}
-  % taken more or less verbatim from Algebraic Program Analysis +
-  % Fast Algorithms for Solving Path Problems
-  The \defn{standard interpretation} is the function
-  $\si{\cdot}: \RegExp{\Sigma} \to \textbf{L}$, where $\textbf{L}$
-  is the set of regular languages, such that
-  $\si{0} = \emptyset$, $\si{1} = \{\epsilon\}$ where $\epsilon$
-  is the empty string, $\si{a} = \{a\}$ for all $a \in \Sigma$,
-  and
-  \begin{align*}
+The set of \defn{regular expressions} over $\Sigma$, written
+$\regexp{\Sigma}$, is the smallest set such that
+$0, 1 \in \regexp{\Sigma}$, $\Sigma \subseteq \regexp{\Sigma}$,
+and $(R_1 + R_2), (R_1 \cdot R_2), R^* \in \regexp{\Sigma}$ for
+all $R, R_1, R_2 \in \regexp{\Sigma}$. $\subexp{R}$ for
+$R \in \regexp{\Sigma}$ is the set of subexpressions of $R$,
+including $R$ itself.
+% taken more or less verbatim from Algebraic Program Analysis +
+% Fast Algorithms for Solving Path Problems
+The \defn{standard interpretation} is the function
+$\si{\cdot}: \regexp{\Sigma} \to \textbf{L}$, where $\textbf{L}$
+is the set of regular languages, such that
+$\si{0} \defeq \emptyset$, $\si{1} \defeq \{\epsilon\}$ where
+$\epsilon$ is the empty string, $\si{a} \defeq \{a\}$ for all
+$a \in \Sigma$, and
+\begin{align*}
   \si{R_1 + R_2} &\defeq \si{R_1} \cup \si{R_2} \\
   \si{R_1 \cdot R_2} &\defeq \{x_1x_2| x_1 \in \si{R_1}, x_2 \in
                        \si{R_2}\} \\
   \si{R^*} &\defeq \{x_1x_2\dots x_n| x_1,x_2,\dots,x_n \in \si{R}\}
-  \end{align*}
-  for all $R, R_1, R_2 \in \RegExp{\Sigma}$.
-\end{definition}
+\end{align*}
+for all $R, R_1, R_2 \in \regexp{\Sigma}$.
 
 Let $X$ and $X'$ be sets of variables such that for each
 $x\in X$, there is a corresponding $x' \in X'$. As an abuse of
 notation, we use $X = X' \defeq \bigwedge_{x \in X} x =
 x'$. $\fv{F}$ for a formula $F$ is the set of free variables in
 $F$. $\Formula{X, X'}$ denotes the set of formulas such that
-$\fv{F} \subseteq X \cup X'$. 
+$\fv{F} \subseteq X \cup X'$. Then, a \defn{control flow graph}
+$G = \tuple{V, E, r, \mathscr{F}}$ is a graph with vertices $V$,
+edges $E$, a root vertex $r$ of indegree 0 from which every
+vertex $v \in V$ is reachable, and a function
+$\mathscr{F}: E \to \Formula{X, X'}$. We use
+$\mathscr{F}_{\tuple{u,v}}(Y, Y')$ to denote
+$\mathscr{F}(\tuple{u,v})[X \mapsto Y, X' \mapsto Y']$. We let
+$\Paths{G}{u}{v}$ be the set of all (possibly non-simple) paths
+from $u$ to $v$ in $G$.
 
-\begin{definition}
-  A \defn{control flow graph} $G = \tuple{V, E, r, \mathscr{F}}$
-  is a graph with vertices $V$, edges $E$, a root vertex $r$ of
-  indegree 0 from which every vertex $v \in V$ is reachable, and
-  a function $\mathscr{F}: E \to \Formula{X, X'}$ for some
-  $X, X'$. We use $\mathscr{F}_{\tuple{u,v}}(Y, Y')$ to denote
-  $\mathscr{F}(\tuple{u,v})[X \mapsto Y, X' \mapsto Y']$. We let
-  $\Paths{G}{u}{v}$ be the set of all (possibly non-simple) paths
-  from $u$ to $v$ in $G$.
-\end{definition}
+A \defn{path expression} $P$ of type $\tuple{u, v}$ on
+$G = \tuple{V, E, r, F}$ is a regular expression over
+$E$ such that $\si{P} \subseteq Paths_G(u,v)$ for some
+$u,v \in V$. We denote the set of path expressions on $G$ by
+$\pathexp{G}$.
 
-\begin{definition}
-  A \emph{path expression} $P$ of type $\tuple{u, v}$ on
-  $G = \tuple{V, E, r, F}$ is a regular expression over
-  $E$ such that $\si{P} \subseteq Paths_G(u,v)$ for some
-  $u,v \in V$. We denote the set of path expressions on $G$ by
-  $PathExp(G)$.
-\end{definition}
-
-Suppose $star$ is a function that takes a formula $F$ and the
-pair of variable vocabulairies $X$ and $X'$ that $F$ relates and
+Suppose $\tc$ is a function that takes a formula $F$ and the pair
+of variable vocabulairies $X$ and $X'$ that $F$ relates and
 returns some overapproximation of the reflexive transitive
 closure of $F$ over $X$ and $X'$ containing no other free
-variables.
-
-\begin{definition}
-  The \emph{transition formula interpretation} is the function
-  $\tf{\cdot}: PathExp(G) \to \Formula{X, X'}$ where
-  $\tf{0} \equiv false$, $\tf{1} \equiv X = X'$,
-  $\tf{\tuple{u, v}} \equiv \mathscr{F}_{\tuple{u, v}}(X, X')$,
-  and
-  \begin{align*}
-    \tf{P_a + P_b} &\equiv \tf{P_a} \lor \tf{P_b} \\
-    \tf{P_a \cdot P_b} &\equiv \exists X''. \tf{P_a}(X, X'')
-                         \land \tf{P_b}(X'', X') \\
-    \tf{P^*} &\equiv star(\tf{P}, \tuple{X, X'}) 
-  \end{align*}
-  for all $P, P_a, P_b \in PathExp(G)$. 
-
-  We use $\tf{P}(Y, Y')$ to denote
-  $\tf{P}[X \mapsto Y, X' \mapsto Y']$.
-\end{definition}
+variables. Then, the \defn{transition formula interpretation} is
+the function $\tf{\cdot}: \pathexp{G} \to \Formula{X, X'}$ where
+$\tf{0} \defeq \false$, $\tf{1} \defeq X = X'$,
+$\tf{\tuple{u, v}} \defeq \mathscr{F}_{\tuple{u, v}}(X, X')$, and
+\begin{align*}
+  \tf{P_1 + P_2} &\defeq \tf{P_1} \lor \tf{P_2} \\
+  \tf{P_1 \cdot P_2} &\defeq \exists X''. \tf{P_1}(X, X'')
+                       \land \tf{P_2}(X'', X') \\
+  \tf{P^*} &\defeq \tc(\tf{P}, \tuple{X, X'}) 
+\end{align*}
+for all $P, P_1, P_2 \in \pathexp{G}$. We use $\tf{P}(Y, Y')$ to
+denote $\tf{P}[X \mapsto Y, X' \mapsto Y']$.
 
 \subsection{Control flow theory}
 
-\begin{definition}
-  In a control flow graph $G = \tuple{V, E, r, \mathscr{F}}$,
-  $v\in V$ \emph{dominates} $u \in V$, written $v \dominates u$,
-  if every path from $r$ to $u$ in $G$ goes through $v$. If
-  $v \dominates u$ and $u \ne v$, then $v$ \emph{strictly
-    dominates} $u$, written $v \strictlydominates u$. If $v$
-  strictly dominates $u$ and is dominated by every vertex that
-  strictly dominates $u$, then $v$ is the \emph{immediate
-    dominator} of $u$. Note that every vertex besides $r$ has a
-  unique immediate dominator --- we denote this by
-  $idom(u)$. $E|_v$ is the set of edges $\tuple{u,w}$ such that
-  $v \strictlydominates w$. $\tuple{u, v} \in E$ is a \emph{back
-    edge} if $v \dominates u$.
-\end{definition}
+In a control flow graph $G = \tuple{V, E, r, \mathscr{F}}$,
+$v\in V$ \defn{dominates} $u \in V$, written $v \dominates u$, if
+every path from $r$ to $u$ in $G$ goes through $v$. If
+$v \dominates u$ and $u \ne v$, then $v$ \defn{strictly
+  dominates} $u$, written $v \strictlydominates u$. If $v$
+strictly dominates $u$ and is dominated by every vertex that
+strictly dominates $u$, then $v$ is the \defn{immediate
+  dominator} of $u$. Note that every vertex besides $r$ has a
+unique immediate dominator --- we denote this by
+$idom(u)$. $E|_v$ is the set of edges $\tuple{u,w}$ such that
+$v \strictlydominates w$. $\tuple{u, v} \in E$ is a \defn{back
+  edge} if $v \dominates u$.
 
-\begin{definition}
-  A control flow graph $G = \tuple{V, E, r, \mathscr{F}}$ is
-  \emph{reducible} if for every cycle $v_0,v_1,\dots,v_n=v_0$ in
-  $G$, there is some $0 \le i \le n$ such that
-  $v_i \dominates v_j$ for all $0 \le j \le n$. (Intuitively,
-  every cycle has a natural entrypoint.)
-\end{definition}
+A control flow graph $G = \tuple{V, E, r, \mathscr{F}}$ is
+\defn{reducible} if for every cycle $v_0,v_1,\dots,v_n=v_0$ in
+$G$, there is some $0 \le i \le n$ such that $v_i \dominates v_j$
+for all $0 \le j \le n$. (Intuitively, every cycle has a natural
+entrypoint.)
 
 \textbf{TODO}: missing definitions for
 \begin{itemize}

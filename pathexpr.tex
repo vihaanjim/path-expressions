@@ -21,12 +21,17 @@
 \newcommand{\strictlydominatedby}{\mathrel{\ll}}
 \newcommand{\dominatedby}{\mathrel{\underline{\strictlydominatedby}}}
 
-\newcommand{\RegExp}[1]{\mathit{RegExp}(#1)}
+\newcommand{\regexp}[1]{\mathit{RegExp}(#1)}
+\newcommand{\pathexp}[1]{\mathit{PathExp}(#1)}
+\newcommand{\subexp}[1]{\mathit{SubExp}(#1)}
 \newcommand{\Paths}[3]{\mathit{Path}_{#1}(#2,#3)}
 \newcommand{\fv}[1]{\mathit{Vars}(#1)}
 \newcommand{\Formula}[1]{\mathit{Formula}(#1)}
 \newcommand{\defeq}{\triangleq}
 \newcommand{\defn}[1]{\textbf{#1}}
+\newcommand{\false}{\mathit{false}}
+\newcommand{\true}{\mathit{true}}
+\newcommand{\tc}{\mathit{star}}
 \newcommand{\zak}[1]{{\color{blue}[Zak says: #1]}}
 
 % define theorems, lemmas, corollaries, and definitions
@@ -69,131 +74,125 @@ A few minor style notes:
 \begin{definition}
   Given a function $wt: \Sigma \to \mathbb{Z}$, the \defn{length}
   of a regular expression is given by
-  $L: \RegExp{\Sigma} \to \mathbb{Z} \cup \{-\infty\}$ where
-  $L(0) = -\infty$, $L(1) = L(R^*) = 1$, $L(a) = wt(a)$ for all
-  $a \in \Sigma$, $L(R_1 + R_2) = \max\{L(R_1), L(R_2)\}$, and
-  $L(R_1 \cdot R_2) = L(R_1) + L(R_2)$.
+  $L: \regexp{\Sigma} \to \mathbb{Z} \cup \{-\infty\}$ where
+  $L(0) \defeq -\infty$, $L(1) \defeq L(R^*) \defeq 1$,
+  $L(a) \defeq wt(a)$ for all $a \in \Sigma$,
+  $L(R_1 + R_2) \defeq \max\{L(R_1), L(R_2)\}$, and
+  $L(R_1 \cdot R_2) \defeq L(R_1) + L(R_2)$.
 \end{definition}
-
 
 \begin{definition}
   Suppose there is an infinite set of variable vocabularies
   $\{X_0, X_1, X_2, \dots\}$, and suppose that $L$ is taken with
   respect to the function $wt: E \to \mathbb{Z}$ that maps every
-  edge to 1. Then, define $I$ mapping path expressions and
+  edge to 1. Then, define $F$ mapping path expressions and
   integer lower and upper bounds to formulas where
-  $F(P, \ell, u) \equiv false$ if $L(P) = -\infty$, and otherwise,
+  $F(P, \ell, u) \defeq \false$ if $L(P) = -\infty$, and
+  otherwise,
   \begin{align*}
     F(1, \ell, u) &\defeq X_\ell = X_u \\
     F({\tuple{u, v}}, \ell, u) &\defeq \mathscr{F}_{\tuple{u, v}}(X_\ell,
   X_u)\\
-    F(P_a + P_b, \ell, u)
-    &\defeq F(P_a, \ell, u) \lor F(P_b, \ell, u) \\
-    F(P_a \cdot P_b, \ell, u)
-    &\defeq F(P_a, \ell, \ell + L(P_a)) \land F(P_b, \ell + L(P_a), u) \\
+    F(P_1 + P_2, \ell, u)
+    &\defeq F(P_1, \ell, u) \lor F(P_2, \ell, u) \\
+    F(P_1 \cdot P_2, \ell, u)
+    &\defeq F(P_1, \ell, \ell + L(P_1)) \land F(P_2, \ell + L(P_1), u) \\
     F(P^*, \ell, u)
-    &\defeq star(F(P, \ell+1, \ell+1+L(P)), \tuple{X_{\ell+1},
+    &\defeq \tc(F(P, \ell+1, \ell+1+L(P)), \tuple{X_{\ell+1},
       X_{\ell+1+L(P)}})[X_{\ell+1} \mapsto X_\ell, X_{\ell+1+L(P)} \mapsto X_u]
   \end{align*}
-  for all $P, P_a, P_b \in PathExp(G)$. 
+  for all $P, P_1, P_2 \in \pathexp{G}$. 
 \end{definition}
+
+Let $V_{i,j} = \bigcup_{k=i}^j X_k$. As an abuse of notation, let
+$\exists S$ for a set $S = \{x_1, \dots, x_m\}$ denote
+$\exists x_1, \dots, x_m$.
 
 \begin{lemma}
   \label{pe:freevars}
-  For all $P \in PathExp(G)$, for all $\ell \ge 0$ and
+  For all $P \in \pathexp{G}$, for all $\ell \ge 0$ and
   $u \ge \ell + L(P)$,
-  $\fv{F(P, \ell, u)} \subseteq \bigcup_{i = \ell}^u X_i$.
+  $\fv{F(P, \ell, u)} \subseteq V_{\ell,u} X_i$.
 \end{lemma}
 
 \begin{proof}
   The claim holds trivially when $L(P) = -\infty$, $P = 1$,
   $P = P'^*$, or $P = \tuple{v, w}$. Suppose the claim holds for
-  $P_a$ and $P_b$ and that $L(P_a + P_b) \ge 0$. Take any
-  $0 \le l \le \ell + L(P_a + P_b) \le u$. Since
-  $L(P_a + P_b) = \max\{L(P_a), L(P_b)\}$, clearly
-  $u \ge \ell + L(P_a)$ and $u \ge \ell + L(P_b)$. Then,
-  $\fv{F(P_a + P_b, \ell, u)} \subseteq fv{F(P_a, \ell, u)} \cup
-  \fv{F(P_b, \ell, u)} = \bigcup_{i = \ell}^u X_i$. Similarly, suppose
-  $L(P_a \cdot P_b) \ge 0$. Then, $L(P_a), L(P_b) \ge 0$. Take
-  $0 \le l \le \ell + L(P_a \cdot P_b) = 1 + L(P_a) + L(P_b) \le u$.
-  Clearly, $u \ge (\ell + L(P_a)) + P_b$. So,
-  $\fv{F(P_a \cdot P_b, \ell, u)} \subseteq \fv{F(P_a, \ell, \ell +
-  L(P_a))} \cup \fv{F(P_b, \ell + L(P_a), u)} = (\bigcup_{i = \ell}^{l
-    + L(P_a)} X_i) \cup (\bigcup_{i = \ell + L(P_a)}^u X_i) =
-  \bigcup_{i = \ell}^u X_i$. By induction, the claim must hold for
-  all $P$.
+  $P_1$ and $P_2$ and that $L(P_1 + P_2) \ge 0$. Take any
+  $0 \le l \le \ell + L(P_1 + P_2) \le u$. Since
+  $L(P_1 + P_2) = \max\{L(P_1), L(P_2)\}$, clearly
+  $u \ge \ell + L(P_1)$ and $u \ge \ell + L(P_2)$. Then,
+  $\fv{F(P_1 + P_2, \ell, u)} \subseteq \fv{F(P_1, \ell, u)} \cup
+  \fv{F(P_2, \ell, u)} = V_{\ell, u}$. Similarly, suppose
+  $L(P_1 \cdot P_2) \ge 0$. Then, $L(P_1), L(P_2) \ge 0$. Take
+  $0 \le l \le \ell + L(P_1 \cdot P_2) = 1 + L(P_1) + L(P_2) \le
+  u$.  Clearly, $u \ge (\ell + L(P_1)) + P_2$. So,
+  $\fv{F(P_1 \cdot P_2, \ell, u)} \subseteq \fv{F(P_1, \ell, \ell
+    + L(P_1))} \cup \fv{F(P_2, \ell + L(P_1), u)} = V_{\ell, \ell
+    + L(P_1)} \cup V_{\ell + L(P_1),u} = V_{\ell, u}$. By
+  induction, the claim must hold for all $P$.
 \end{proof}
 
-\zak{I would state the induction hypothesis as the claim in the
-  theorem -- we really want to understand the sense in which these
-  formulas are equivalent (rather than just equisatisfiable).}
 \begin{theorem}
-  For all $P \in PathExp(G)$,
-  $Sat(\tf{P}) \iff Sat(F(P, 0, L(P)))$.
+  For all $\ell \ge 0$ and $u \ge \ell + L(P)$,
+  $\tf{P} \equiv \exists V_{\ell,u}. F(P, \ell, u) \land X =
+  X_\ell \land X' = X_u$
 \end{theorem}
 
 \begin{proof}
-  Let $V_{i,j} = \bigcup_{k=i}^j X_k$. As an abuse of notation,
-  let $\exists S$ for a set $S = \{x_1, \dots, x_m\}$ denote
-  $\exists x_1, \dots, x_m$. Then, we proceed by structural
-  induction on $P$ with the hypothesis that for all $l \ge 0$ and
-  $u \ge \ell + L(P)$,
-  $\tf{P} \equiv \exists V_{\ell,u}. F(P, \ell, u) \land X = X_\ell \land
-  X' = X_r$. By Lemma \ref{pe:freevars}, $X$ and $X'$ are not
-  free in $F(P, \ell, u)$, so this is sufficient to prove the claim.
-  If $L(P) = -\infty$, $P = 1$, or $P = \tuple{v, w}$, then the
-  claim holds trivially.
+  We proceed by structural induction on $P$. If $L(P) = -\infty$,
+  then the claim holds trivially. Otherwise, suppose
+  $L(P) \ge 0$, and take arbitrary
+  $0 \le \ell \le \ell + L(P) \le u$. If $P = 1$ or
+  $P = \tuple{v, w}$, then the claim also holds trivially.
 
-  Suppose the claim holds for $P_a$ and $P_b$ and suppose
-  $L(P_a + P_b) \ge 0$. Take arbitrary
-  $0 \le \ell \le \ell + L(P_a + P_b) \le u$.
-  \zak{it makes the reader's life easier to make it clear what's arbitrary and to delete redundant constraints.  I'd write: Let $\ell,u$ be arbitrary satisfying $0 \leq \ell$ and $\ell + L(P_a + P_b) \leq u$. (A few places below also follow this pattern)}
-  Then,
+  Suppose $P = P_1 + P_2$. By the induction hypothesis,
   \begin{align*}
-    \tf{P_a + P_b}
-    &= \tf{P_a} \lor \tf{P_b} \\
+    \tf{P_1 + P_2}
+    &= \tf{P_1} \lor \tf{P_2} \\
     &\equiv
-      (\exists V_{\ell,u}. F(P_a, \ell, u) \land X = X_\ell \land X' = X_r)
-      \lor (\exists V_{\ell,u}. F(P_b, \ell, u) \land X = X_\ell \land X' =
+      (\exists V_{\ell,u}. F(P_1, \ell, u) \land X = X_\ell \land X' = X_r)
+      \lor (\exists V_{\ell,u}. F(P_2, \ell, u) \land X = X_\ell \land X' =
       X_u) \\
     &\equiv
-      \exists V_{\ell,u}. F(P_a+P_b,\ell,u) \land X = X_\ell \land X' = X_u
+      \exists V_{\ell,u}. F(P_1+P_2,\ell,u) \land X = X_\ell \land X' = X_u
   \end{align*}
 
-  Similarly, suppose $L(P_a \cdot P_b) \ge 0$ and take arbitrary
-  $0 \le l \le \ell + L(P_a \cdot P_b) \le u$. By Lemma
+  Similarly, suppose $P = P_1 \cdot P_2$. By Lemma
   \ref{pe:freevars}, we know that
-  $\fv{F(P_a, \ell, \ell + L(P_a))) \subseteq V_{\ell, \ell + L(P_a)}}$ and
-  $\fv{F(P_b, \ell + L(P_a), u)} \subseteq V_{\ell + L(P_a), u}$.  By
-  definition,
-  $V_{\ell, u} = V_{\ell, \ell + L(P_a)} \cup V_{\ell + L(P_a), u}$ and
-  $V_{\ell, \ell + L(P_a)} \cap V_{\ell + L(P_a), u} = X_{\ell +
-    L(P_a)}$. Furthermore, $L(P_a), L(P_b) \ge 0$ by definition \zak{not by definition since $-\infty$ is in the range of $L$, but does follow from $L(P_a \cdot P_b) \geq 0$},
-  meaning that $\ell + L(P_a) \ge 0$ and
-  $u \ge (\ell + L(P_a)) + L(P_b)$. So,
+  $\fv{F(P_1, \ell, \ell + L(P_1))} \subseteq V_{\ell, \ell +
+    L(P_1)}$ and
+  $\fv{F(P_2, \ell + L(P_1), u)} \subseteq V_{\ell + L(P_1), u}$.
+  By definition,
+  $V_{\ell, u} = V_{\ell, \ell + L(P_1)} \cup V_{\ell + L(P_1),
+    u}$ and
+  $V_{\ell, \ell + L(P_1)} \cap V_{\ell + L(P_1), u} = X_{\ell +
+    L(P_1)}$. Furthermore, $L(P_1), L(P_2) \ge 0$ since
+  $L(P_1 \cdot P_2) \geq 0$. So, $\ell + L(P_1) \ge 0$ and
+  $u \ge (\ell + L(P_1)) + L(P_2)$. By the induction hypothesis,
   \begin{align*}
-    \tf{P_a \cdot P_b}
+    \tf{P_1 \cdot P_2}
     &= \exists X''.
-      \tf{P_a}(X, X'') \land \tf{P_b}(X'', X') \\
+      \tf{P_1}(X, X'') \land \tf{P_2}(X'', X') \\
     &\equiv \exists X''.
-      (\exists V_{\ell, \ell + L(P_a)}. F(P_a, \ell, \ell + L(P_a)) \land
-      X = l \land X'' = X_{\ell + L(P_a)}) \\
-    & \qquad \land (\exists V_{\ell + L(P_a), u}.
-      F(P_b, \ell + L(P_a), u) \land
-      X'' = X_{\ell + L(P_a)} \land X' = u) \\
+      (\exists V_{\ell, \ell + L(P_1)}. F(P_1, \ell, \ell + L(P_1)) \land
+      X = l \land X'' = X_{\ell + L(P_1)}) \\
+    & \qquad \land (\exists V_{\ell + L(P_1), u}.
+      F(P_2, \ell + L(P_1), u) \land
+      X'' = X_{\ell + L(P_1)} \land X' = u) \\
     &\equiv \exists X''.
       \exists V_{\ell, u}.
-      F(P_a, \ell, \ell + L(P_a)) \land F(P_b, \ell + L(P_a), u) \land
-      X = l \land X'' = X_{l + L(P_a)} \land X' = u \\
+      F(P_1, \ell, \ell + L(P_1)) \land F(P_2, \ell + L(P_1), u) \land
+      X = l \land X'' = X_{l + L(P_1)} \land X' = u \\
     &\equiv \exists V_{\ell, u}.
-      F(P_a \cdot P_b, \ell, u) \land X = l \land X' = u
+      F(P_1 \cdot P_2, \ell, u) \land X = l \land X' = u
   \end{align*}
 
   Finally, suppose the claim holds for $P$ and take arbitrary
   $0 \le l \le \ell + 1 \le u$. By the induction hypothesis,
   $\tf{P} \equiv \exists V_{\ell+1, \ell+1+L(P)}. F(P, \ell+1, \ell+1+L(P))
   \land X = X_{\ell+1} \land X' = X_{\ell+1+L(P)}$. So,
-  $\tf{P^*}(X_{\ell+1}, X_{\ell+1+L(P)}) \equiv star(F(P, \ell+1, \ell+1+L(P)),
+  $\tf{P^*}(X_{\ell+1}, X_{\ell+1+L(P)}) \equiv \tc(F(P, \ell+1, \ell+1+L(P)),
   \tuple{X_{\ell+1}, X_{\ell+1+L(P)}})$. Therefore,
   $\tf{P^*}(X_\ell, X_u) \equiv F(P^*, \ell, u)$, and the claim holds.
 
@@ -210,24 +209,24 @@ A few minor style notes:
 \begin{lemma}
   \label{dom:trans}
   If $u \dominates v \dominates w$, then every path
-  from $u$ to $w$ must go through $v$.
+  from $u$ to $w$ passes through $v$.
 \end{lemma}
 \begin{proof}
   If $u = v$ or $v = w$, then the claim holds trivially.
   Otherwise, let $p_1$ be a simple path from $r$ to $u$ and let
   $p_2$ be an arbitrary path from $u$ to $w$. By definition, the
-  concatenation of $p_1$ and $p_2$ must go throught $v$. Suppose
-  $p_1$ goes through $v$. Then, there is some prefix $p_1'$ of
+  concatenation of $p_1$ and $p_2$ passes through $v$. Suppose
+  $p_1$ passes through $v$. Then, there is some prefix $p_1'$ of
   $p_1$ that is a path from $r$ to $v$. But, by definition,
-  $p_1'$ must go through $u$, which contradicts the simplicity of
-  $p_1$. Therefore, $p_2$ must go through $v$, as desired.
+  $p_1'$ passes through $u$, which contradicts the simplicity of
+  $p_1$. Therefore, $p_2$ passes through $v$, as desired.
 \end{proof}
 
 \begin{lemma}
   \label{dom:nostrict}
   If $u \not\strictlydominates v$, $v \not\strictlydominates u$,
   $u \not\strictlydominates w$, and $v \dominates w$, then every
-  path from $u$ to $w$ must pass through $v$.
+  path from $u$ to $w$ passes through $v$.
 \end{lemma}
 
 \begin{proof}
@@ -236,8 +235,8 @@ A few minor style notes:
   trivially. Otherwise, consider a path $p_1$ from $r$ to $u$
   that doesn't pass through $v$. Then, take any path $p_2$ from
   $u$ to $w$. The concatenation of $p_1$ and $p_2$ is a path from
-  $r$ to $w$, so it must pass through $v$. So, $p_2$ passes
-  through $v$.
+  $r$ to $w$, so it passes through $v$. So, $p_2$ passes through
+  $v$.
 \end{proof}
 
 \begin{lemma}
@@ -247,20 +246,12 @@ A few minor style notes:
 \end{lemma}
 
 \begin{proof}
-  Take a minimal path $p$ from $r$ to $u$. Suppose $p$ traverses a
-  back edge $\tuple{w_1,w_2}$. Let $p'$ be a prefix of $p$
-  immediately before this edge. Then, $p'$ must go through $w_2$,
-  which contradicts the minimality of $p$. Since $p$ goes through
-  $v$ by definition, this completes the proof.
+  Take a simple path $p$ from $r$ to $u$. Suppose $p$ traverses a
+  back edge $\tuple{w_1,w_2}$. Let $p'$ be the prefix of $p$ that
+  comes immediately before this edge. Then, $p'$ must go through
+  $w_2$, which contradicts the simplicity of $p$. Since $p$ goes
+  through $v$ by definition, this completes the proof.
 \end{proof}
-
-\begin{definition}
-  A control flow graph $G = \tuple{V, E, r, \mathscr{F}}$ is
-  \emph{reducible} if for every cycle $v_0,v_1,\dots,v_n=v_0$ in
-  $G$, there is some $0 \le i \le n$ such that
-  $v_i \dominates v_j$ for all $0 \le j \le n$. (Intuitively,
-  every cycle has a natural entrypoint.)
-\end{definition}
 
 \zak{Nice characterization!  Could use some rephrasing.
   (E.g., write $u \rightsquigarrow v$ if there is a back-edge from $u$ to $v$ that does not contain a backedge. Write $u \preceq v$ if there exists some $u'$ such that $u \dominatedby u' \not \strictlydominates v$ and $u' \rightsquigarrow v$.  Then the lemma is that if $G$ is reducible, then $\preceq$ is a partial order (then we let $\leq$ be an arbitrary linearization)).}
@@ -326,7 +317,7 @@ A few minor style notes:
     $G=\tuple{V, E, r, \mathscr{F}}$ with vertices labeled
     $1,\dots, n = r$ as detailed in Lemma \ref{reducible:order}}
   
-  \KwOut{A function $pe: V \to PathExp(G)$ such that for all
+  \KwOut{A function $pe: V \to \pathexp{G}$ such that for all
     $v \in V$, $pe(v)$ is a well-formed path expression
     recognizing exactly $Paths_G(r, v)$}
 
@@ -418,18 +409,19 @@ the rest of the analysis of Tarjan's algorithm.
 
 \begin{definition}
   If $P$ is a path expression such that
-  $0, 1 \not \in SubExp(P)$, then let $src, tgt: SubExp(P) \to V$
-  and $sstar, tstar: SubExp(P) \to \{true, false\}$ be defined as
+  $0, 1 \not \in \subexp{P}$, then let
+  $src, tgt: \subexp{P} \to V$ and
+  $sstar, tstar: \subexp{P} \to \{\true, \false\}$ be defined as
   follows:
 
   \begin{center}
     \begin{tabular}{ c | c | c | c | c }
       & $src$ & $tgt$ & $sstar$ & $tstar$ \\
       \hline
-      $\tuple{v, w}$ & v & w & $false$ & $false$ \\
+      $\tuple{v, w}$ & v & w & $\false$ & $\false$ \\
       $P_1 + P_2$ & $src(P_1)$ & $tgt(P_1)$ & $sstar(P_1) \lor sstar(P_2)$ & $tstar(P_1) \lor tstar(P_2)$ \\
       $P_1 \cdot P_2$ & $src(P_1)$ & $tgt(P_2)$ & $sstar(P_1) $ & $tstar(P_2)$ \\
-      ${P_0}^*$ & $src(P_0)$ & $tgt(P_0)$ & $true$ & $true$
+      ${P_0}^*$ & $src(P_0)$ & $tgt(P_0)$ & $\true$ & $\true$
     \end{tabular}
   \end{center}
 
@@ -442,7 +434,7 @@ the rest of the analysis of Tarjan's algorithm.
 \begin{lemma}
   Suppose $eval_v(\cdot)$ is the state of the compressed weighted
   forest before the $v$th iteration. Let
-  $S_v = \bigcup_{w < v} SubExp(eval_v(w))$,
+  $S_v = \bigcup_{w < v} \subexp{eval_v(w)}$,
   $K_v^t = \max\{L(P)|P \in S_v, type(P) = t\}$, and
   \begin{align*}
     \ell_{v,k}(P)
@@ -464,7 +456,7 @@ the rest of the analysis of Tarjan's algorithm.
   \item For all $P = {P_0}^* \in S_v$ with $\ell = \ell_{v,k}(P)$,
     $u = u_{v,k}(P)$, $\ell_0 = \ell_{v,k}(P_0)$, and
     $u_0 = u_{v,k}(P_0)$,
-    $F(P, \ell, u) \equiv star(F(P_0, l_0, u_0), \tuple{X_{l_0},
+    $F(P, \ell, u) \equiv \tc(F(P_0, l_0, u_0), \tuple{X_{l_0},
       X_{u_0}})[X_{l_0} \mapsto X_\ell, X_{u_0} \mapsto X_u]$
   \end{enumerate}
 
@@ -480,9 +472,9 @@ the rest of the analysis of Tarjan's algorithm.
   $eval_{v+1}(w) = noncycle \cdot cycle^* \cdot eval_v(w)$
   otherwise. Define
   \begin{align*}
-    S_1 &\defeq \bigcup_{w < v, w\not\dominatedby v} SubExp(eval_v(w))\\
-    S_2 &\defeq \bigcup_{w < v, w\strictlydominatedby v} SubExp(eval_v(w))\\
-    S_3 &\defeq SubExp(noncycle \cdot cycle^*)
+    S_1 &\defeq \bigcup_{w < v, w\not\dominatedby v} \subexp{eval_v(w)}\\
+    S_2 &\defeq \bigcup_{w < v, w\strictlydominatedby v} \subexp{eval_v(w)}\\
+    S_3 &\defeq \subexp{noncycle \cdot cycle^*}
   \end{align*}
   \zak{TODO: Give $S_1/S_2/S_3$ more descriptive names.   Numerical subscripts also conflict with $S_v$, since $v$ ranges over the naturals.}
   Observe that $S_v = S_1 \cup S_2$ and
@@ -494,36 +486,38 @@ the rest of the analysis of Tarjan's algorithm.
     the compressed weighted forest at iteration $v$, so $eval_v(u)$
     is $q \cdot p$.  If $u$ is a predecessor of $v$, then we evaluate
     $\mathit{eval}_v(u)$ at iteration $v$, compress $u \xrightarrow{q \cdot p} v$, and
-    $\mathit{eval}_{v+1}(u) = (\mathit{noncycle} \cdot \mathtit{cycle}^*) \cdot (q \cdot p) = (\mathit{noncycle} \cdot \mathtit{cycle}^*) \cdot \mathit{eval}_v(u)$.  But if $u$ is not a predecessor of $v$, then we don't compress, and
-    $\mathit{eval}_{v+1}(u) = ((\mathit{noncycle} \cdot \mathtit{cycle}^*) \cdot q) \cdot p$.
-    Maybe you could instead define $\mathit{Links}_v = \bigcup_{u < v} (\mathit{noncycle}_u \cdot \mathtit{cycle}_u^*)$ and $\mathit{LinkSeq}_v$ to be the set of all path expressions that can be formed by concatenating path expressions from $\mathtit{Links}_v$ (finitely many, due to type constraints).  Then prove the result about sub-expreesions of path expressions from $\mathtit{LinkSeq}_v$.
+    $\mathit{eval}_{v+1}(u) = (\mathit{noncycle} \cdot \mathit{cycle}^*) \cdot (q \cdot p) = (\mathit{noncycle} \cdot \mathit{cycle}^*) \cdot \mathit{eval}_v(u)$.  But if $u$ is not a predecessor of $v$, then we don't compress, and
+    $\mathit{eval}_{v+1}(u) = ((\mathit{noncycle} \cdot \mathit{cycle}^*) \cdot q) \cdot p$.
+    Maybe you could instead define $\mathit{Links}_v = \bigcup_{u < v} (\mathit{noncycle}_u \cdot \mathit{cycle}_u^*)$ and $\mathit{LinkSeq}_v$ to be the set of all path expressions that can be formed by concatenating path expressions from $\mathit{Links}_v$ (finitely many, due to type constraints).  Then prove the result about sub-expreesions of path expressions from $\mathit{LinkSeq}_v$.
   }
 
   Take any $P_1 \in S_1$. There must be some
   $w \not \dominatedby v$ such that $P_1 \in
-  SubExp(eval_v(w))$. By Lemma \ref{tarjan:correct},
-  $w \dominates init(P_1), fin(P_1)$. Then,
-    $v \not \dominates init(P_1), fin(P_1)$. So,
-  $l_{v+1,k}(P_1) = \ell_{v,k}(P_1)$ and
-  $u_{v+1,k}(P_1) = u_{v,k}(P_1)$. Thus, the claim holds for $S_1$.
-\zak{init/fin should be src/tgt?  Commas are ambigious -- should $w \dominates init(P_1), fin(P_1)$ be interpreted as $w$ dominates both $\mathit{src}(P_1)$ and $\mathtit{tgt}(P_1$)?  (Expanding to English is easier on the reader than the compact mathematical notation)}
+  \subexp{eval_v(w)}$. By Lemma \ref{tarjan:correct},
+  $w \dominates src(P_1)$ and $w \dominates tgt(P_1)$. So,
+  $v \not \dominates src(P_1)$ and $v \not \dominates
+  fin(P_1)$. So, $\ell_{v+1,k}(P_1) = \ell_{v,k}(P_1)$ and
+  $u_{v+1,k}(P_1) = u_{v,k}(P_1)$. Thus, the claim holds for
+  $S_1$.
 
   Similarly, take any $P_2 \in S_2$. By Lemma
-  \ref{tarjan:correct}, $v \dominates init(P_2), fin(P_2)$. Let
-  $L = L(noncycle \cdot cycle^*)$ \zak{$L$ is already reserved for the length function -- pick a different symbol}. Then,
-  $L(eval_{v+1}(init(P_2))) = L + L(eval_v(init(P_2)))$ and
-  $L(eval_{v+1}(fin(P_2))) = L + L(eval_v(fin(P_2)))$. So,
-  $l_{v+1,k}(P_2) = L + \ell_{v,k}(P_2) = l_{v,k+L}(P_2)$ and
-  $u_{v+1,k}(P_2) = L + u_{v,k}(P_2) =
+  \ref{tarjan:correct}, $v \dominates src(P_2)$ and
+  $v \dominates tgt(P_2)$. Let $L = L(noncycle \cdot cycle^*)$
+  \zak{$L$ is already reserved for the length function -- pick a
+    different symbol}. Then,
+  $L(eval_{v+1}(src(P_2))) = L + L(eval_v(src(P_2)))$ and
+  $L(eval_{v+1}(tgt(P_2))) = L + L(eval_v(tgt(P_2)))$. So,
+  $\ell_{v+1,k}(P_2) = L + \ell_{v,k}(P_2) = \ell_{v,k+L}(P_2)$
+  and $u_{v+1,k}(P_2) = L + u_{v,k}(P_2) =
   u_{v,k+L}(P_2)$. Therefore, the claim holds for $S_2$.
 
   It remains to show that the claim holds for all $S_3$. For all
   $v' \in pred(v)$ where $v'\ne idom(v)$,
-  $sstar(eval(v')) = tstar(\tuple{v',v}) = false$. Furthermore,
+  $sstar(eval(v')) = tstar(\tuple{v',v}) = \false$. Furthermore,
   $eval(idom(v))\cdot \tuple{idom(v), v}$ gets simplified to
   $\tuple{idom(v), v}$, and
   $sstar(\tuple{idom(v), v}) = tstar(\tuple{idom(v), v}) =
-  false$. Therefore, $K_v^{type(noncycle)} = L(noncycle)$ and
+  \false$. Therefore, $K_v^{type(noncycle)} = L(noncycle)$ and
   $K_v^{type(cycle)} = L(cycle)$. So, (1) holds for $S_3$; (2)
   holds for $noncycle \cdot cycle^*$ since
   $L(eval_{v+1}(v)) = L(noncycle) + 1$ and $starred(cycle^*)$;
