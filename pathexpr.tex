@@ -7,6 +7,8 @@
 \usepackage{mathrsfs} % good script letters
 \usepackage{xcolor}
 \usepackage{hyperref}
+\usepackage{ifthen}
+\usepackage{centernot}
 
 % wrap in angle brackets
 \newcommand{\tuple}[1]{\langle #1 \rangle}
@@ -20,11 +22,16 @@
 \newcommand{\dominates}{\mathrel{\underline{\strictlydominates}}}
 \newcommand{\strictlydominatedby}{\mathrel{\ll}}
 \newcommand{\dominatedby}{\mathrel{\underline{\strictlydominatedby}}}
+\newcommand{\notstrictlydominates}{\mathrel{\centernot\strictlydominates}}
+\newcommand{\notdominates}{\mathrel{\centernot\dominates}}
+\newcommand{\notstrictlydominatedby}{\mathrel{\centernot\strictlydominatedby}}
+\newcommand{\notdominatedby}{\mathrel{\centernot\dominatedby}}
 
 \newcommand{\regexp}[1]{\mathit{RegExp}(#1)}
 \newcommand{\pathexp}[1]{\mathit{PathExp}(#1)}
+\newcommand{\pathexpzofree}[1]{\mathit{PathExpZOF}(#1)} %placeholder symbol
 \newcommand{\subexp}[1]{\mathit{SubExp}(#1)}
-\newcommand{\Paths}[3]{\mathit{Path}_{#1}(#2,#3)}
+\newcommand{\Paths}[3]{\mathit{Paths}_{#1}(#2,#3)}
 \newcommand{\fv}[1]{\mathit{Vars}(#1)}
 \newcommand{\Formula}[1]{\mathit{Formula}(#1)}
 \newcommand{\defeq}{\triangleq}
@@ -32,6 +39,19 @@
 \newcommand{\false}{\mathit{false}}
 \newcommand{\true}{\mathit{true}}
 \newcommand{\tc}{\mathit{star}}
+\newcommand{\find}[1]{\mathit{find}(#1)}
+\newcommand{\eval}[2][]{
+  \ifthenelse{ \equal{#1}{} }
+  {\mathit{eval}(#2)}
+  {\mathit{eval}_{#1}(#2)}
+}
+\newcommand{\link}[3]{\mathit{link}(#1, #2, #3)}
+\newcommand{\src}[1]{\mathit{src}(#1)}
+\newcommand{\tgt}[1]{\mathit{tgt}(#1)}
+\newcommand{\sstar}[1]{\mathit{sstar}(#1)}
+\newcommand{\tstar}[1]{\mathit{tstar}(#1)}
+\newcommand{\starred}[1]{\mathit{starred}(#1)}
+\newcommand{\type}[1]{\mathit{type}(#1)}
 \newcommand{\zak}[1]{{\color{blue}[Zak says: #1]}}
 
 % define theorems, lemmas, corollaries, and definitions
@@ -224,8 +244,8 @@ $\exists x_1, \dots, x_m$.
 
 \begin{lemma}
   \label{dom:nostrict}
-  If $u \not\strictlydominates v$, $v \not\strictlydominates u$,
-  $u \not\strictlydominates w$, and $v \dominates w$, then every
+  If $u \notstrictlydominates v$, $v \notstrictlydominates u$,
+  $u \notstrictlydominates w$, and $v \dominates w$, then every
   path from $u$ to $w$ passes through $v$.
 \end{lemma}
 
@@ -254,13 +274,13 @@ $\exists x_1, \dots, x_m$.
 \end{proof}
 
 \zak{Nice characterization!  Could use some rephrasing.
-  (E.g., write $u \rightsquigarrow v$ if there is a back-edge from $u$ to $v$ that does not contain a backedge. Write $u \preceq v$ if there exists some $u'$ such that $u \dominatedby u' \not \strictlydominates v$ and $u' \rightsquigarrow v$.  Then the lemma is that if $G$ is reducible, then $\preceq$ is a partial order (then we let $\leq$ be an arbitrary linearization)).}
+  (E.g., write $u \rightsquigarrow v$ if there is a back-edge from $u$ to $v$ that does not contain a backedge. Write $u \preceq v$ if there exists some $u'$ such that $u \dominatedby u' \notstrictlydominates v$ and $u' \rightsquigarrow v$.  Then the lemma is that if $G$ is reducible, then $\preceq$ is a partial order (then we let $\leq$ be an arbitrary linearization)).}
 
 \begin{lemma}
   \label{reducible:order}
   If $G$ is reducible, then there is an ordering of the vertices
   such that for all $u, v\in V$, $u \le v$ if there is a vertex
-  $u'$ where $u \dominatedby u' \not \strictlydominates v$ and
+  $u'$ where $u \dominatedby u' \notstrictlydominates v$ and
   there is a path from $u'$ to $v$ that doesn't traverse any back
   edges.
 \end{lemma}
@@ -270,38 +290,37 @@ $\exists x_1, \dots, x_m$.
   above relation is a partial order.
   \begin{enumerate}
   \item Reflexivity: let $v \in V$ be arbitrary.
-    $v \dominatedby v \not \strictlydominates v$, and the empty
+    $v \dominatedby v \notstrictlydominates v$, and the empty
     path from $v$ to $v$ does not traverse any back edges.
   \item Antisymmetry: suppose there are some $u, u', v, v' \in V$
     and paths $p_1$ and $p_2$ between $u'$ and $v$ and $v'$ and
     $u$, respectively, such that
-    $u \dominatedby u' \not \strictlydominates v$,
-    $v \dominatedby v' \not \strictlydominates u$, and $p_1$ and
+    $u \dominatedby u' \notstrictlydominates v$,
+    $v \dominatedby v' \notstrictlydominates u$, and $p_1$ and
     $p_2$ don't traverse any back edges. Since
-    $u' \not\strictlydominates v$ and
-    $v' \not\strictlydominates u$, neither $u'$ nor $v'$ can
+    $u' \notstrictlydominates v$ and
+    $v' \notstrictlydominates u$, neither $u'$ nor $v'$ can
     strictly dominate the other. By Lemma \ref{dom:nostrict},
-    $p_1$ goes through $v'$, and $p_2$ goes through
-    $u'$. But, this means there is a cycle starting and ending at
-    $u'$ that goes through $v'$ and doesn't traverse a back
-    edge. If the cycle is non-empty, then no vertex dominates its
-    predecessor in the cycle. Since $G$ is reducible, this means
-    the cycle must be empty, i.e. $u' = v'$. So,
-    $u' \dominates v$ but $u' \not \strictlydominates v$ and
-    $v' \dominates u$ but $v' \not \strictlydominates
-    u$. Therefore, $u = v' = u' = v$.
+    $p_1$ goes through $v'$, and $p_2$ goes through $u'$. But,
+    this means there is a cycle starting and ending at $u'$ that
+    goes through $v'$ and doesn't traverse a back edge. If the
+    cycle is non-empty, then no vertex dominates its predecessor
+    in the cycle. Since $G$ is reducible, this means the cycle
+    must be empty, i.e. $u' = v'$. So, $u' \dominates v$ but
+    $u' \notstrictlydominates v$ and $v' \dominates u$ but
+    $v' \notstrictlydominates u$. Therefore, $u = v' = u' = v$.
   \item Transitivity: suppose there are some
     $u, u', v, v', w \in V$ and paths $p_1$ and $p_2$ between
     $u'$ and $v$ and $v'$ and $w$, respectively, such that
-    $u \dominatedby u' \not \strictlydominates v$,
-    $v \dominatedby v' \not \strictlydominates w$, and $p_1$ and
+    $u \dominatedby u' \notstrictlydominates v$,
+    $v \dominatedby v' \notstrictlydominates w$, and $p_1$ and
     $p_2$ don't traverse any back edges. Note that
-    $u' \not \strictlydominates v'$. If $v' \dominates u'$, then
-    we are done. Otherwise, $v' \not \strictlydominates u'$. By
-    Lemma \ref{dom:nostrict}, $p_1$ passes through $v'$. But, we
-    also have that $u' \not \strictlydominates w$, because
-    otherwise $u' \dominates v'$. So, there is a path from
-    $u' \dominates u$ to $w \not\strictlydominatedby u'$ through
+    $u' \notstrictlydominates v'$. If $v' \dominates u'$, then we
+    are done. Otherwise, $v' \notstrictlydominates u'$. By Lemma
+    \ref{dom:nostrict}, $p_1$ passes through $v'$. But, we also
+    have that $u' \notstrictlydominates w$, because otherwise
+    $u' \dominates v'$. So, there is a path from
+    $u' \dominates u$ to $w \notstrictlydominatedby u'$ through
     $v'$ that doesn't traverse any back edges.
   \end{enumerate}
 \end{proof}
@@ -319,7 +338,7 @@ $\exists x_1, \dots, x_m$.
   
   \KwOut{A function $pe: V \to \pathexp{G}$ such that for all
     $v \in V$, $pe(v)$ is a well-formed path expression
-    recognizing exactly $Paths_G(r, v)$}
+    recognizing exactly $\Paths{G}{r}{v}$}
 
   Initialize a compressed weighted forest on $V$ \;
 
@@ -327,18 +346,18 @@ $\exists x_1, \dots, x_m$.
     $cycle, noncycle \gets 0$ \;
 
     \ForEach{$v' \in pred(v)$}{
-      \lIf{$find(v') = v$}{
-        $cycle \gets cycle + eval(v') \cdot \tuple{v', v}$
+      \lIf{$\find{v'} = v$}{
+        $cycle \gets cycle + \eval{v'} \cdot \tuple{v', v}$
       }
       \lElse{
-        $noncycle \gets noncycle + eval(v') \cdot \tuple{v', v}$
+        $noncycle \gets noncycle + \eval{v'} \cdot \tuple{v', v}$
       }
     }
 
-    $link(v, noncycle \cdot cycle^*, idom(v))$ \;
+    $\link{v}{noncycle \cdot cycle^*}{idom(v)}$ \;
   }
 
-  \Return $\lambda v. eval(v)$ \;
+  \Return $\lambda v. \eval{v}$ \;
 
 \end{algorithm}
 
@@ -351,8 +370,8 @@ the rest of the analysis of Tarjan's algorithm.
 
 \begin{lemma}
   \label{tarjan:correct}
-  Before the $v$th iteration, for all $w < v$, $find(w) = D_v(w)$
-  and $\si{eval(w)} = Paths_G(D_v(w), w) \cap E|_{D_v(w)}^*$,
+  Before the $v$th iteration, for all $w < v$, $\find(w) = D_v(w)$
+  and $\si{\eval{w}} = \Paths{G}{D_v(w)}{w} \cap E|_{D_v(w)}^*$,
   where $D_v(w)$ is the smallest vertex at least $v$ that
   dominates $w$.
 \end{lemma}
@@ -360,18 +379,17 @@ the rest of the analysis of Tarjan's algorithm.
 \begin{proof}
   We proceed by induction on $v$. The claim holds vacuously
   before the first iteration. Suppose it holds before the $v$th
-  iteration. By the induction hypothesis, $find(w) = v$ only if
-  $v \dominates w$. So, for all $w \not \dominatedby v$,
-  $find(w)$ and $eval(w)$ are unchanged, and
-  $D_{v+1}(w) = D_v(w)$. So, the claim still holds for such
-  $w$. Consider any $w \dominatedby v$. By Lemma
-  \ref{dom:backedge}, $w \le v$. And, $D_v(w) = v$. By the
-  induction hypothesis, before this iteration,
-  $\si{eval(w)} = Paths_G(v, w) \cap E|_v^*$. Furthermore,
-  $D_{v+1}(w) = idom(v)$, and every path from $idom(v)$ to $w$
-  must pass through $v$ by Lemma \ref{dom:trans}. Thus, it is
-  sufficient to show that
-  $\si{noncycle \cdot cycle^*} = Paths_G(idom(v), v) \cap
+  iteration. By the induction hypothesis, $\find(w) = v$ only if
+  $v \dominates w$. So, for all $w \notdominatedby v$, $\find(w)$
+  and $\eval{w}$ are unchanged, and $D_{v+1}(w) = D_v(w)$. So,
+  the claim still holds for such $w$. Consider any
+  $w \dominatedby v$. By Lemma \ref{dom:backedge}, $w \le
+  v$. And, $D_v(w) = v$. By the induction hypothesis, before this
+  iteration, $\si{\eval{w}} = \Paths{G}{v}{w} \cap
+  E|_v^*$. Furthermore, $D_{v+1}(w) = idom(v)$, and every path
+  from $idom(v)$ to $w$ must pass through $v$ by Lemma
+  \ref{dom:trans}. Thus, it is sufficient to show that
+  $\si{noncycle \cdot cycle^*} = \Paths{G}{idom(v)}{v} \cap
   E|_{idom(v)}^*$. That the left hand side is a subset of the
   right hand side follows trivially from the induction
   hypothesis, so we focus on the other direction.
@@ -382,18 +400,17 @@ the rest of the analysis of Tarjan's algorithm.
   expressed as the concatenation of a path $p_0'$ and an edge
   $\tuple{v', v}$ where $v' \dominatedby idom(v)$. By Lemma
   \ref{dom:trans}, since $p_0'$ doesn't go through $v$,
-  $v \not \dominates v'$. And, since $v' \dominatedby idom(v)$,
+  $v \notdominates v'$. And, since $v' \dominatedby idom(v)$,
   $v'$ must be dominated by every vertex that strictly dominates
-  $v$. So, either $v' = idom(v)$, or
-  $v' \not \strictlydominates v$ and $\tuple{v', v}$ is a path
-  from $v'$ to $v$ that doesn't traverse a back edge, i.e.
-  $v' \le v$. Suppose there is some $v''$ such that
-  $v' \dominatedby v'' \not \dominates v$. By Lemma
+  $v$. So, either $v' = idom(v)$, or $v' \notstrictlydominates v$
+  and $\tuple{v', v}$ is a path from $v'$ to $v$ that doesn't
+  traverse a back edge, i.e.  $v' \le v$. Suppose there is some
+  $v''$ such that $v' \dominatedby v'' \notdominates v$. By Lemma
   \ref{dom:backedge}, there is a path from $v''$ to $v'$ that
   does not traverse a back edge. So, $v'' < v$. Therefore, the
   smallest vertex at least $v$ that dominates $v'$ is
   $idom(v)$. By the induction hypothesis, $p_0'$ is recognized by
-  $eval(v')$. So, $noncycle$ recognizes $p_0$.
+  $\eval{v'}$. So, $noncycle$ recognizes $p_0$.
 
   Now, take any of the $p_i$. By reducibility, some vertex in
   $p_i$ must dominate all the others. In particular, it must
@@ -402,47 +419,45 @@ the rest of the analysis of Tarjan's algorithm.
   $p_i$. In particular, we can express $p_i$ as the concatenation
   of a path $p_i'$ and an edge $\tuple{v', v}$, where
   $v' \dominatedby v$. By the induction hypothesis, $p_i'$ is
-  recognized by $eval(v')$ before this iteration. So, $cycle$
+  recognized by $\eval{v'}$ before this iteration. So, $cycle$
   recognizes $p_i$ for all $1 \le i \le m$. Therefore, the claim
   holds after this iteration.
 \end{proof}
 
 \begin{definition}
-  If $P$ is a path expression such that
-  $0, 1 \not \in \subexp{P}$, then let
-  $src, tgt: \subexp{P} \to V$ and
-  $sstar, tstar: \subexp{P} \to \{\true, \false\}$ be defined as
-  follows:
+  Let $\mathit{src}, \mathit{tgt}: \pathexpzofree{G} \to V$ and
+  $\mathit{sstar}, \mathit{tstar}: \pathexpzofree{G} \to \{\true,
+  \false\}$ be defined as follows:
 
   \begin{center}
     \begin{tabular}{ c | c | c | c | c }
-      & $src$ & $tgt$ & $sstar$ & $tstar$ \\
+      $P$ & $\src{P}$ & $\tgt{P}$ & $\sstar{P}$ & $\tstar{P}$ \\
       \hline
       $\tuple{v, w}$ & v & w & $\false$ & $\false$ \\
-      $P_1 + P_2$ & $src(P_1)$ & $tgt(P_1)$ & $sstar(P_1) \lor sstar(P_2)$ & $tstar(P_1) \lor tstar(P_2)$ \\
-      $P_1 \cdot P_2$ & $src(P_1)$ & $tgt(P_2)$ & $sstar(P_1) $ & $tstar(P_2)$ \\
-      ${P_0}^*$ & $src(P_0)$ & $tgt(P_0)$ & $\true$ & $\true$
+      $P_1 + P_2$ & $\src{P_1}$ & $\tgt{P_1}$ & $\sstar{P_1} \lor \sstar{P_2}$ & $\tstar{P_1} \lor \tstar{P_2}$ \\
+      $P_1 \cdot P_2$ & $\src{P_1}$ & $\tgt{P_2}$ & $\sstar{P_1} $ & $\tstar{P_2}$ \\
+      ${P_0}^*$ & $\src{P_0}$ & $\tgt{P_0}$ & $\true$ & $\true$
     \end{tabular}
   \end{center}
 
   We let
-  $type(P_0) = \tuple{\tuple{src(P_0), sstar(P_0)},
-    \tuple{tgt(P_0), tstar(P_0)}}$ and
-  $starred(P_0) \equiv sstar(P_0) \land tstar(P_0)$.
+  $\type{P_0} = \tuple{\tuple{\src{P_0}, \sstar{P_0}},
+    \tuple{\tgt{P_0}, \tstar{P_0}}}$ and
+  $\starred{P_0} \equiv \sstar{P_0} \land \tstar{P_0}$.
 \end{definition}
 
 \begin{lemma}
-  Suppose $eval_v(\cdot)$ is the state of the compressed weighted
-  forest before the $v$th iteration. Let
-  $S_v = \bigcup_{w < v} \subexp{eval_v(w)}$,
-  $K_v^t = \max\{L(P)|P \in S_v, type(P) = t\}$, and
+  Suppose $\eval[v]{\cdot}$ is the state of the compressed
+  weighted forest before the $v$th iteration. Let
+  $S_v = \bigcup_{w < v} \subexp{\eval[v]{w}}$,
+  $K_v^t = \max\{L(P)|P \in S_v, \type{P} = t\}$, and
   \begin{align*}
     \ell_{v,k}(P)
     &= \begin{cases}
-      k+L(eval_v(src(P))) & \neg starred(P) \\
-      k+L(eval_v(tgt(P))) - 1 & starred(P)
+      k+L(\eval[v]{\src{P}}) & \neg \starred{P} \\
+      k+L(\eval[v]{\tgt{P}}) - 1 & \starred{P}
     \end{cases} \\
-    u_{v,k}(P) &= \ell_{v,k}(P) + K_v^{type(P)}
+    u_{v,k}(P) &= \ell_{v,k}(P) + K_v^{\type{P}}
   \end{align*}
   for any $k \ge 0$. Then, for all $k \ge 0$, the following hold:
 
@@ -468,12 +483,12 @@ the rest of the analysis of Tarjan's algorithm.
   We proceed by induction on $v$. The claim holds vacuously for
   $v = 0$. Suppose it holds for $0 \le v \le n - 1$ and take an
   arbitrary $k \ge 0$. By Lemma \ref{tarjan:correct},
-  $eval_{v+1}(w) = eval_v(w)$ if $v \not \dominates w$, and
-  $eval_{v+1}(w) = noncycle \cdot cycle^* \cdot eval_v(w)$
+  $\eval[v+1]{w} = \eval[v]{w}$ if $v \notdominates w$, and
+  $\eval[v+1]{w} = noncycle \cdot cycle^* \cdot \eval[v]{w}$
   otherwise. Define
   \begin{align*}
-    S_1 &\defeq \bigcup_{w < v, w\not\dominatedby v} \subexp{eval_v(w)}\\
-    S_2 &\defeq \bigcup_{w < v, w\strictlydominatedby v} \subexp{eval_v(w)}\\
+    S_1 &\defeq \bigcup_{w < v, w\notdominatedby v} \subexp{\eval[v]{w}}\\
+    S_2 &\defeq \bigcup_{w < v, w\strictlydominatedby v} \subexp{\eval[v]{w}}\\
     S_3 &\defeq \subexp{noncycle \cdot cycle^*}
   \end{align*}
   \zak{TODO: Give $S_1/S_2/S_3$ more descriptive names.   Numerical subscripts also conflict with $S_v$, since $v$ ranges over the naturals.}
@@ -492,44 +507,44 @@ the rest of the analysis of Tarjan's algorithm.
   }
 
   Take any $P_1 \in S_1$. There must be some
-  $w \not \dominatedby v$ such that $P_1 \in
-  \subexp{eval_v(w)}$. By Lemma \ref{tarjan:correct},
-  $w \dominates src(P_1)$ and $w \dominates tgt(P_1)$. So,
-  $v \not \dominates src(P_1)$ and $v \not \dominates
-  fin(P_1)$. So, $\ell_{v+1,k}(P_1) = \ell_{v,k}(P_1)$ and
+  $w \notdominatedby v$ such that $P_1 \in
+  \subexp{\eval[v]{w}}$. By Lemma \ref{tarjan:correct},
+  $w \dominates \src{P_1}$ and $w \dominates \tgt{P_1}$. So,
+  $v \notdominates \src{P_1}$ and $v \notdominates fin(P_1)$. So,
+  $\ell_{v+1,k}(P_1) = \ell_{v,k}(P_1)$ and
   $u_{v+1,k}(P_1) = u_{v,k}(P_1)$. Thus, the claim holds for
   $S_1$.
 
   Similarly, take any $P_2 \in S_2$. By Lemma
-  \ref{tarjan:correct}, $v \dominates src(P_2)$ and
-  $v \dominates tgt(P_2)$. Let $L = L(noncycle \cdot cycle^*)$
+  \ref{tarjan:correct}, $v \dominates \src{P_2}$ and
+  $v \dominates \tgt{P_2}$. Let $L = L(noncycle \cdot cycle^*)$
   \zak{$L$ is already reserved for the length function -- pick a
     different symbol}. Then,
-  $L(eval_{v+1}(src(P_2))) = L + L(eval_v(src(P_2)))$ and
-  $L(eval_{v+1}(tgt(P_2))) = L + L(eval_v(tgt(P_2)))$. So,
+  $L(\eval[v+1]{\src{P_2}}) = L + L(\eval[v]{\src{P_2}})$ and
+  $L(\eval[v+1]{\tgt{P_2}}) = L + L(\eval[v]{\tgt{P_2}})$. So,
   $\ell_{v+1,k}(P_2) = L + \ell_{v,k}(P_2) = \ell_{v,k+L}(P_2)$
   and $u_{v+1,k}(P_2) = L + u_{v,k}(P_2) =
   u_{v,k+L}(P_2)$. Therefore, the claim holds for $S_2$.
 
   It remains to show that the claim holds for all $S_3$. For all
   $v' \in pred(v)$ where $v'\ne idom(v)$,
-  $sstar(eval(v')) = tstar(\tuple{v',v}) = \false$. Furthermore,
-  $eval(idom(v))\cdot \tuple{idom(v), v}$ gets simplified to
-  $\tuple{idom(v), v}$, and
-  $sstar(\tuple{idom(v), v}) = tstar(\tuple{idom(v), v}) =
-  \false$. Therefore, $K_v^{type(noncycle)} = L(noncycle)$ and
-  $K_v^{type(cycle)} = L(cycle)$. So, (1) holds for $S_3$; (2)
+  $\sstar{\eval[v]{v'}} = \tstar{\tuple{v',v}} =
+  \false$. Furthermore, $\eval[idom(v)]\cdot \tuple{idom(v), v}$
+  gets simplified to $\tuple{idom(v), v}$, and
+  $\sstar{\tuple{idom(v), v}} = \tstar{\tuple{idom(v), v}} =
+  \false$. Therefore, $K_v^{\type{noncycle}} = L(noncycle)$ and
+  $K_v^{\type{cycle}} = L(cycle)$. So, (1) holds for $S_3$; (2)
   holds for $noncycle \cdot cycle^*$ since
-  $L(eval_{v+1}(v)) = L(noncycle) + 1$ and $starred(cycle^*)$;
-  and (3) holds for $cycle^*$ since $starred(cycle^*)$ but
-  $\neg starred(cycle)$.
+  $L(\eval[v+1]{v}) = L(noncycle) + 1$ and $\starred{cycle^*}$;
+  and (3) holds for $cycle^*$ since $\starred{cycle^*}$ but
+  $\neg \starred{cycle}$.
 
-  Finally, consider any $eval_v(v') \cdot \tuple{v', v}$ where
+  Finally, consider any $\eval[v]{v'} \cdot \tuple{v', v}$ where
   $v' \in pred(v)$. Take the smallest $w'$ at least $v$ that
   dominates $v'$. Since $v' \ne v$, the only $P_3\in S_v$ with
-  $type(P_3) = type(eval_v(v'))$ is $P_3 = eval_v(v')$. So,
-  $K_v^{type(eval_v(v'))} = L(eval_v(v'))$. Therefore, (2) holds
-  for $eval_v(v') \cdot \tuple{v', v}$, as desired.
+  $\type{P_3} = \type{\eval[v]{v'}}$ is $P_3 = \eval[v]{v'}$. So,
+  $K_v^{\type{\eval[v]{v'}}} = L(\eval[v]{v'})$. Therefore, (2)
+  holds for $\eval[v]{v'} \cdot \tuple{v', v}$, as desired.
 \end{proof}
 
 \zak{The components are here, but missing the high-level theorem

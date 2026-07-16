@@ -6,7 +6,9 @@ $0, 1 \in \regexp{\Sigma}$, $\Sigma \subseteq \regexp{\Sigma}$,
 and $(R_1 + R_2), (R_1 \cdot R_2), R^* \in \regexp{\Sigma}$ for
 all $R, R_1, R_2 \in \regexp{\Sigma}$. $\subexp{R}$ for
 $R \in \regexp{\Sigma}$ is the set of subexpressions of $R$,
-including $R$ itself.
+including $R$ itself. $R$ is $\{0,1\}$-free if
+$0, 1 \not \in \subexp{R}$.
+
 % taken more or less verbatim from Algebraic Program Analysis +
 % Fast Algorithms for Solving Path Problems
 The \defn{standard interpretation} is the function
@@ -42,7 +44,8 @@ A \defn{path expression} $P$ of type $\tuple{u, v}$ on
 $G = \tuple{V, E, r, F}$ is a regular expression over
 $E$ such that $\si{P} \subseteq Paths_G(u,v)$ for some
 $u,v \in V$. We denote the set of path expressions on $G$ by
-$\pathexp{G}$.
+$\pathexp{G}$ and the set of $\{0,1\}$-free path expressions on
+$G$ by $\pathexpzofree{G}$.
 
 Suppose $\tc$ is a function that takes a formula $F$ and the pair
 of variable vocabulairies $X$ and $X'$ that $F$ relates and
@@ -82,7 +85,25 @@ $G$, there is some $0 \le i \le n$ such that $v_i \dominates v_j$
 for all $0 \le j \le n$. (Intuitively, every cycle has a natural
 entrypoint.)
 
-\textbf{TODO}: missing definitions for
-\begin{itemize}
-\item eval/link/update data structure
-\end{itemize}
+\subsection{Data Structures}
+
+% almost verbatim from Termination Analysis Without the Tears,
+% except that I have """clarified""" the grouping of the
+% concatenation in eval
+
+A \defn{compressed weighted forest} is a data structure that
+maintains a forest with edges weighted by regular expressions
+and that supports the following operations:
+
+\begin{enumerate}
+\item $\find{v}$: return the unique root $u$ from which $v$ is
+  reachable.
+\item $\eval{v}$: return the concatenation $R_1 \cdots R_n$,
+  where $\find{v} \xrightarrow{R_1} \cdots \xrightarrow{R_n} v$
+  is a path in the forest. (The associativity of $\cdot$ is
+  intentionally left ambiguous --- $R_1 \cdots R_n$ may be
+  grouped arbitrarily.)
+\item $\link{u}{R}{v}$: create an edge from $u$ to $v$ with
+  weight $R$ in the forest. (This operation is only defined when
+  $u$ and $v$ are roots.)
+\end{enumerate}
