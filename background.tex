@@ -83,7 +83,9 @@ strictly dominates $u$, then $v$ is the \defn{immediate
 unique immediate dominator --- we denote this by
 $idom(u)$. $E|_v$ is the set of edges $\tuple{u,w}$ such that
 $v \strictlydominates w$. $\tuple{u, v} \in E$ is a \defn{back
-  edge} if $v \dominates u$.
+  edge} if $v \dominates u$. We write $u \rightsquigarrow v$ to
+indicate that there is a path from $u$ to $v$ in $G$ that does
+not traverse a back edge.
 
 A control flow graph $G = \tuple{V, E, r, \mathscr{F}}$ is
 \defn{reducible} if for every cycle $v_0,v_1,\dots,v_n=v_0$ in
@@ -104,12 +106,14 @@ supports the following operations:
 \begin{itemize}
 \item $\find{v}$: return the unique root $u$ from which $v$ is
   reachable.
-\item $\eval{v}$: return a concatenation $R_1 \cdots R_n$, where
-  $\find{v} \xrightarrow{R_1} \cdots \xrightarrow{R_n} v$ is the
-  path in the forest. (The associativity of $\cdot$ is
-  intentionally left ambiguous --- $R_1 \cdots R_n$ may be
-  grouped arbitrarily.)
-\item $\link{u}{R}{v}$: create an edge from $u$ to $v$ with
-  weight $R$ in the forest. (This operation is only defined when
-  $u$ is a root.)
+\item $\eval{v}$: return a concatenation
+  $R_1 \cdot R_2 \cdot \cdots R_n$, where
+  $u \xrightarrow{R_1} u_1 \xrightarrow{R_2} \cdots
+  \xrightarrow{R_n} v$ is the path in the forest from
+  $u = \find{v}$ to $v$. (The associativity of $\cdot$ is
+  intentionally left ambiguous ---
+  $R_1 \cdot R_2 \cdot \cdots R_n$ may be grouped arbitrarily.)
+\item $\link{u}{R}{v}$: add an edge to the forest from $u$ to $v$
+  with weight $R$. (This operation is only defined when $u$ is a
+  root.)
 \end{itemize}
