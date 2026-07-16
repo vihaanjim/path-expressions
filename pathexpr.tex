@@ -32,6 +32,7 @@
 \newcommand{\pathexpzofree}[1]{\mathit{PathExpZOF}(#1)} %placeholder symbol
 \newcommand{\subexp}[1]{\mathit{SubExp}(#1)}
 \newcommand{\Paths}[3]{\mathit{Paths}_{#1}(#2,#3)}
+\newcommand{\var}{\mathit{VAR}}
 \newcommand{\fv}[1]{\mathit{Vars}(#1)}
 \newcommand{\Formula}[1]{\mathit{Formula}(#1)}
 \newcommand{\defeq}{\triangleq}
@@ -95,7 +96,7 @@ A few minor style notes:
   Given a function $wt: \Sigma \to \mathbb{Z}$, the \defn{length}
   of a regular expression is given by
   $L: \regexp{\Sigma} \to \mathbb{Z} \cup \{-\infty\}$ where
-  $L(0) \defeq -\infty$, $L(1) \defeq L(R^*) \defeq 1$,
+  $L(0) \defeq -\infty$, $L(1) \defeq 0$, $L(R^*) \defeq 1$,
   $L(a) \defeq wt(a)$ for all $a \in \Sigma$,
   $L(R_1 + R_2) \defeq \max\{L(R_1), L(R_2)\}$, and
   $L(R_1 \cdot R_2) \defeq L(R_1) + L(R_2)$.
@@ -108,11 +109,10 @@ A few minor style notes:
   edge to 1. Then, define $F$ mapping path expressions and
   integer lower and upper bounds to formulas where
   $F(P, \ell, u) \defeq \false$ if $L(P) = -\infty$, and
-  otherwise,
+  otherwise $F(1, \ell, u) \defeq X_\ell = X_u$,
+  $F({\tuple{u, v}}, \ell, u) \defeq \mathscr{F}_{\tuple{u,
+      v}}(X_\ell, X_u)$, and
   \begin{align*}
-    F(1, \ell, u) &\defeq X_\ell = X_u \\
-    F({\tuple{u, v}}, \ell, u) &\defeq \mathscr{F}_{\tuple{u, v}}(X_\ell,
-  X_u)\\
     F(P_1 + P_2, \ell, u)
     &\defeq F(P_1, \ell, u) \lor F(P_2, \ell, u) \\
     F(P_1 \cdot P_2, \ell, u)
@@ -125,14 +125,13 @@ A few minor style notes:
 \end{definition}
 
 Let $V_{i,j} = \bigcup_{k=i}^j X_k$. As an abuse of notation, let
-$\exists S$ for a set $S = \{x_1, \dots, x_m\}$ denote
-$\exists x_1, \dots, x_m$.
+$\exists S$ for a set $S = \{z_1, \dots, z_N\}$ denote
+$\exists z_1, \dots, z_N$.
 
 \begin{lemma}
   \label{pe:freevars}
   For all $P \in \pathexp{G}$, for all $\ell \ge 0$ and
-  $u \ge \ell + L(P)$,
-  $\fv{F(P, \ell, u)} \subseteq V_{\ell,u} X_i$.
+  $u \ge \ell + L(P)$, $\fv{F(P, \ell, u)} \subseteq V_{\ell,u}$.
 \end{lemma}
 
 \begin{proof}

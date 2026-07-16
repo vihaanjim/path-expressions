@@ -19,23 +19,29 @@ $\epsilon$ is the empty string, $\si{a} \defeq \{a\}$ for all
 $a \in \Sigma$, and
 \begin{align*}
   \si{R_1 + R_2} &\defeq \si{R_1} \cup \si{R_2} \\
-  \si{R_1 \cdot R_2} &\defeq \{x_1x_2| x_1 \in \si{R_1}, x_2 \in
+  \si{R_1 \cdot R_2} &\defeq \{y_1y_2| y_1 \in \si{R_1}, y_2 \in
                        \si{R_2}\} \\
-  \si{R^*} &\defeq \{x_1x_2\dots x_n| x_1,x_2,\dots,x_n \in \si{R}\}
+  \si{R^*} &\defeq \{y_1y_2\dots y_n| y_1,y_2,\dots,y_n \in \si{R}\}
 \end{align*}
 for all $R, R_1, R_2 \in \regexp{\Sigma}$.
 
-Let $X$ and $X'$ be sets of variables such that for each
-$x\in X$, there is a corresponding $x' \in X'$. As an abuse of
-notation, we use $X = X' \defeq \bigwedge_{x \in X} x =
-x'$. $\fv{F}$ for a formula $F$ is the set of free variables in
-$F$. $\Formula{X, X'}$ denotes the set of formulas such that
-$\fv{F} \subseteq X \cup X'$. Then, a \defn{control flow graph}
-$G = \tuple{V, E, r, \mathscr{F}}$ is a graph with vertices $V$,
-edges $E$, a root vertex $r$ of indegree 0 from which every
-vertex $v \in V$ is reachable, and a function
-$\mathscr{F}: E \to \Formula{X, X'}$. We use
-$\mathscr{F}_{\tuple{u,v}}(Y, Y')$ to denote
+Suppose $\var = \{x_1,\dots,x_m\}$ is a set of variables.  Then,
+a \defn{variable vocabulary} is a bijection
+$X: \var \to \mathcal{C}$ for some set $\mathcal{C}$ of
+symbols. As an abuse of notation, for two variable vocabularies
+$X$ and $X'$, we let
+$X = X' \defeq \bigwedge_{i=1}^m X(x_i) = X'(x_i)$ and
+$F[X \mapsto X'] \defeq F[X(x_1) \mapsto X'(x_1), \dots, X(x_m)
+\mapsto X'(x_m)]$. $\fv{F}$ for a formula $F$ is the set of free
+variables in $F$. $\mathit{Formula}$ denotes the set of formulas
+and
+$\Formula{X, X'} \defeq \{F \in \mathit{Formula}|\fv{F} \subseteq
+\bigcup_{i=1}^m \{X(x_i), X'(x_i)\}\}$. Then, a \defn{control
+  flow graph} $G = \tuple{V, E, r, \mathscr{F}}$ is a graph with
+vertices $V$, edges $E$, a root vertex $r$ of indegree 0 from
+which every vertex $v \in V$ is reachable, and a function
+$\mathscr{F}: E \to \Formula{X, X'}$ for some $X$ and $X'$. We
+use $\mathscr{F}_{\tuple{u,v}}(Y, Y')$ to denote
 $\mathscr{F}(\tuple{u,v})[X \mapsto Y, X' \mapsto Y']$. We let
 $\Paths{G}{u}{v}$ be the set of all (possibly non-simple) paths
 from $u$ to $v$ in $G$.
@@ -92,18 +98,18 @@ entrypoint.)
 % concatenation in eval
 
 A \defn{compressed weighted forest} is a data structure that
-maintains a forest with edges weighted by regular expressions
-and that supports the following operations:
+maintains a forest with edges weighted by regular expressions. It
+supports the following operations:
 
-\begin{enumerate}
+\begin{itemize}
 \item $\find{v}$: return the unique root $u$ from which $v$ is
   reachable.
-\item $\eval{v}$: return the concatenation $R_1 \cdots R_n$,
-  where $\find{v} \xrightarrow{R_1} \cdots \xrightarrow{R_n} v$
-  is a path in the forest. (The associativity of $\cdot$ is
+\item $\eval{v}$: return a concatenation $R_1 \cdots R_n$, where
+  $\find{v} \xrightarrow{R_1} \cdots \xrightarrow{R_n} v$ is the
+  path in the forest. (The associativity of $\cdot$ is
   intentionally left ambiguous --- $R_1 \cdots R_n$ may be
   grouped arbitrarily.)
 \item $\link{u}{R}{v}$: create an edge from $u$ to $v$ with
   weight $R$ in the forest. (This operation is only defined when
-  $u$ and $v$ are roots.)
-\end{enumerate}
+  $u$ is a root.)
+\end{itemize}
