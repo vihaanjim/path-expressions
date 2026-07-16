@@ -428,20 +428,21 @@ the rest of the analysis of Tarjan's algorithm.
   \false\}$ be defined as follows:
 
   \begin{center}
-    \begin{tabular}{ c | c | c | c | c }
+    \begin{tabular}{| c | c | c | c | c |}
+      \hline
       $P$ & $\src{P}$ & $\tgt{P}$ & $\sstar{P}$ & $\tstar{P}$ \\
       \hline
       $\tuple{v, w}$ & v & w & $\false$ & $\false$ \\
-      $P_1 + P_2$ & $\src{P_1}$ & $\tgt{P_1}$ & $\sstar{P_1} \lor \sstar{P_2}$ & $\tstar{P_1} \lor \tstar{P_2}$ \\
-      $P_1 \cdot P_2$ & $\src{P_1}$ & $\tgt{P_2}$ & $\sstar{P_1} $ & $\tstar{P_2}$ \\
-      ${P_0}^*$ & $\src{P_0}$ & $\tgt{P_0}$ & $\true$ & $\true$
+      $P_1 + P_2$, $P_1 \cdot P_2$ & $\src{P_1}$ & $\tgt{P_1}$ & $\sstar{P_1}$ & $\tstar{P_2}$ \\
+      ${P_0}^*$ & $\src{P_0}$ & $\tgt{P_0}$ & $\true$ & $\true$ \\
+      \hline
     \end{tabular}
   \end{center}
 
   We let
-  $\type{P_0} = \tuple{\tuple{\src{P_0}, \sstar{P_0}},
-    \tuple{\tgt{P_0}, \tstar{P_0}}}$ and
-  $\starred{P_0} \equiv \sstar{P_0} \land \tstar{P_0}$.
+  $\type{P_0} \defeq \tuple{\src{P_0}, \sstar{P_0}, \tgt{P_0},
+    \tstar{P_0}}$ and
+  $\starred{P_0} \defeq \sstar{P_0} \land \tstar{P_0}$.
 \end{definition}
 
 \begin{lemma}
@@ -450,31 +451,26 @@ the rest of the analysis of Tarjan's algorithm.
   $S_v = \bigcup_{w < v} \subexp{\eval[v]{w}}$,
   $K_v^t = \max\{L(P)|P \in S_v, \type{P} = t\}$, and
   \begin{align*}
-    \ell_{v,k}(P)
+    \ell_v(P)
     &= \begin{cases}
-      k+L(\eval[v]{\src{P}}) & \neg \starred{P} \\
-      k+L(\eval[v]{\tgt{P}}) - 1 & \starred{P}
+      L(\eval[v]{\src{P}}) & \neg \starred{P} \\
+      L(\eval[v]{\tgt{P}}) - 1 & \starred{P}
     \end{cases} \\
-    u_{v,k}(P) &= \ell_{v,k}(P) + K_v^{\type{P}}
+    u_v(P) &= \ell_v(P) + K_v^{\type{P}}
   \end{align*}
   for any $k \ge 0$. Then, for all $k \ge 0$, the following hold:
 
   \begin{enumerate}
   \item For all $P = P_1 + P_2 \in S_v$,
-    $F(P, \ell_{v,k}(P), u_{v,k}(P)) \equiv F(P_1, \ell_{v,k}(P_1),
-    u_{v,k}(P_1)) \lor F(P_2, \ell_{v,k}(P_2), u_{v,k}(P_2))$.
+    $\ell_v(P) = \ell_v(P_1) = \ell_v(P_2)$ and
+    $u_v(P) = u_v(P_1) = u_v(P_2)$.
   \item For all $P = P_1 \cdot P_2 \in S_v$,
-    $F(P, \ell_{v,k}(P), u_{v,k}(P)) \equiv F(P_1, \ell_{v,k}(P_1),
-    u_{v,k}(P_1)) \land F(P_2, \ell_{v,k}(P_2), u_{v,k}(P_2))$
-  \item For all $P = {P_0}^* \in S_v$ with $\ell = \ell_{v,k}(P)$,
-    $u = u_{v,k}(P)$, $\ell_0 = \ell_{v,k}(P_0)$, and
-    $u_0 = u_{v,k}(P_0)$,
-    $F(P, \ell, u) \equiv \tc(F(P_0, l_0, u_0), \tuple{X_{l_0},
-      X_{u_0}})[X_{l_0} \mapsto X_\ell, X_{u_0} \mapsto X_u]$
+    $\ell_v(P) = \ell_v(P_1)$, $u_v(P_1) = \ell_v(P_2)$,
+    $u_v(P) = u_v(P_2)$.
+  \item For all $P = {P_0}^* \in S_v$,
+    $\ell_v(P_0) = \ell_v(P) + 1$, $u_v(P_0) = \ell_v(P) + 1 +
+    L(P_0)$, and $u_v(P) = \ell_v(P) + 1$.
   \end{enumerate}
-
-  \zak{I'm not clear on the role of $k$.  I might try to hide it in the proof.
-    }
 \end{lemma}
 
 \begin{proof}
@@ -509,25 +505,26 @@ the rest of the analysis of Tarjan's algorithm.
   \subexp{\eval[v]{w}}$. By Lemma \ref{tarjan:correct},
   $w \dominates \src{P_1}$ and $w \dominates \tgt{P_1}$. So,
   $v \notdominates \src{P_1}$ and $v \notdominates fin(P_1)$. So,
-  $\ell_{v+1,k}(P_1) = \ell_{v,k}(P_1)$ and
-  $u_{v+1,k}(P_1) = u_{v,k}(P_1)$. Thus, the claim holds for
+  $\ell_{v+1}(P_1) = \ell_v(P_1)$ and
+  $u_{v+1}(P_1) = u_v(P_1)$. Thus, the claim holds for
   $S_1$.
 
   Similarly, take any $P_2 \in S_2$. By Lemma
   \ref{tarjan:correct}, $v \dominates \src{P_2}$ and
-  $v \dominates \tgt{P_2}$. Let $L = L(noncycle \cdot cycle^*)$
-  \zak{$L$ is already reserved for the length function -- pick a
-    different symbol}. Then,
-  $L(\eval[v+1]{\src{P_2}}) = L + L(\eval[v]{\src{P_2}})$ and
-  $L(\eval[v+1]{\tgt{P_2}}) = L + L(\eval[v]{\tgt{P_2}})$. So,
-  $\ell_{v+1,k}(P_2) = L + \ell_{v,k}(P_2) = \ell_{v,k+L}(P_2)$
-  and $u_{v+1,k}(P_2) = L + u_{v,k}(P_2) =
-  u_{v,k+L}(P_2)$. Therefore, the claim holds for $S_2$.
+  $v \dominates \tgt{P_2}$. Let
+  $\Lambda = L(noncycle \cdot cycle^*)$. Then,
+  $L(\eval[v+1]{\src{P_2}}) = \Lambda + L(\eval[v]{\src{P_2}})$
+  and
+  $L(\eval[v+1]{\tgt{P_2}}) = \Lambda +
+  L(\eval[v]{\tgt{P_2}})$. So,
+  $\ell_{v+1}(P_2) = \Lambda + \ell_v(P_2)$ and
+  $u_{v+1}(P_2) = \Lambda + u_v(P_2)$. By simple algebra, the
+  claim holds for $S_2$.
 
   It remains to show that the claim holds for all $S_3$. For all
   $v' \in pred(v)$ where $v'\ne idom(v)$,
   $\sstar{\eval[v]{v'}} = \tstar{\tuple{v',v}} =
-  \false$. Furthermore, $\eval[idom(v)]\cdot \tuple{idom(v), v}$
+  \false$. Furthermore, $\eval{idom(v)}\cdot \tuple{idom(v), v}$
   gets simplified to $\tuple{idom(v), v}$, and
   $\sstar{\tuple{idom(v), v}} = \tstar{\tuple{idom(v), v}} =
   \false$. Therefore, $K_v^{\type{noncycle}} = L(noncycle)$ and
